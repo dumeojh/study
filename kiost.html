@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>안성여고 통합 출결 키오스크</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        :root { --in: #0d6efd; --out: #ffc107; --return: #198754; --home: #dc3545; --bg: #f4f7f6; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
+        .kiosk-box { background: white; width: 90%; max-width: 650px; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; position: relative; }
+        .school-title { font-size: 24px; font-weight: bold; color: #555; margin-bottom: 10px; }
+        .clock { font-size: 55px; font-weight: 900; color: #222; margin-bottom: 5px; font-family: monospace; }
+        .date { font-size: 18px; color: #888; margin-bottom: 30px; font-weight: bold; }
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+        .status-btn { padding: 20px; font-size: 22px; font-weight: bold; border: 3px solid transparent; border-radius: 15px; cursor: pointer; transition: 0.2s; background: white; }
+        .btn-in { color: var(--in); border-color: #b6d4fe; } .btn-in.selected { background: var(--in); color: white; border-color: var(--in); }
+        .btn-out { color: #b38200; border-color: #fff3cd; } .btn-out.selected { background: var(--out); color: black; border-color: var(--out); }
+        .btn-return { color: var(--return); border-color: #badbcc; } .btn-return.selected { background: var(--return); color: white; border-color: var(--return); }
+        .btn-home { color: var(--home); border-color: #f5c2c7; } .btn-home.selected { background: var(--home); color: white; border-color: var(--home); }
+        .input-area { background: #f8f9fa; padding: 25px; border-radius: 15px; border: 1px solid #e9ecef; }
+        .guide-text { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 15px; }
+        #scanner-input { width: 100%; max-width: 250px; padding: 15px; font-size: 28px; font-weight: bold; text-align: center; border: 3px solid #ccc; border-radius: 10px; letter-spacing: 3px; }
+        #scanner-input:focus { outline: none; border-color: #444; }
+        #result-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); border-radius: 20px; z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
+        .receipt { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 2px dashed #ccc; width: 80%; }
+        .r-name { font-size: 28px; font-weight: 900; margin-bottom: 10px; } .r-status { font-size: 35px; font-weight: 900; margin-bottom: 15px; }
+        .r-time { font-size: 18px; color: #666; margin-bottom: 15px; } .r-msg { font-size: 16px; font-weight: bold; background: #eee; padding: 10px; border-radius: 8px; }
+/* 🌟 경고용 깜빡임 애니메이션 추가 */
+@keyframes urgentBlink {
+    0%, 100% { background-color: white; border-color: #dc3545; }
+    50% { background-color: #ffe6e6; border-color: #dc3545; transform: scale(1.05); box-shadow: 0 0 30px rgba(220,53,69,0.5); }
+}
+.receipt.blink-warning {
+    animation: urgentBlink 0.4s infinite;
+    border-width: 5px;
+    border-style: solid;
+}
+    
+    
+    </style>
+</head>
+<body>
+
+<div class="kiosk-box">
+    <div class="school-title">🏫 안성여고 자율학습 출결 센터</div>
+    <div class="clock" id="live-clock">00:00:00</div>
+    <div class="date" id="live-date">2026년 00월 00일</div>
+
+    <div class="status-grid">
+        <button class="status-btn btn-in selected" onclick="selectStatus('입실', this)">🟢 등교 입실</button>
+        <button class="status-btn btn-out" onclick="selectStatus('외출', this)">🟡 잠시 외출</button>
+        <button class="status-btn btn-return" onclick="selectStatus('복귀', this)">🔵 외출 복귀</button>
+        <button class="status-btn btn-home" onclick="selectStatus('귀가', this)">🔴 최종 귀가</button>
+    </div>
+
+<div class="input-area">
+        <div class="guide-text" id="guide-msg">학생증을 스캔하거나 학번을 입력하세요.</div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <input type="text" id="scanner-input" placeholder="학생증 스캔 또는 학번" autocomplete="off" style="text-transform: uppercase;">
+            <input type="text" id="name-input" placeholder="이름" autocomplete="off" style="display:none; width: 100%; max-width: 150px; padding: 15px; font-size: 24px; font-weight: bold; text-align: center; border: 3px solid #ccc; border-radius: 10px;">
+        </div>
+    </div>
+
+    <div id="result-overlay">
+        <div class="receipt">
+            <div class="r-name" id="r-name">-</div>
+            <div class="r-status" id="r-status">-</div>
+            <div class="r-time" id="r-time">-</div>
+            <div class="r-msg" id="r-msg">-</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBP6oveXbGlNn_0XqttHbU2ZDUYhH2nf4c",
+        authDomain: "self-study-project-82bdf.firebaseapp.com",
+        projectId: "self-study-project-82bdf",
+        storageBucket: "self-study-project-82bdf.firebasestorage.app",
+        messagingSenderId: "482006075036",
+        appId: "1:482006075036:web:473445e0f86d48cd22cf59"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+
+////////////////////////////////////
+    let serverRoster = {}; 
+    let serverBarcodes = {}; // 🌟 바코드 매핑용 변수 추가
+    let currentStatus = "입실"; 
+    const todayObj = new Date();
+    const todayStr = todayObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); 
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('live-clock').innerText = now.toLocaleTimeString('ko-KR', { hour12: false });
+        const days = ['일','월','화','수','목','금','토'];
+        document.getElementById('live-date').innerText = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]}요일)`;
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    async function fetchRoster() {
+        const doc = await db.collection("settings").doc("roster").get();
+        if (doc.exists) {
+            const data = doc.data();
+            serverRoster = JSON.parse(data.list || "{}");
+            serverBarcodes = JSON.parse(data.barcodeList || "{}"); // 🌟 바코드 목록도 서버에서 가져옴
+        }
+    }
+    fetchRoster();
+
+// 🌟 [추가] 에러 발생 시 삐-삐-삐 소리를 내는 기계음 함수
+function playErrorBeep() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function beep(time, freq) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = freq;
+            osc.type = 'square'; // 경고음에 어울리는 기계음 소리
+            gain.gain.setValueAtTime(0.15, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+            osc.start(time);
+            osc.stop(time + 0.15);
+        }
+        // 0.2초 간격으로 3번 연속 빠르고 크게 울림
+        beep(audioCtx.currentTime, 600);
+        beep(audioCtx.currentTime + 0.2, 600);
+        beep(audioCtx.currentTime + 0.4, 600);
+    } catch(e) { 
+        console.error("오디오 재생 에러:", e); 
+    }
+}
+
+
+    
+    function selectStatus(status, btnElement) {
+        currentStatus = status;
+        document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('selected'));
+        btnElement.classList.add('selected');
+        const guide = document.getElementById('guide-msg');
+        if(status === '귀가') guide.innerHTML = "<span style='color:red;'>귀가 처리 후에는 다시 입실할 수 없습니다.</span><br>학생증을 스캔하세요.";
+        else guide.innerText = "학생증을 스캔하거나 학번을 입력하세요.";
+        focusScanner();
+    }
+
+
+
+
+    
+const scannerInput = document.getElementById('scanner-input');
+    const nameInput = document.getElementById('name-input');
+    function focusScanner() { scannerInput.focus(); }
+    document.addEventListener('click', focusScanner);
+    setInterval(() => { if(document.activeElement !== scannerInput && document.activeElement !== nameInput) focusScanner(); }, 2000);
+
+    let authMode = "1"; // 기본값 (1단계)
+
+    // 🌟 서버에서 인증 방식 설정을 가져옵니다.
+    async function fetchSettings() {
+        const doc = await db.collection("settings").doc("schedule").get();
+        if (doc.exists && doc.data().authMode) {
+            authMode = doc.data().authMode;
+            if (authMode === "3") {
+                nameInput.style.display = 'block'; // 3단계면 이름 입력창 열기
+            }
+        }
+    }
+    fetchSettings();
+
+    // 🌟 키보드 엔터키 제어 (3단계일 때는 학번 치고 엔터 치면 이름 칸으로 넘어감)
+    scannerInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') { 
+            e.preventDefault(); 
+            if (authMode === "3" && scannerInput.value.trim() !== "") nameInput.focus();
+            else processCheckInOut(); 
+        }
+    });
+    nameInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); processCheckInOut(); }
+    });
+
+
+
+
+    // 🌟 [추가] 한글 타자를 영문 QWERTY 배열로 자동 변환해주는 함수
+function convertKorToEng(text) {
+    const cho = ["r","R","s","e","E","f","a","q","Q","t","T","d","w","W","c","z","x","v","g"];
+    const jung = ["k","o","i","O","j","p","u","P","h","hk","ho","hl","y","n","nj","np","nl","b","m","ml","l"];
+    const jong = ["","r","R","rt","s","sw","sg","e","f","fr","fa","fq","ft","fx","fv","fg","a","q","qt","t","T","d","w","c","z","x","v","g"];
+    const jamoMap = {
+        'ㄱ':'r','ㄲ':'R','ㄳ':'rt','ㄴ':'s','ㄵ':'sw','ㄶ':'sg','ㄷ':'e','ㄸ':'E','ㄹ':'f','ㄺ':'fr','ㄻ':'fa','ㄼ':'fq','ㄽ':'ft','ㄾ':'fx','ㄿ':'fv','ㅀ':'fg','ㅁ':'a','ㅂ':'q','ㅃ':'Q','ㅄ':'qt','ㅅ':'t','ㅆ':'T','ㅇ':'d','ㅈ':'w','ㅉ':'W','ㅊ':'c','ㅋ':'z','ㅌ':'x','ㅍ':'v','ㅎ':'g',
+        'ㅏ':'k','ㅐ':'o','ㅑ':'i','ㅒ':'O','ㅓ':'j','ㅔ':'p','ㅕ':'u','ㅖ':'P','ㅗ':'h','ㅘ':'hk','ㅙ':'ho','ㅚ':'hl','ㅛ':'y','ㅜ':'n','ㅝ':'nj','ㅞ':'np','ㅟ':'nl','ㅠ':'b','ㅡ':'m','ㅢ':'ml','ㅣ':'l'
+    };
+
+    let result = "";
+    for (let i = 0; i < text.length; i++) {
+        let code = text.charCodeAt(i);
+        if (code >= 44032 && code <= 55203) { // 완전한 글자 (예: '가')
+            code -= 44032;
+            let c = Math.floor(code / (21 * 28));
+            let j = Math.floor((code % (21 * 28)) / 28);
+            let jo = (code % (21 * 28)) % 28;
+            result += cho[c] + jung[j] + jong[jo];
+        } else if (code >= 12593 && code <= 12643) { // 자음/모음 낱개 (예: 'ㅛ', 'ㅊ')
+            result += jamoMap[text[i]] || text[i];
+        } else { // 숫자나 이미 영문인 경우
+            result += text[i];
+        }
+    }
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////
+    
+    let selectionTimer = null; 
+
+// 🌟 1차 검증 함수 (학번, 이름 맞는지 검사)
+    async function processCheckInOut() {
+        let rawId = scannerInput.value.trim();
+        if (!rawId) return;
+
+        // 🌟 [핵심 변경] 한글로 잘못 스캔된 값을 영문으로 바꾸고 대문자로 통일!
+        let id = convertKorToEng(rawId).toUpperCase(); 
+        
+        const nameVal = nameInput.value.trim();
+        
+        // 🌟 [핵심 로직] 스캔한 값이 바코드 리스트에 있다면, 연결된 진짜 학번으로 변환!
+        // 예: id가 "3301C"인데 serverBarcodes에 있으면, id를 "3301"로 바꿔버림.
+        if (serverBarcodes[id]) {
+            id = serverBarcodes[id];
+        }
+        
+        const studentName = serverRoster[id];
+        if (!studentName) {
+            showReceipt("오류", `[${id}]`, "등록되지 않은 학번입니다.", "명단을 확인해 주세요.", "#dc3545");
+            scannerInput.value = ""; nameInput.value = "";
+            return;
+        }
+
+        // [3단계] 학번 + 이름 모두 일치해야 통과
+        if (authMode === "3") {
+// ... (이 아래 코드는 기존과 동일하게 유지) ...
+
+            
+            if (!nameVal) { nameInput.focus(); return; }
+            if (studentName !== nameVal) {
+                showReceipt("오류", "이름 불일치", `학번 [${id}]의 이름이 틀립니다.`, "다시 입력해주세요.", "#dc3545");
+                scannerInput.value = ""; nameInput.value = "";
+                focusScanner(); return;
+            }
+            executeLogic(id, studentName); // 통과하면 실행
+        } 
+        // [2단계] 학번 치면 이름 확인 팝업 띄우기
+        else if (authMode === "2") {
+            showNameConfirm(id, studentName);
+        } 
+        // [1단계] 학번만 치면 바로 패스 (기존 방식)
+        else {
+            executeLogic(id, studentName);
+        }
+    }
+
+// 🌟 2단계 전용 팝업 (본인 맞습니까?) - 색상 오류 수정
+    function showNameConfirm(id, name) {
+        const rName = document.getElementById('r-name');
+        const rStatus = document.getElementById('r-status');
+        const rTime = document.getElementById('r-time');
+        const rMsg = document.getElementById('r-msg');
+        
+        rName.innerText = `🙋 ${name} 학생`;
+        rStatus.innerText = "본인 확인";
+        rStatus.style.color = "#0d6efd"; // 정의되지 않았던 var(--primary) 대신 명확한 파란색(#0d6efd)으로 지정
+        rTime.innerText = "화면의 이름이 본인이 맞습니까?";
+        
+        // 버튼 색상도 확실한 파란색과 회색 헥스코드로 지정
+        rMsg.innerHTML = `
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="confirmYes('${id}', '${name}')" style="flex: 1; padding: 25px; font-size: 20px; font-weight: bold; background: #0d6efd; color: white; border: none; border-radius: 10px; cursor: pointer;">예 (맞습니다)</button>
+                <button onclick="confirmNo()" style="flex: 1; padding: 25px; font-size: 20px; font-weight: bold; background: #6c757d; color: white; border: none; border-radius: 10px; cursor: pointer;">아니오</button>
+            </div>
+        `;
+        document.getElementById('result-overlay').style.display = 'flex';
+        document.querySelector('.receipt').classList.remove('blink-warning');
+    }
+
+    // 🌟 '예' 버튼 눌렀을 때 멈춘 것처럼 보이는 현상 수정 (로딩 피드백 추가)
+    function confirmYes(id, name) {
+        // 버튼을 즉시 없애고 로딩 메시지를 띄워서 반응성 확보 및 중복 클릭 방지
+        const rMsg = document.getElementById('r-msg');
+        rMsg.innerHTML = `
+            <div style="margin-top: 20px; padding: 20px; font-size: 20px; font-weight: bold; color: #0d6efd; background: #f0f9ff; border-radius: 10px;">
+                ⏳ 출결 데이터를 확인 중입니다...<br><span style="font-size:16px; color:#666;">(잠시만 기다려주세요)</span>
+            </div>
+        `;
+        
+        // 시각적 피드백을 먼저 준 뒤에 서버 통신 시작
+        executeLogic(id, name); 
+    }
+
+
+    
+    function confirmNo() {
+        document.getElementById('result-overlay').style.display = 'none';
+        scannerInput.value = ""; focusScanner();
+    }
+
+    // 🌟 실제 출결 DB 처리 로직 (원래 있던 긴 코드들)
+    async function executeLogic(id, studentName) {
+        scannerInput.value = ""; nameInput.value = ""; 
+        
+        const now = new Date();
+        const currentMonthStr = (now.getMonth() + 1) + "월";
+        const todayDayEng = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
+
+        try {
+            const appQuery = await db.collection("applications").where("stuId", "==", id).where("targetMonth", "==", currentMonthStr).get();
+            if (appQuery.empty) {
+                showReceipt(studentName, "입실 불가", "신청 내역 없음", `이번 달(${currentMonthStr}) 야자 신청자가 아닙니다.`, "#dc3545");
+                return; 
+            }
+            const appData = appQuery.docs[0].data();
+            if (!appData[todayDayEng]) {
+                 showReceipt(studentName, "입실 불가", "오늘 신청 아님", "오늘은 야자를 신청한 요일이 아닙니다.", "#dc3545");
+                 return; 
+            }
+
+            if (appData.type === "자율석") {
+                // [수정된 코드] 오늘 날짜 문서 1개만 열어서 해당 학생 학번이 존재하는지만 쏙 빼서 확인
+                const ticketDoc = await db.collection("daily_reservations_v2").doc(todayStr).get();
+                
+                if (!ticketDoc.exists || !ticketDoc.data()[id]) {
+                    playErrorBeep(); 
+                    showReceipt(studentName, "발권 필요 ⚠️", "자리를 배정받지 않음", "일일 발권기에서 먼저 자리를 선택하고 오세요!", "#dc3545", true);
+                    return; 
+                }
+            }
+
+            const logId = `${todayStr}_${id}`;
+            const logDoc = await db.collection("attendance_logs").doc(logId).get();
+            const logData = logDoc.exists ? logDoc.data() : null;
+            const lastStatus = logData ? logData.status : "미입실";
+
+            if (logData && logData.lastUpdateTime) {
+                const diffSec = Math.floor((now - logData.lastUpdateTime.toDate()) / 1000);
+                if (diffSec < 40) {
+                    showReceipt(studentName, "방금 처리됨", `${diffSec}초 전에 [${lastStatus}] 처리되었습니다.`, "잠시 후 이용해 주세요.", "#6c757d");
+                    return;
+                }
+            }
+
+            if (lastStatus === "미입실") saveAttendance(id, studentName, "입실", now);
+            else if (lastStatus === "입실" || lastStatus === "복귀") showSmartSelection(id, studentName); 
+            else if (lastStatus === "외출") saveAttendance(id, studentName, "복귀", now);
+            else if (lastStatus === "귀가") showReceipt(studentName, "이미 귀가함", "최종 귀가 처리된 학생입니다.", "재입실은 관리자에게 문의하세요.", "#6c757d");
+
+        } catch (e) { showReceipt("오류", "통신 실패", "연결 상태 확인 요망", e.message, "#dc3545"); }
+    }
+
+// (이 아래의 showSmartSelection, saveAttendance 등은 그대로 유지됩니다)
+
+
+
+
+    
+    
+// 🌟 [추가] 스마트 선택 화면 (외출/귀가 전용)
+function showSmartSelection(id, name) {
+    // 결과창(receipt) 영역을 선택창으로 변신시킵니다.
+    const rName = document.getElementById('r-name');
+    const rStatus = document.getElementById('r-status');
+    const rTime = document.getElementById('r-time');
+    const rMsg = document.getElementById('r-msg');
+    
+    rName.innerText = `🙋 ${name} 학생`;
+    rStatus.innerText = "상태 선택";
+    rStatus.style.color = "#333";
+    rTime.innerText = "현재 입실 중입니다. 다음 작업을 선택하세요.";
+    
+    // 버튼 생성 (HTML을 갈아끼움)
+    rMsg.innerHTML = `
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="confirmSelection('${id}', '${name}', '외출')" style="flex: 1; padding: 25px; font-size: 20px; font-weight: bold; background: var(--out); border: none; border-radius: 10px; cursor: pointer;">잠시 외출</button>
+            <button onclick="confirmSelection('${id}', '${name}', '귀가')" style="flex: 1; padding: 25px; font-size: 20px; font-weight: bold; background: var(--home); color: white; border: none; border-radius: 10px; cursor: pointer;">최종 귀가</button>
+        </div>
+        <div id="cancel-timer" style="margin-top: 15px; color: #dc3545; font-weight: bold;">(10초 뒤 자동 취소됩니다)</div>
+    `;
+
+    document.getElementById('result-overlay').style.display = 'flex';
+
+    // 🌟 자동 취소 타이머 작동 (10초)
+    let timeLeft = 10;
+    if(selectionTimer) clearInterval(selectionTimer);
+    selectionTimer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('cancel-timer').innerText = `(${timeLeft}초 뒤 자동 취소됩니다)`;
+        if (timeLeft <= 0) {
+            clearInterval(selectionTimer);
+            document.getElementById('result-overlay').style.display = 'none';
+            focusScanner();
+        }
+    }, 1000);
+}
+
+// 🌟 [추가] 선택 버튼 클릭 시 처리
+function confirmSelection(id, name, status) {
+    if(selectionTimer) clearInterval(selectionTimer);
+    saveAttendance(id, name, status, new Date());
+}
+
+// saveAttendance, showReceipt, selectStatus 등은 기존과 동일...
+    
+
+// 🌟 [추가함수 1] 실제로 DB에 저장하는 함수 (공통 사용)
+async function saveAttendance(id, name, status, timeObj) {
+    const logId = `${todayStr}_${id}`;
+    const timeStr = timeObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    
+    await db.collection("attendance_logs").doc(logId).set({
+        date: todayStr, stuId: id, stuName: name, status: status, 
+        lastUpdateTime: timeObj,
+        history: firebase.firestore.FieldValue.arrayUnion(`${status} (${timeStr})`)
+    }, { merge: true });
+
+    let color = status === "입실" ? "#0d6efd" : (status === "복귀" ? "#198754" : (status === "외출" ? "#b38200" : "#dc3545"));
+    showReceipt(name, status + " 완료", `처리시간: ${timeStr}`, "정상 처리되었습니다.", color);
+}
+
+    
+
+// 🌟 1) 매개변수 맨 끝에 isUrgent = false 를 추가합니다.
+function showReceipt(name, status, timeInfo, msg, color, isUrgent = false) { 
+    
+    // 1. 시각적 알림 강화: 상태에 따라 키오스크 배경색 변경
+    const container = document.querySelector('.kiosk-box');
+    const originalBg = "#ffffff"; // 기본 하얀색
+    
+    // '귀가' 포함 시 연한 빨강, 그 외(입실/복귀)는 연한 파랑/녹색 계열로 피드백
+    if (status.includes("귀가")) {
+        container.style.backgroundColor = "#fff5f5"; // 귀가 경고색
+    } else if (status.includes("입실") || status.includes("복귀")) {
+        container.style.backgroundColor = "#f0f9ff"; // 입실 확인색
+    }
+
+    // 🌟 2) 새로 추가되는 깜빡임 제어 로직! (영수증 박스 선택)
+    const receiptBox = document.querySelector('.receipt');
+    if (isUrgent) {
+        receiptBox.classList.add('blink-warning'); // 클래스 붙여서 깜빡이게
+    } else {
+        receiptBox.classList.remove('blink-warning'); // 평소엔 제거
+    }
+
+    // 2. 결과 데이터 표시
+    document.getElementById('r-name').innerText = name;
+    document.getElementById('r-status').innerText = status;
+    document.getElementById('r-status').style.color = color;
+    document.getElementById('r-time').innerText = timeInfo;
+    document.getElementById('r-msg').innerText = msg;
+    
+    // 3. 결과 오버레이 표시
+    const overlay = document.getElementById('result-overlay');
+    overlay.style.display = 'flex';
+
+    // 4. 초기화 로직 (2.5초 후 실행)
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        container.style.backgroundColor = originalBg;
+        
+        selectStatus('입실', document.querySelector('.btn-in')); 
+        
+        const scannerInput = document.getElementById('scanner-input');
+        scannerInput.value = "";
+        focusScanner();
+        
+        console.log("시스템이 다음 학생을 위해 [입실] 모드로 자동 초기화되었습니다.");
+    }, 2500); 
+}
+</script>
+</body>
+</html>

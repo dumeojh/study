@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>안성여고 야간 자율학습 통합 시스템</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            margin: 50px 0 30px 0;
+            text-align: center;
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        /* 6개 박스 그리드 레이아웃 */
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            width: 90%;
+            max-width: 1000px;
+            padding-bottom: 50px;
+        }
+
+        /* 카드 기본 스타일 */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            text-decoration: none;
+            color: #333;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid #eee;
+        }
+
+        /* 마우스 올렸을 때 효과 */
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-color: var(--accent-color);
+        }
+
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .card-desc {
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            line-height: 1.5;
+        }
+
+        /* 사용설명서 박스 별도 강조 */
+        .card-help {
+            background: #ebf5fb;
+            border: 2px dashed var(--accent-color);
+        }
+
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.5rem; }
+            .container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>안성여고 야간 자율학습 시스템</h1>
+        <p>원하시는 서비스 메뉴를 선택해 주세요.</p>
+    </header>
+
+    <div class="container">
+        <a href="https://dumeojh.github.io/self-study/settings.html" class="card">
+            <div class="icon">⚙️</div>
+            <div class="card-title">환경설정</div>
+            <div class="card-desc">운영 일정, 명단 및 도면 관리<br>(관리자 전용)</div>
+        </a>
+
+        <a href="https://dumeojh.github.io/self-study/sign_up.html" class="card">
+            <div class="icon">📝</div>
+            <div class="card-title">야간 자율학습 신청</div>
+            <div class="card-desc">월별 야자 참여 요일 및<br>고정석 좌석 신청</div>
+        </a>
+
+        <a href="https://dumeojh.github.io/self-study/daily_ticket.html" class="card">
+            <div class="icon">🎟️</div>
+            <div class="card-title">일일 자율석 발권기</div>
+            <div class="card-desc">자율석 신청 학생들을 위한<br>당일 좌석 결정 시스템</div>
+        </a>
+
+        <a href="https://dumeojh.github.io/self-study/kiosk.html" class="card">
+            <div class="icon">🔍</div>
+            <div class="card-title">통합 출결 키오스크</div>
+            <div class="card-desc">학생증 바코드 스캔을 통한<br>실시간 입실 및 퇴실 체크</div>
+        </a>
+
+        <a href="https://dumeojh.github.io/self-study/split_admin.html" class="card">
+            <div class="icon">📊</div>
+            <div class="card-title">야자 통합 관리</div>
+            <div class="card-desc">실시간 좌석 현황 모니터링 및<br>학생 출결 상담 리포트</div>
+        </a>
+
+        <a href="help.html" class="card card-help">
+            <div class="icon">❓</div>
+            <div class="card-title">시스템 사용설명서</div>
+            <div class="card-desc">프로그램 구성 및 단계별<br>상세 이용 가이드 확인</div>
+        </a>
+    </div>
+
+</body>
+</html>
