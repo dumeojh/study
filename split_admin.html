@@ -1230,11 +1230,13 @@ if (tmMatch) {
                 currentBadges += `<span style="background:${bg}; color:${fontCol}; border:${border}; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:${fontWeight};">${t}T</span>`;
             });
 
+
+// 💡 여기서부터 수정! (선언되지 않은 변수들을 기존 변수로 교체했습니다)
             let timeBoxHtml = `
                 <div style="text-align: left; margin-top: 8px; font-size: 11px; background: #f8f9fa; padding: 6px; border-radius: 6px; border: 1px solid #e9ecef; width: max-content; margin-left: auto; margin-right: auto;">
                     <div style="margin-bottom: 5px;"><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">신청:</span>${appliedBadges}</div>
                     <div style="margin-bottom: 5px;"><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">현재:</span>${currentBadges}</div>
-                    <div><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">결과:</span><span style="color: ${resultColor}; font-weight: bold;">${resultText}</span></div>
+                    <div><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">결과:</span><span style="color: ${statusColor}; font-weight: bold;">${status}</span></div>
                 </div>`;
             // =====================================================================
 
@@ -1246,7 +1248,7 @@ if (tmMatch) {
                     ${st.stuName} 👆
                 </td>
                 <td style="text-align: center; vertical-align: middle;">
-                    <div><span style="font-size:12px; color:#666;">[${st.type}]</span> <strong style="font-size:14px; display:block; margin-top:4px;">${seatDisplayHtml}</strong></div>
+                    <div><span style="font-size:12px; color:#666;">[${st.type}]</span> <strong style="font-size:14px; display:block; margin-top:4px;">${st.seatNum}</strong></div>
                 </td>
                 <td style="text-align: center; vertical-align: middle;">${timeBoxHtml}</td>
                 <td style="text-align: left; padding-left: 15px; vertical-align: middle;">${historyHtml}</td>
@@ -1254,6 +1256,7 @@ if (tmMatch) {
                 <td style="color:#555; vertical-align: middle;">${tagTime}</td>
             `;
             tbody.appendChild(tr);
+
         });
         
         document.getElementById('daily-list-summary').innerHTML = `전체 대상: ${stat.total}명 | <span style="color:var(--primary);">입실: ${stat.present}명</span> | <span style="color:#fd7e14;">외출: ${stat.out}명</span> | <span style="color:var(--gray);">귀가: ${stat.finish}명</span> | <span style="color:var(--danger);">미입실: ${stat.absent}명</span>`;
