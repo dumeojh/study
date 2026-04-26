@@ -673,1493 +673,655 @@
 </div>
 
 
-
 <script>
+    // =========================================================
+    // 1. Supabase 초기화 및 전역 변수 (에러 방지를 위해 최상단 선언)
+    // =========================================================
+    const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // --- [기존 변수 선언부 아래에 추가] ---
-
-let dailyReservationsData = []; // 당일 자율석 발권 데이터 저장용
-
-    
-
-    const firebaseConfig = {
-
-        apiKey: "AIzaSyBP6oveXbGlNn_0XqttHbU2ZDUYhH2nf4c",
-
-        authDomain: "self-study-project-82bdf.firebaseapp.com",
-
-        projectId: "self-study-project-82bdf",
-
-        storageBucket: "self-study-project-82bdf.firebasestorage.app",
-
-        messagingSenderId: "482006075036",
-
-        appId: "1:482006075036:web:473445e0f86d48cd22cf59"
-
-    };
-
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-
-    const db = firebase.firestore();
-
-
-
-    let applicationData = {}; let attendanceLogsData = {}; let seatMapData = []; let rows = 20, cols = 30;
-
-    // 👇👇 2. 전역 변수 추가 👇👇
-
+    let applicationData = {}; 
+    let attendanceLogsData = {}; 
+    let dailyReservationsData = []; 
+    let seatMapData = []; 
+    let rows = 20, cols = 30;
     let globalCalendarSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
-
-
+    let rosterPhones = {};
 
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
-
     document.getElementById('daily-date').value = todayStr;
 
-
-
-// 👇👇 3. firebase 설정 아래, 함수들 선언되기 전쯤에 달력 감시 코드 추가 👇👇
-
-    db.collection("settings").doc("calendarSchedule").onSnapshot(doc => {
-
-        if (doc.exists) {
-
-            const d = doc.data();
-
-            if (d.data) globalCalendarSchedule.data = JSON.parse(d.data);
-
-            if (d.defaultDays) globalCalendarSchedule.defaultDays = d.defaultDays;
-
-            
-
-            // 달력 설정이 바뀌면 화면도 새로고침
-
-            if(document.getElementById('supervisor-grid')) renderDailySupervisorMap();
-
+    // =========================================================
+    // 2. 기초 데이터 불러오기 (도면, 연락처, 달력, 신청내역)
+    // =========================================================
+    async function fetchBaseData() {
+        // 1. 도면 데이터
+        const { data: layout } = await supabaseClient.from('settings').select('value').eq('key', 'seatLayout').maybeSingle();
+        if (layout && layout.value) {
+            rows = layout.value.rows; cols = layout.value.cols;
+            seatMapData = JSON.parse(layout.value.grid);
+        }
+        // 2. 연락처 데이터
+        const { data: roster } = await supabaseClient.from('settings').select('value').eq('key', 'roster').maybeSingle();
+        if (roster && roster.value && roster.value.phoneList) rosterPhones = JSON.parse(roster.value.phoneList);
+        
+        // 3. 달력 데이터
+        const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
+        if (cal && cal.value) {
+            if (cal.value.data) globalCalendarSchedule.data = JSON.parse(cal.value.data);
+            if (cal.value.defaultDays) globalCalendarSchedule.defaultDays = cal.value.defaultDays;
         }
 
-    });
-
-
-
-    
-
-    function switchTab(tabId, btn) {
-
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-
-        document.getElementById(tabId).classList.add('active'); 
-
-        if(btn) btn.classList.add('active');
-
-        if(tabId === 'tab-status') renderStatusTable();
-
-        if(tabId === 'tab-stats') calculateAndRenderStats(); // 통계 탭을 누르면 바로 새 통계 함수가 실행되도록 변경
-
-        if(tabId === 'tab-daily-list') renderDailyList(); // 🌟 이 줄을 추가하세요! (탭 누를 때 렌더링)
-
+        // 4. 신청 내역 데이터 (카멜케이스로 변환하여 기존 코드 호환성 유지)
+        const { data: apps } = await supabaseClient.from('applications').select('*');
+        applicationData = {};
+        if (apps) {
+            apps.forEach(app => {
+                applicationData[app.id] = {
+                    docId: app.id, targetMonth: app.target_month, stuId: app.stu_id, stuName: app.stu_name,
+                    type: app.type, seatNum: app.seat_num, mon: app.mon, tue: app.tue, wed: app.wed,
+                    thu: app.thu, fri: app.fri, sat: app.sat, sun: app.sun
+                };
+            });
+        }
+        renderStatusTable();
     }
 
+    // =========================================================
+    // 3. 당일 데이터 (출결, 일일발권) 불러오기 (5초마다 반복 실행됨)
+    // =========================================================
+    async function loadDailyDataAndRender() {
+        const dateStr = document.getElementById('daily-date').value;
 
-
-    // --- [지도 및 출결 로직] ---
-
-    async function loadSeatLayout() {
-
-        const doc = await db.collection("settings").doc("seatLayout").get();
-
-        if (doc.exists) {
-
-            rows = doc.data().rows; cols = doc.data().cols;
-
-            seatMapData = JSON.parse(doc.data().grid);
-
-            renderDailySupervisorMap();
-
+        // 1. 출결 로그
+        const { data: logs } = await supabaseClient.from('attendance_logs').select('*').eq('date', dateStr);
+        attendanceLogsData = {};
+        if (logs) {
+            logs.forEach(log => {
+                attendanceLogsData[String(log.stu_id)] = {
+                    id: log.id, date: log.date, stuId: log.stu_id, stuName: log.stu_name,
+                    status: log.status, history: log.history, lastUpdateTime: log.last_update_time
+                };
+            });
         }
 
-    }
-
-
-
-// --- [데이터 로드 함수 수정] ---
-
-function loadDailyDataAndRender() {
-
-    const dateStr = document.getElementById('daily-date').value;
-
-    
-
-    // 1. 출결 로그 감시 (기존 코드)
-
-    db.collection("attendance_logs").where("date", "==", dateStr).onSnapshot(snap => {
-
-        attendanceLogsData = {}; 
-
-        snap.forEach(doc => attendanceLogsData[String(doc.data().stuId)] = doc.data());
-
-        renderDailySupervisorMap();
-
-        renderDailyList(); // 🌟 이 줄을 추가하세요! (출결 찍힐 때마다 리스트도 새로고침)
-
-    });
-
-
-
-// 2. 🌟 [수정된 코드] 당일 자율석 예약 내역 감시 (단일 문서 감시로 변경)
-    db.collection("daily_reservations_v2").doc(dateStr).onSnapshot(doc => {
+        // 2. 당일 발권 내역
+        const { data: res } = await supabaseClient.from('daily_reservations').select('*').eq('date', dateStr);
         dailyReservationsData = [];
-        if (doc.exists) {
-            // 저장된 Map 데이터를 배열로 풀어서 기존 화면 렌더링 로직에 전달
-            dailyReservationsData = Object.values(doc.data());
+        if (res) {
+            res.forEach(r => {
+                dailyReservationsData.push({
+                    id: r.id, date: r.date, stuId: r.stu_id, stuName: r.stu_name,
+                    seatNum: r.seat_num, times: r.times
+                });
+            });
         }
+
         renderDailySupervisorMap();
         renderDailyList();
+    }
+
+    // 초기 실행 및 5초 타이머 설정
+    fetchBaseData().then(() => {
+        loadDailyDataAndRender();
+        setInterval(loadDailyDataAndRender, 5000); 
     });
 
-}
-
-
-
-function renderDailySupervisorMap() {
-
-    if(seatMapData.length === 0) return;
-
-    const container = document.getElementById('supervisor-grid');
-
-    container.innerHTML = ''; 
-
-    container.style.gridTemplateColumns = `repeat(${cols}, 55px)`;
-
-
-
-// 👇👇 4. 휴무일 판별 로직 추가 👇👇
-
-    const dateStr = document.getElementById('daily-date').value;
-
-    const targetDateObj = new Date(dateStr);
-
-    const dayIdx = targetDateObj.getDay();
-
-
-
-    // 기본 요일(월~금)인지 확인
-
-    let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
-
-    let reason = "";
-
-
-
-    // 달력에서 개별적으로 지정한 휴무일인지 확인 (예: 4월 20일)
-
-    if (globalCalendarSchedule.data[dateStr] !== undefined) {
-
-        isOperating = globalCalendarSchedule.data[dateStr].active;
-
-        reason = globalCalendarSchedule.data[dateStr].reason;
-
+    // =========================================================
+    // 4. 화면 렌더링 함수들 (기존 선생님의 디자인 및 로직 완벽 유지)
+    // =========================================================
+    function switchTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active'); 
+        if(btn) btn.classList.add('active');
+        if(tabId === 'tab-status') renderStatusTable();
+        if(tabId === 'tab-stats') calculateAndRenderStats(); 
+        if(tabId === 'tab-daily-list') renderDailyList(); 
     }
 
+    function renderDailySupervisorMap() {
+        if(seatMapData.length === 0) return;
+        const container = document.getElementById('supervisor-grid');
+        container.innerHTML = ''; 
+        container.style.gridTemplateColumns = `repeat(${cols}, 55px)`;
 
+        const dateStr = document.getElementById('daily-date').value;
+        const targetDateObj = new Date(dateStr);
+        const dayIdx = targetDateObj.getDay();
 
-    const banner = document.getElementById('holiday-banner');
+        let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
+        let reason = "";
 
-    if (!isOperating) {
+        if (globalCalendarSchedule.data[dateStr] !== undefined) {
+            isOperating = globalCalendarSchedule.data[dateStr].active;
+            reason = globalCalendarSchedule.data[dateStr].reason;
+        }
 
-        banner.style.display = 'block'; // 배너 켜기
+        const banner = document.getElementById('holiday-banner');
+        if (!isOperating) {
+            banner.style.display = 'block'; 
+            document.getElementById('holiday-reason').innerText = reason || "정규휴무 (운영 요일 아님)";
+            container.style.opacity = '0.3'; 
+            container.style.pointerEvents = 'none'; 
+        } else {
+            banner.style.display = 'none'; 
+            container.style.opacity = '1';
+            container.style.pointerEvents = 'auto';
+        }
+        
+        const timeStr = document.getElementById('daily-time').value; 
+        const targetDay = ['sun','mon','tue','wed','thu','fri','sat'][dayIdx];
+        const cellEls = {};
 
-        document.getElementById('holiday-reason').innerText = reason || "정규휴무 (운영 요일 아님)";
-
-        container.style.opacity = '0.3'; // 좌석표는 흐릿하게 처리해서 쉬는 날임을 강조
-
-        container.style.pointerEvents = 'none'; // 클릭 방지
-
-    } else {
-
-        banner.style.display = 'none'; // 배너 끄기
-
-        container.style.opacity = '1';
-
-        container.style.pointerEvents = 'auto';
-
-    }
-
-    // 👆👆 휴무일 판별 로직 끝 👆👆
-
-
-
-    
-
-    
-
-    const timeStr = document.getElementById('daily-time').value; 
-
-    const targetDay = ['sun','mon','tue','wed','thu','fri','sat'][new Date(document.getElementById('daily-date').value).getDay()];
-
-    
-
-    const cellEls = {};
-
-
-
-    seatMapData.forEach((rowCells) => {
-
-        rowCells.forEach((d) => {
-
-            const cell = typeof d === 'number' ? {type: d, label: ""} : d;
-
-            const div = document.createElement('div');
-
-            div.className = `seat-cell seat-${cell.type}`; 
-
-            div.innerText = cell.label || "";
-
-            if ((cell.type === 1 || cell.type === 2) && cell.label) cellEls[cell.label] = div;
-
-            container.appendChild(div);
-
+        seatMapData.forEach((rowCells) => {
+            rowCells.forEach((d) => {
+                const cell = typeof d === 'number' ? {type: d, label: ""} : d;
+                const div = document.createElement('div');
+                div.className = `seat-cell seat-${cell.type}`; 
+                div.innerText = cell.label || "";
+                if ((cell.type === 1 || cell.type === 2) && cell.label) cellEls[cell.label] = div;
+                container.appendChild(div);
+            });
         });
 
-    });
-
-
-
-    Object.entries(applicationData).forEach(([docId, d]) => {
-
-        if(d.type === "고정석" && d[targetDay] && d[targetDay].includes(timeStr) && cellEls[d.seatNum]) {
-
-            const target = cellEls[d.seatNum]; 
-
-            const log = attendanceLogsData[String(d.stuId)];
-
-            target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#1565c0;">${d.stuName}</span>`;
-
-            
-
-if (log) {
-
-                if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
-
-                else if (log.status === "외출") target.classList.add('status-out'); 
-
-                else if (log.status === "귀가") target.classList.add('status-finish'); // 🌟 귀가는 회색으로!
-
-                else target.classList.add('status-present-fixed'); 
-
-            } else {
-
-                target.classList.add('status-absent'); // 아무 기록 없으면 빨간 미입실
-
-            }
-
-            
-
-            target.style.cursor = "pointer";
-
-            // 🌟 수정됨: 빈 값이 아닌 서버에서 가져온 전화번호부를 검색해서 넘겨줌
-
-            target.onclick = () => openDailyStatus(d.stuId, d.stuName, d.seatNum, rosterPhones[String(d.stuId)]);
-
-        }
-
-    });
-
-
-
-    dailyReservationsData.forEach(d => {
-
-        if(d.times && d.times.includes(timeStr) && cellEls[d.seatNum]) {
-
-            const target = cellEls[d.seatNum];
-
-            const log = attendanceLogsData[String(d.stuId)];
-
-            
-
-            target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#2e7d32;">${d.stuName}</span>`;
-
-
-
-if (log) {
-
-                if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
-
-                else if (log.status === "외출") target.classList.add('status-out'); 
-
-                else if (log.status === "귀가") target.classList.add('status-finish'); // 🌟 귀가는 회색으로!
-
-                else target.classList.add('status-present-auto'); 
-
-            } else {
-
-                target.classList.add('status-absent'); 
-
-            }
-
-
-
-            const appEntry = Object.entries(applicationData).find(([id, app]) => String(app.stuId) === String(d.stuId));
-
-            if (appEntry) {
-
+        Object.entries(applicationData).forEach(([docId, d]) => {
+            if(d.type === "고정석" && d[targetDay] && d[targetDay].includes(timeStr) && cellEls[d.seatNum]) {
+                const target = cellEls[d.seatNum]; 
+                const log = attendanceLogsData[String(d.stuId)];
+                target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#1565c0;">${d.stuName}</span>`;
+                
+                if (log) {
+                    if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
+                    else if (log.status === "외출") target.classList.add('status-out'); 
+                    else if (log.status === "귀가") target.classList.add('status-finish'); 
+                    else target.classList.add('status-present-fixed'); 
+                } else {
+                    target.classList.add('status-absent'); 
+                }
                 target.style.cursor = "pointer";
+                target.onclick = () => openDailyStatus(d.stuId, d.stuName, d.seatNum, rosterPhones[String(d.stuId)]);
+            }
+        });
 
-                // 🌟 수정됨: 빈 값이 아닌 서버에서 가져온 전화번호부를 검색해서 넘겨줌
+        dailyReservationsData.forEach(d => {
+            if(d.times && d.times.includes(timeStr) && cellEls[d.seatNum]) {
+                const target = cellEls[d.seatNum];
+                const log = attendanceLogsData[String(d.stuId)];
+                
+                target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#2e7d32;">${d.stuName}</span>`;
 
-                target.onclick = () => openDailyStatus(appEntry[1].stuId, appEntry[1].stuName, d.seatNum, rosterPhones[String(appEntry[1].stuId)]);
+                if (log) {
+                    if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
+                    else if (log.status === "외출") target.classList.add('status-out'); 
+                    else if (log.status === "귀가") target.classList.add('status-finish'); 
+                    else target.classList.add('status-present-auto'); 
+                } else {
+                    target.classList.add('status-absent'); 
+                }
 
+                const appEntry = Object.entries(applicationData).find(([id, app]) => String(app.stuId) === String(d.stuId));
+                if (appEntry) {
+                    target.style.cursor = "pointer";
+                    target.onclick = () => openDailyStatus(appEntry[1].stuId, appEntry[1].stuName, d.seatNum, rosterPhones[String(appEntry[1].stuId)]);
+                }
+            }
+        });
+    }
+
+    function renderDailyList() {
+        const tbody = document.getElementById('daily-list-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        
+        const targetDateStr = document.getElementById('daily-date').value;
+        const targetDay = ['sun','mon','tue','wed','thu','fri','sat'][new Date(targetDateStr).getDay()];
+        const sortBy = document.getElementById('sort-daily-list').value;
+        const filterStatusElement = document.getElementById('filter-daily-status');
+        const statusFilter = filterStatusElement ? filterStatusElement.value : 'all';
+        const timeSelectVal = parseInt(document.getElementById('daily-time').value);
+        const currentSlot = isNaN(timeSelectVal) ? 1 : timeSelectVal;
+        
+        let targetStudentsMap = new Map();
+
+        Object.values(applicationData).forEach(app => {
+            if (app.type === "고정석" && app[targetDay]) {
+                targetStudentsMap.set(String(app.stuId), {
+                    stuId: app.stuId, stuName: app.stuName, seatNum: app.seatNum, 
+                    appliedTimes: app[targetDay] + "타임", type: "고정석", 
+                    phone: rosterPhones[String(app.stuId)], rawTimes: app[targetDay] 
+                });
+            }
+        });
+
+        dailyReservationsData.forEach(res => {
+            const stuIdStr = String(res.stuId);
+            if (!targetStudentsMap.has(stuIdStr)) {
+                targetStudentsMap.set(stuIdStr, {
+                    stuId: res.stuId, stuName: res.stuName, seatNum: res.seatNum, 
+                    appliedTimes: (res.times || "-") + "타임", type: "자율석", 
+                    phone: rosterPhones[String(res.stuId)], rawTimes: res.times || "" 
+                });
+            }
+        });
+
+        let targetStudents = Array.from(targetStudentsMap.values());
+        if (sortBy === "id") targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
+        else if (sortBy === "seat") targetStudents.sort((a, b) => String(a.seatNum).localeCompare(String(b.seatNum)));
+
+        let stat = { total: targetStudents.length, present: 0, out: 0, absent: 0, finish: 0 };
+
+        targetStudents.forEach(st => {
+            const log = attendanceLogsData[String(st.stuId)];
+            let status = "미입실"; let tagTime = "-"; let statusColor = "var(--danger)"; 
+            let historyHtml = `<span style="color:#aaa; font-size:11px;">스캔 기록 없음</span>`;
+
+            if (log) {
+                status = log.status;
+                if (log.lastUpdateTime) {
+                    const dt = new Date(log.lastUpdateTime);
+                    tagTime = dt.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                }
+                
+                if (log.history && log.history.length > 0) {
+                    let groupedHistory = { 0: [], 1: [], 2: [], 3: [] };
+                    log.history.forEach(h => {
+                        const tmMatch = h.match(/(\d{2}:\d{2})/);
+                        let slot = 0; 
+                        if (tmMatch) {
+                            const timeStr = tmMatch[1];
+                            if (timeStr < "16:30") slot = 0;       
+                            else if (timeStr < "18:50") slot = 1;  
+                            else if (timeStr < "20:10") slot = 2;  
+                            else slot = 3;                         
+                        } else {
+                            if (h.includes("1타임")) slot = 1;
+                            else if (h.includes("2타임")) slot = 2;
+                            else if (h.includes("3타임")) slot = 3;
+                        }
+                        groupedHistory[slot].push(h);
+                    });
+
+                    let allTagsInline = [];
+                    [0, 1, 2, 3].forEach(t => {
+                        const hasLogs = groupedHistory[t].length > 0;
+                        const isApplied = st.rawTimes.includes(String(t));
+                        const shouldShowSlot = (t === 0 && hasLogs) || (t > 0 && (isApplied || hasLogs));
+
+                        if (shouldShowSlot) {
+                            const slotLabel = t === 0 ? "0T" : `${t}T`;
+                            const slotBg = (hasLogs || t === 0) ? (t === 0 ? "#6c757d" : "var(--primary)") : "#adb5bd";
+                            allTagsInline.push(`<span style="background:${slotBg}; color:white; font-size:10px; padding:3px 6px; border-radius:4px; font-weight:bold; display:inline-block; vertical-align:middle; box-shadow:0 1px 2px rgba(0,0,0,0.1);">${slotLabel}</span>`);
+
+                            if (hasLogs) {
+                                groupedHistory[t].forEach(h => {
+                                    let tagClass = "tag-in"; 
+                                    if (h.includes("외출")) tagClass = "tag-out"; 
+                                    else if (h.includes("귀가") || h.includes("누락")) tagClass = "tag-home";
+                                    allTagsInline.push(`<span class="mini-tag ${tagClass}" style="display:inline-block; vertical-align:middle;">${h}</span>`);
+                                });
+                            }
+                        }
+                    });
+                    
+                    if (allTagsInline.length > 0) {
+                        historyHtml = `<div style="line-height:2.4;">` + allTagsInline.join('<span style="color:#aaa; font-size:11px; margin:0 4px; display:inline-block; vertical-align:middle;">➔</span>') + `</div>`;
+                    }
+                }
             }
 
+            if (status === "미입실" || status === "귀가(누락)") { statusColor = "var(--danger)"; stat.absent++; } 
+            else if (status === "입실" || status === "복귀") { statusColor = "var(--primary)"; stat.present++; } 
+            else if (status === "외출") { statusColor = "#fd7e14"; stat.out++; } 
+            else if (status === "귀가") { statusColor = "var(--gray)"; stat.finish++; }
+
+            let mappedGroup = "미입실";
+            if (status === "입실" || status === "복귀") mappedGroup = "입실";
+            else if (status === "외출") mappedGroup = "외출";
+            else if (status === "귀가") mappedGroup = "귀가";
+
+            if (statusFilter !== "all" && mappedGroup !== statusFilter) return; 
+
+            let appliedBadges = "";
+            [0, 1, 2, 3].forEach(t => {
+                const isApplied = st.rawTimes.includes(String(t));
+                if (isApplied) {
+                    appliedBadges += `<span style="background:#6c757d; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:bold;">${t}T</span>`;
+                } else {
+                    appliedBadges += `<span style="border:1px dashed #adb5bd; color:#adb5bd; background:transparent; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px;">${t}T</span>`;
+                }
+            });
+
+            let currentStatusBadge = `<span style="color:${statusColor}; font-weight:bold;">${status}</span>`;
+            let resultText = "진행 중 🏃";
+            let resultColor = "#b38200"; 
+            
+            if (status === "귀가") { resultText = "귀가 완료 🏠"; resultColor = "var(--gray)"; } 
+            else if (status === "귀가(누락)") { resultText = "태그 누락 🚨"; resultColor = "var(--danger)"; } 
+            else if (status === "미입실") { resultText = "결석/미입실 ❌"; resultColor = "var(--danger)"; }
+
+            let timeBoxHtml = `
+                <div style="text-align: left; margin-top: 8px; font-size: 11px; background: #f8f9fa; padding: 6px; border-radius: 6px; border: 1px solid #e9ecef; width: max-content; margin-left: auto; margin-right: auto;">
+                    <div style="margin-bottom: 5px;"><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">신청:</span>${appliedBadges}</div>
+                    <div style="margin-bottom: 5px;"><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">현재:</span>${currentStatusBadge}</div>
+                    <div><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">결과:</span><span style="color: ${resultColor}; font-weight: bold;">${resultText}</span></div>
+                </div>`;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="vertical-align: middle;">${st.stuId}</td>
+                <td style="font-weight:bold; cursor:pointer; color:var(--primary); text-decoration:underline; vertical-align: middle;" 
+                    onclick="openDailyStatus('${st.stuId}', '${st.stuName}', '${st.seatNum}', '${st.phone || ''}')">
+                    ${st.stuName} 👆
+                </td>
+                <td style="text-align: center; vertical-align: middle;">
+                    <div><span style="font-size:12px; color:#666;">[${st.type}]</span> <strong style="font-size:14px;">${st.seatNum || '-'}</strong></div>
+                </td>
+                <td style="text-align: center; vertical-align: middle;">${timeBoxHtml}</td>
+                <td style="text-align: left; padding-left: 15px; vertical-align: middle;">${historyHtml}</td>
+                <td style="font-weight:900; color:${statusColor}; vertical-align: middle;">${status}</td>
+                <td style="color:#555; vertical-align: middle;">${tagTime}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        document.getElementById('daily-list-summary').innerHTML = `전체 대상: ${stat.total}명 | <span style="color:var(--primary);">입실: ${stat.present}명</span> | <span style="color:#fd7e14;">외출: ${stat.out}명</span> | <span style="color:var(--gray);">귀가: ${stat.finish}명</span> | <span style="color:var(--danger);">미입실: ${stat.absent}명</span>`;
+    }
+
+    function openDailyStatus(stuId, stuName, seatNum, phone) {
+        document.getElementById('daily-status-modal').style.display = 'flex';
+        document.getElementById('ds-name').innerText = stuName;
+        document.getElementById('ds-info').innerText = `학번: ${stuId} | 좌석: ${seatNum}`;
+        
+        const phoneBox = document.getElementById('ds-phone');
+        if (phone) {
+            const defaultMessage = encodeURIComponent(`[안성여고 자율학습실]\n${stuName} 학생, 지정된 입실 시간이 지났습니다. 신속히 입실해주세요.\n\n(※ 본 문자는 야간자율학습 관리를 위한 공용 기기에서 발송되었습니다.)`);
+            phoneBox.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>📞 <b>${phone}</b></span>
+                    <a href="sms:${phone}?body=${defaultMessage}" style="background: #198754; color: white; padding: 5px 12px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">💬 미입실 알림 문자</a>
+                </div>`;
+            phoneBox.style.background = "#d1e7dd"; 
+        } else {
+            phoneBox.innerHTML = `📞 등록된 연락처 없음`;
+            phoneBox.style.background = "#eef6ff";
         }
 
-    });
+        const log = attendanceLogsData[String(stuId)];
+        const timelineUl = document.getElementById('ds-timeline');
+        timelineUl.innerHTML = '';
 
-}
-
-
-
-
-
-    
-
-// --- [상담 리포트] ---
+        if (log && log.history && log.history.length > 0) {
+            log.history.forEach(record => {
+                let color = "#6c757d"; 
+                if (record.includes("입실") || record.includes("복귀")) color = "var(--primary)";
+                else if (record.includes("외출")) color = "var(--warning)";
+                else if (record.includes("귀가") || record.includes("누락")) color = "var(--danger)";
+                
+                timelineUl.innerHTML += `
+                    <li style="position: relative; padding-left: 15px; margin-bottom: 5px;">
+                        <span style="position: absolute; left: 0; top: 8px; width: 6px; height: 6px; border-radius: 50%; background: ${color};"></span>
+                        ${record}
+                    </li>`;
+            });
+        } else {
+            timelineUl.innerHTML = `<li style="text-align: center; color: #999; font-size: 13px;">오늘 스캔된 기록이 없습니다.</li>`;
+        }
+    }
 
     async function openCounsel(docId) {
-
         const student = applicationData[docId]; if(!student) return;
-
         document.getElementById('counsel-modal').style.display = 'flex';
-
         document.getElementById('counsel-title').innerText = `${student.stuId} ${student.stuName} 상담 리포트`;
 
-
-
         const monthMap = { "1월":0,"2월":1,"3월":2,"4월":3,"5월":4,"6월":5,"7월":6,"8월":7,"9월":8,"10월":9,"11월":10,"12월":11 };
-
         const mIdx = monthMap[student.targetMonth];
+        const year = new Date().getFullYear();
 
-        const year = 2026;
-
-
-
-        // 1. 출결 로그 가져오기
-
-        const logsSnap = await db.collection("attendance_logs").where("stuId", "==", String(student.stuId)).get();
-
-        let logs = {}; logsSnap.forEach(doc => logs[doc.data().date] = doc.data());
-
-
-
-        // 🌟 2. [추가] 환경설정에서 '달력 일정(calendarSchedule)' 데이터 가져오기
-
-        const calDoc = await db.collection("settings").doc("calendarSchedule").get();
-
-        let globalSchedule = {};
-
-        let defaultDays = [1, 2, 3, 4, 5]; // 기본값: 월~금 운영
-
-        if (calDoc.exists) {
-
-            const cData = calDoc.data();
-
-            if (cData.data) globalSchedule = JSON.parse(cData.data);
-
-            if (cData.defaultDays) defaultDays = cData.defaultDays; // 관리자가 설정한 기본 요일
-
+        // 수파베이스에서 학생의 모든 출결 로그 가져오기
+        const { data: logsData } = await supabaseClient.from("attendance_logs").select("*").eq("stu_id", String(student.stuId));
+        let logs = {}; 
+        if (logsData) {
+            logsData.forEach(log => logs[log.date] = log);
         }
 
-
-
         const firstDay = new Date(year, mIdx, 1).getDay();
-
         const lastDate = new Date(year, mIdx + 1, 0).getDate();
-
         let html = `<table class="counsel-calendar"><thead><tr><th style="color:red">일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th style="color:blue">토</th></tr></thead><tbody><tr>`;
-
         
-
         let tApply = 0, tPresent = 0;
-
         for(let i=0; i<firstDay; i++) html += `<td></td>`;
-
         
-
         for(let d=1; d<=lastDate; d++) {
-
             const dStr = `${year}-${String(mIdx+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-
             const dayIdx = new Date(year, mIdx, d).getDay();
-
             const dayKey = ['sun','mon','tue','wed','thu','fri','sat'][dayIdx];
-
             
-
-            // 🌟 3. [추가] 오늘이 '야자 운영일'인지 판별
-
-            let isOperating = defaultDays.includes(dayIdx); // 1차 확인: 기본 운영 요일인가?
-
+            let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx); 
             let reason = "";
-
-            if (globalSchedule[dStr] !== undefined) {
-
-                isOperating = globalSchedule[dStr].active; // 2차 확인: 달력에서 개별적으로 껐는가?
-
-                reason = globalSchedule[dStr].reason;
-
+            if (globalCalendarSchedule.data[dStr] !== undefined) {
+                isOperating = globalCalendarSchedule.data[dStr].active; 
+                reason = globalCalendarSchedule.data[dStr].reason;
             }
-
-
 
             let slotHtml = `<div class="time-slot-container">`;
 
-
-
-            // 🌟 4. [수정] 운영하는 날에만 출결 계산, 안 하는 날은 사유 표시
-
             if (!isOperating) {
-
-                // 야자 안 하는 날 (휴무, 모의고사 등) -> 통계에 안 들어감!
-
                 slotHtml += `<div style="font-size:10px; color:#dc3545; font-weight:bold; margin-top:15px;">${reason || "운영 안함"}</div>`;
-
             } else {
-
-                // 정상 운영하는 날 -> 기존처럼 출결 계산
-
                 const appliedTimes = (student[dayKey] || "").split(',').filter(v => v);
-
                 const history = logs[dStr] ? logs[dStr].history.join(',') : "";
-
                 
-
                 [1, 2, 3].forEach(t => {
-
                     const isApplied = appliedTimes.includes(String(t));
-
                     const isPresent = history.includes(`${t}타임 입실`);
-
                     let cls = "time-slot";
-
                     
-
                     if(isApplied) { 
-
-                        tApply++; // 분모 증가
-
+                        tApply++; 
                         cls += " slot-applied"; 
-
-                        if(isPresent) { 
-
-                            cls += " slot-present"; 
-
-                            tPresent++; // 분자 증가
-
-                        } else { 
-
-                            cls += " slot-absent"; 
-
-                        } 
-
+                        if(isPresent) { cls += " slot-present"; tPresent++; } 
+                        else { cls += " slot-absent"; } 
                     }
-
                     slotHtml += `<div class="${cls}">${t}T</div>`;
-
                 });
-
             }
-
-            
-
             slotHtml += `</div>`;
-
             html += `<td><div class="day-box">${d}</div>${slotHtml}</td>`;
-
             if((firstDay+d)%7===0) html += `</tr><tr>`;
-
         }
-
         
-
         document.getElementById('counsel-calendar-area').innerHTML = html + `</tr></tbody></table>`;
-
         const rate = tApply > 0 ? Math.round((tPresent / tApply) * 100) : 0;
-
         document.getElementById('c-total-apply').innerText = tApply;
-
         document.getElementById('c-total-present').innerText = tPresent;
-
         document.getElementById('c-rate').innerText = rate + "%";
-
         document.getElementById('c-total-min').innerText = tPresent * 80;
-
         document.getElementById('c-comment').innerText = rate >= 80 ? "✨ 매우 성실한 학생입니다." : "⚠️ 정기적인 참여가 필요합니다.";
-
     }
-
-
-
-
-
-    // 오늘의 실시간 출결 현황 열기
-
-function openDailyStatus(stuId, stuName, seatNum, phone) {
-
-    document.getElementById('daily-status-modal').style.display = 'flex';
-
-    
-
-    // 학생 기본 정보 채우기
-
-    document.getElementById('ds-name').innerText = stuName;
-
-    document.getElementById('ds-info').innerText = `학번: ${stuId} | 좌석: ${seatNum}`;
-
-    
-
- 
-
-    
-
-// 🌟 전화번호 처리 및 문자 보내기 버튼 추가 (공용 기기 맞춤형)
-
-    const phoneBox = document.getElementById('ds-phone');
-
-    if (phone) {
-
-        // 공용 기기용 메시지로 수정: 발신자가 누군지 명확히 밝힙니다.
-
-        const defaultMessage = encodeURIComponent(`[안성여고 자율학습실]\n${stuName} 학생, 지정된 입실 시간이 지났습니다. 신속히 입실해주세요.\n\n(※ 본 문자는 야간자율학습 관리를 위한 공용 기기에서 발송되었습니다.)`);
-
-        
-
-        phoneBox.innerHTML = `
-
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-
-                <span>📞 <b>${phone}</b></span>
-
-                <a href="sms:${phone}?body=${defaultMessage}" style="background: #198754; color: white; padding: 5px 12px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">💬 미입실 알림 문자</a>
-
-            </div>
-
-        `;
-
-        phoneBox.style.background = "#d1e7dd"; // 번호가 있으면 초록색 배경
-
-    } else {
-
-        phoneBox.innerHTML = `📞 등록된 연락처 없음`;
-
-        phoneBox.style.background = "#eef6ff";
-
-    }
-
-
-
-
-
-
-
-    
-
-    // 타임라인(history) 가져오기
-
-    const log = attendanceLogsData[String(stuId)];
-
-    const timelineUl = document.getElementById('ds-timeline');
-
-    timelineUl.innerHTML = '';
-
-
-
-    if (log && log.history && log.history.length > 0) {
-
-        log.history.forEach(record => {
-
-            // 상태에 따라 타임라인 점의 색상 변경
-
-            let color = "#6c757d"; // 기본 회색
-
-            if (record.includes("입실") || record.includes("복귀")) color = "var(--primary)";
-
-            else if (record.includes("외출")) color = "var(--warning)";
-
-            else if (record.includes("귀가")) color = "var(--danger)";
-
-            
-
-            // 리스트 아이템 추가
-
-            timelineUl.innerHTML += `
-
-                <li style="position: relative; padding-left: 15px; margin-bottom: 5px;">
-
-                    <span style="position: absolute; left: 0; top: 8px; width: 6px; height: 6px; border-radius: 50%; background: ${color};"></span>
-
-                    ${record}
-
-                </li>`;
-
-        });
-
-    } else {
-
-        timelineUl.innerHTML = `<li style="text-align: center; color: #999; font-size: 13px;">오늘 스캔된 기록이 없습니다.</li>`;
-
-    }
-
-}
-
-
-
-    // --- [데이터 관리] ---
 
     function renderStatusTable() {
-
         const tbody = document.getElementById('status-body'); tbody.innerHTML = "";
-
         const month = document.getElementById('filter-month').value;
-
-        Object.keys(applicationData).map(id => ({ docId: id, ...applicationData[id] })).sort((a,b)=>a.stuId-b.stuId).forEach(d => {
-
+        Object.keys(applicationData).map(id => applicationData[id]).sort((a,b)=>String(a.stuId).localeCompare(String(b.stuId))).forEach(d => {
             if(month !== "all" && d.targetMonth !== month) return;
-
             const tr = document.createElement('tr');
-
             tr.innerHTML = `<td>${d.targetMonth}</td><td onclick="fillEditForm('${d.docId}')" style="cursor:pointer; color:var(--primary);">${d.stuId}</td><td onclick="openCounsel('${d.docId}')" style="cursor:pointer; font-weight:bold;">${d.stuName}</td><td>${d.type}</td><td>${d.seatNum||'-'}</td><td>${d.mon||''}</td><td>${d.tue||''}</td><td>${d.wed||''}</td><td>${d.thu||''}</td><td>${d.fri||''}</td><td>${d.sat||''}</td><td>${d.sun||''}</td>`;
-
             tbody.appendChild(tr);
-
         });
-
     }
-
-
-
-
-
-
-
-    
-
-function renderDailyList() {
-
-    const tbody = document.getElementById('daily-list-body');
-
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-
-    
-
-    const targetDateStr = document.getElementById('daily-date').value;
-
-    const targetDay = ['sun','mon','tue','wed','thu','fri','sat'][new Date(targetDateStr).getDay()];
-
-    const sortBy = document.getElementById('sort-daily-list').value;
-
-    
-
-    const filterStatusElement = document.getElementById('filter-daily-status');
-
-    const statusFilter = filterStatusElement ? filterStatusElement.value : 'all';
-
-    
-
-    const timeSelectVal = parseInt(document.getElementById('daily-time').value);
-
-    const currentSlot = isNaN(timeSelectVal) ? 1 : timeSelectVal;
-
-    
-
-// 🌟 1. 배열 대신 Map을 사용하여 중복 방지 (학번을 키값으로 사용)
-    let targetStudentsMap = new Map();
-
-    // 🌟 2. 고정석 학생 먼저 Map에 담기
-    Object.values(applicationData).forEach(app => {
-        if (app.type === "고정석" && app[targetDay]) {
-            targetStudentsMap.set(String(app.stuId), {
-                stuId: app.stuId, stuName: app.stuName, seatNum: app.seatNum, 
-                appliedTimes: app[targetDay] + "타임", type: "고정석", 
-                phone: rosterPhones[String(app.stuId)],
-                rawTimes: app[targetDay] 
-            });
-        }
-    });
-
-    // 🌟 3. 자율석 학생 담기 (단, 고정석에 이미 등록된 학번이면 무시하여 중복 방지!)
-    dailyReservationsData.forEach(res => {
-        const stuIdStr = String(res.stuId);
-        
-        // targetStudentsMap에 해당 학번이 없을 때만 자율석으로 추가
-        if (!targetStudentsMap.has(stuIdStr)) {
-            targetStudentsMap.set(stuIdStr, {
-                stuId: res.stuId, stuName: res.stuName, seatNum: res.seatNum, 
-                appliedTimes: (res.times || "-") + "타임", type: "자율석", 
-                phone: rosterPhones[String(res.stuId)],
-                rawTimes: res.times || "" 
-            });
-        }
-    });
-
-    // 🌟 4. Map에 담긴 데이터를 다시 배열로 변환해서 아래의 기존 정렬 로직과 연결
-    let targetStudents = Array.from(targetStudentsMap.values());
-
-
-
-
-
-    
-
-    if (sortBy === "id") targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
-
-    else if (sortBy === "seat") targetStudents.sort((a, b) => String(a.seatNum).localeCompare(String(b.seatNum)));
-
-
-
-    let stat = { total: targetStudents.length, present: 0, out: 0, absent: 0, finish: 0 };
-
-
-
-    targetStudents.forEach(st => {
-
-        const log = attendanceLogsData[String(st.stuId)];
-
-        let status = "미입실"; let tagTime = "-"; let statusColor = "var(--danger)"; 
-
-        let historyHtml = `<span style="color:#aaa; font-size:11px;">스캔 기록 없음</span>`;
-
-
-
-        if (log) {
-
-            status = log.status;
-
-            if (log.lastUpdateTime) {
-
-                const dt = log.lastUpdateTime.toDate ? log.lastUpdateTime.toDate() : new Date(log.lastUpdateTime);
-
-                tagTime = dt.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
-
-            }
-
-            
-
-            if (log.history && log.history.length > 0) {
-
-                let groupedHistory = { 0: [], 1: [], 2: [], 3: [] };
-
-
-
-                log.history.forEach(h => {
-
-                    const tmMatch = h.match(/(\d{2}:\d{2})/);
-
-                    let slot = 0; 
-
-                    
-
-                    if (tmMatch) {
-
-                        const timeStr = tmMatch[1];
-
-                        if (timeStr < "16:30") slot = 0;       
-
-                        else if (timeStr < "18:50") slot = 1;  
-
-                        else if (timeStr < "20:10") slot = 2;  
-
-                        else slot = 3;                         
-
-                    } else {
-
-                        if (h.includes("1타임")) slot = 1;
-
-                        else if (h.includes("2타임")) slot = 2;
-
-                        else if (h.includes("3타임")) slot = 3;
-
-                    }
-
-                    groupedHistory[slot].push(h);
-
-                });
-
-
-
-                let allTagsInline = [];
-
-
-
-                // 🌟 핵심 수정 사항: 로그가 없더라도 '신청한 타임'이면 배지를 띄워 흐름을 유지합니다.
-
-                [0, 1, 2, 3].forEach(t => {
-
-                    const hasLogs = groupedHistory[t].length > 0;
-
-                    const isApplied = st.rawTimes.includes(String(t));
-
-                    
-
-                    // 0타임은 찍힌 로그가 있을 때만 표시, 1/2/3타임은 신청했거나 로그가 있으면 무조건 표시
-
-                    const shouldShowSlot = (t === 0 && hasLogs) || (t > 0 && (isApplied || hasLogs));
-
-
-
-                    if (shouldShowSlot) {
-
-                        const slotLabel = t === 0 ? "0T" : `${t}T`;
-
-                        // 기록 없이 시간만 흐른 타임(결석/외출 상태)은 약간 흐린 회색 배지로 표시
-
-                        const slotBg = (hasLogs || t === 0) ? (t === 0 ? "#6c757d" : "var(--primary)") : "#adb5bd";
-
-                        
-
-                        allTagsInline.push(`<span style="background:${slotBg}; color:white; font-size:10px; padding:3px 6px; border-radius:4px; font-weight:bold; display:inline-block; vertical-align:middle; box-shadow:0 1px 2px rgba(0,0,0,0.1);">${slotLabel}</span>`);
-
-
-
-                        // 해당 교시의 스캔 기록들 삽입 (있는 경우에만)
-
-                        if (hasLogs) {
-
-                            groupedHistory[t].forEach(h => {
-
-                                let tagClass = "tag-in"; 
-
-                                if (h.includes("외출")) tagClass = "tag-out"; 
-
-                                else if (h.includes("귀가") || h.includes("누락")) tagClass = "tag-home";
-
-                                
-
-                                allTagsInline.push(`<span class="mini-tag ${tagClass}" style="display:inline-block; vertical-align:middle;">${h}</span>`);
-
-                            });
-
-                        }
-
-                    }
-
-                });
-
-                
-
-                if (allTagsInline.length > 0) {
-
-                    historyHtml = `<div style="line-height:2.4;">` + 
-
-                        allTagsInline.join('<span style="color:#aaa; font-size:11px; margin:0 4px; display:inline-block; vertical-align:middle;">➔</span>') + 
-
-                        `</div>`;
-
-                }
-
-            }
-
-        }
-
-
-
-        if (status === "미입실" || status === "귀가(누락)") { statusColor = "var(--danger)"; stat.absent++; } 
-
-        else if (status === "입실" || status === "복귀") { statusColor = "var(--primary)"; stat.present++; } 
-
-        else if (status === "외출") { statusColor = "#fd7e14"; stat.out++; } 
-
-        else if (status === "귀가") { statusColor = "var(--gray)"; stat.finish++; }
-
-
-
-        let mappedGroup = "미입실";
-
-        if (status === "입실" || status === "복귀") mappedGroup = "입실";
-
-        else if (status === "외출") mappedGroup = "외출";
-
-        else if (status === "귀가") mappedGroup = "귀가";
-
-
-
-        if (statusFilter !== "all" && mappedGroup !== statusFilter) return; 
-
-
-
-
-
-        
-
-        
-
-
-
-
-
-
-
- //////////////////////////////////////////////////////////////////////////////////////////////////////       
-
-// 🌟 1. 신청 현황 (0T~3T 모두 표시, 미신청은 회색 점선)
-
-// 🌟 1. 신청 현황 (0T~3T 모두 표시, 미신청은 회색 점선)
-        let appliedBadges = "";
-        [0, 1, 2, 3].forEach(t => {
-            const isApplied = st.rawTimes.includes(String(t));
-            
-            if (isApplied) {
-                // 🟢 신청한 타임: 진한 회색 바탕에 흰 글씨
-                appliedBadges += `<span style="background:#6c757d; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:bold;">${t}T</span>`;
-            } else {
-                // ⚪ 신청 안 한 타임 (0T 포함): 회색 점선 테두리에 투명 바탕
-                appliedBadges += `<span style="border:1px dashed #adb5bd; color:#adb5bd; background:transparent; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px;">${t}T</span>`;
-            }
-        });
-
-        // 🌟 2. 현재 상태 (위에서 미리 계산된 statusColor를 그대로 활용)
-        let currentStatusBadge = `<span style="color:${statusColor}; font-weight:bold;">${status}</span>`;
-
-        // 🌟 3. 마지막 결과 판단 로직
-        let resultText = "진행 중 🏃";
-        let resultColor = "#b38200"; 
-        
-        if (status === "귀가") { 
-            resultText = "귀가 완료 🏠"; 
-            resultColor = "var(--gray)"; 
-        } else if (status === "귀가(누락)") { 
-            resultText = "태그 누락 🚨"; 
-            resultColor = "var(--danger)"; 
-        } else if (status === "미입실") { 
-            resultText = "결석/미입실 ❌"; 
-            resultColor = "var(--danger)"; 
-        }
-
-        // 🌟 3줄 텍스트 뼈대 만들기
-        let timeBoxHtml = `
-            <div style="text-align: left; margin-top: 8px; font-size: 11px; background: #f8f9fa; padding: 6px; border-radius: 6px; border: 1px solid #e9ecef; width: max-content; margin-left: auto; margin-right: auto;">
-                <div style="margin-bottom: 5px;">
-                    <span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">신청:</span>
-                    ${appliedBadges}
-                </div>
-                <div style="margin-bottom: 5px;">
-                    <span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">현재:</span>
-                    ${currentStatusBadge}
-                </div>
-                <div>
-                    <span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">결과:</span>
-                    <span style="color: ${resultColor}; font-weight: bold;">${resultText}</span>
-                </div>
-            </div>
-        `;
-
-//////////////////////////////////////////////////////////////////////////////////////
-        
-
-
-const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td style="vertical-align: middle;">${st.stuId}</td>
-            <td style="font-weight:bold; cursor:pointer; color:var(--primary); text-decoration:underline; vertical-align: middle;" 
-                onclick="openDailyStatus('${st.stuId}', '${st.stuName}', '${st.seatNum}', '${st.phone || ''}')">
-                ${st.stuName} 👆
-            </td>
-            <td style="text-align: center; vertical-align: middle;">
-                <div><span style="font-size:12px; color:#666;">[${st.type}]</span> <strong style="font-size:14px;">${st.seatNum || '-'}</strong></div>
-            </td>
-            <td style="text-align: center; vertical-align: middle;">
-                ${timeBoxHtml}
-            </td>
-            <td style="text-align: left; padding-left: 15px; vertical-align: middle;">
-                ${historyHtml}
-            </td>
-            <td style="font-weight:900; color:${statusColor}; vertical-align: middle;">${status}</td>
-            <td style="color:#555; vertical-align: middle;">${tagTime}</td>
-        `;
-
-        ///////////////////
-
-        tbody.appendChild(tr);
-
-    });
-
-    
-
-    document.getElementById('daily-list-summary').innerHTML = `전체 대상: ${stat.total}명 | <span style="color:var(--primary);">입실: ${stat.present}명</span> | <span style="color:#fd7e14;">외출: ${stat.out}명</span> | <span style="color:var(--gray);">귀가: ${stat.finish}명</span> | <span style="color:var(--danger);">미입실: ${stat.absent}명</span>`;
-
-}
-
-
-
-
-
-    
-
-
-
-    
 
     function fillEditForm(id) {
-
         const d = applicationData[id]; document.getElementById('edit-doc-id').value = id;
-
         document.getElementById('m-month').value = d.targetMonth; document.getElementById('m-id').value = d.stuId; document.getElementById('m-name').value = d.stuName;
-
         document.getElementById('m-type').value = d.type || "고정석"; document.getElementById('m-seatNum').value = d.seatNum||"";
-
         ['mon','tue','wed','thu','fri','sat','sun'].forEach(k => document.getElementById(`m-${k}`).value = d[k]||"");
-
-        switchTab('tab-manual', document.querySelectorAll('.tab-btn')[2]);
-
+        switchTab('tab-manual', document.querySelectorAll('.tab-btn')[3]);
     }
 
+    function resetManualForm() { 
+        document.getElementById('edit-doc-id').value = ""; 
+        document.querySelectorAll('#tab-manual input').forEach(i => i.value = ""); 
+    }
 
-
+    // =========================================================
+    // 5. DB 데이터 조작 함수들 (개별수정, 강제마감, 통계 - 수파베이스 적용)
+    // =========================================================
     async function saveManualEntry() {
-
         const id = document.getElementById('edit-doc-id').value;
-
         const data = { 
-
-            targetMonth: document.getElementById('m-month').value, 
-
-            stuId: String(document.getElementById('m-id').value), 
-
-            stuName: document.getElementById('m-name').value, 
-
+            target_month: document.getElementById('m-month').value, 
+            stu_id: String(document.getElementById('m-id').value), 
+            stu_name: document.getElementById('m-name').value, 
             type: document.getElementById('m-type').value, 
-
-            seatNum: document.getElementById('m-seatNum').value, 
-
+            seat_num: document.getElementById('m-seatNum').value, 
             mon: document.getElementById('m-mon').value || "", 
-
             tue: document.getElementById('m-tue').value || "", 
-
             wed: document.getElementById('m-wed').value || "", 
-
             thu: document.getElementById('m-thu').value || "", 
-
             fri: document.getElementById('m-fri').value || "", 
-
             sat: document.getElementById('m-sat').value || "", 
-
             sun: document.getElementById('m-sun').value || "",
-
-            lastUpdateTime: new Date()
-
+            last_update_time: new Date().toISOString()
         };
+        try {
+            if(id) await supabaseClient.from("applications").update(data).eq("id", id); 
+            else await supabaseClient.from("applications").insert([data]);
+            alert("저장되었습니다."); 
+            resetManualForm(); 
+            fetchBaseData(); 
+            switchTab('tab-status', document.querySelectorAll('.tab-btn')[2]);
+        } catch(e) { alert("오류: " + e.message); }
+    }
+
+    async function closeMissingTags() {
+        const targetDate = document.getElementById('daily-date').value; 
+        if (!confirm(`${targetDate} 일자의 출결을 마감하시겠습니까?\n아직 귀가하지 않은 학생은 '태그 누락'으로 처리됩니다.`)) return;
 
         try {
+            const { data: logs } = await supabaseClient.from("attendance_logs").select("*").eq("date", targetDate);
+            let missingCount = 0;
+            const now = new Date().toISOString();
 
-            if(id) await db.collection("applications").doc(id).update(data); else await db.collection("applications").add(data);
-
-            alert("저장되었습니다."); resetManualForm(); switchTab('tab-status', document.querySelectorAll('.tab-btn')[1]);
-
-        } catch(e) { alert("오류: " + e.message); }
-
-    }
-
-
-
-// 일일 출결 마감 (태그 누락자 강제 처리)
-
-async function closeMissingTags() {
-
-    const targetDate = document.getElementById('daily-date').value; // 현재 보고 있는 날짜
-
-    
-
-    if (!confirm(`${targetDate} 일자의 출결을 마감하시겠습니까?\n아직 귀가하지 않은 학생은 '태그 누락'으로 처리됩니다.`)) {
-
-        return;
-
-    }
-
-
-
-    try {
-
-        // 1. 해당 날짜의 출결 로그 몽땅 가져오기
-
-        const snapshot = await db.collection("attendance_logs").where("date", "==", targetDate).get();
-
-        
-
-        let missingCount = 0;
-
-        const now = new Date();
-
-
-
-        // 2. 환경설정에서 야자 공식 종료 시간 가져오기 (예: 21:30)
-
-        const schedDoc = await db.collection("settings").doc("schedule").get();
-
-        const endTimeStr = schedDoc.exists ? (schedDoc.data().t3_end || "21:30") : "21:30";
-
-
-
-        // 데이터베이스 업데이트를 한 번에 처리하기 위한 Batch 준비
-
-        const batch = db.batch();
-
-
-
-        snapshot.forEach(doc => {
-
-            const data = doc.data();
-
-            
-
-            // 3. 상태가 '귀가'가 아니면 태그 누락으로 간주 ('입실', '복귀', '외출' 상태로 방치된 경우)
-
-            if (data.status !== "귀가" && data.status !== "귀가(누락)") {
-
-                missingCount++;
-
-                const docRef = db.collection("attendance_logs").doc(doc.id);
-
-                
-
-                // 4. 어떻게 기록할지 정의
-
-                // (선택 사항) 태그를 안 찍고 갔으므로, 시스템 공식 종료 시간을 기준으로 강제 계산하거나 0분 처리할 수 있습니다. 
-
-                // 여기서는 '태그 누락'이라는 명확한 꼬리표를 달아줍니다.
-
-                const updateData = {
-
-                    status: "귀가(누락)", // 상태를 누락으로 변경
-
-                    lastUpdateTime: now,
-
-                    // 히스토리에 빨간색 글씨로 누락 사실을 기록
-
-                    history: firebase.firestore.FieldValue.arrayUnion(`🚨 태그 누락 강제 마감`) 
-
-                };
-
-                
-
-                batch.update(docRef, updateData);
-
+            if (logs) {
+                for (let log of logs) {
+                    if (log.status !== "귀가" && log.status !== "귀가(누락)") {
+                        missingCount++;
+                        let newHistory = log.history || [];
+                        newHistory.push(`🚨 태그 누락 강제 마감`);
+                        await supabaseClient.from("attendance_logs").update({
+                            status: "귀가(누락)",
+                            last_update_time: now,
+                            history: newHistory
+                        }).eq("id", log.id);
+                    }
+                }
             }
 
-        });
-
-
-
-        // 5. 변경된 내역을 DB에 일괄 반영
-
-        if (missingCount > 0) {
-
-            await batch.commit();
-
-            alert(`총 ${missingCount}명의 태그 누락자를 강제 마감 처리했습니다.`);
-
-            loadDailyDataAndRender(); // 화면 새로고침
-
-        } else {
-
-            alert("태그 누락자가 없습니다. 완벽한 하루네요!");
-
+            if (missingCount > 0) {
+                alert(`총 ${missingCount}명의 태그 누락자를 강제 마감 처리했습니다.`);
+                loadDailyDataAndRender(); 
+            } else {
+                alert("태그 누락자가 없습니다. 완벽한 하루네요!");
+            }
+        } catch (e) {
+            console.error("마감 처리 중 오류:", e);
+            alert("오류가 발생했습니다: " + e.message);
         }
-
-
-
-    } catch (e) {
-
-        console.error("마감 처리 중 오류:", e);
-
-        alert("오류가 발생했습니다: " + e.message);
-
     }
 
-}
+    async function calculateAndRenderStats() {
+        const selectedMonth = document.getElementById('stats-month-filter').value;
+        document.getElementById('stats-loading').style.display = 'block';
+        document.getElementById('stats-container').style.display = 'none';
 
+        try {
+            const { data: logsData } = await supabaseClient.from("attendance_logs").select("*");
+            const filteredLogs = [];
+            
+            if (logsData) {
+                logsData.forEach(data => {
+                    const logDate = new Date(data.date);
+                    const logMonth = (logDate.getMonth() + 1) + "월";
+                    const isTargetMonth = (selectedMonth === "all" || logMonth === selectedMonth);
+                    const isPresent = (data.status !== "미입실" && data.status !== "귀가(누락)");
 
-
-// ---------------------------------------------------
-
-// 📊 월별 필터가 적용된 통계 분석 함수
-
-// ---------------------------------------------------
-
-async function calculateAndRenderStats() {
-
-    // 1. 사용자가 선택한 월이 무엇인지 가져옵니다. (예: "4월" 또는 "all")
-
-    const selectedMonth = document.getElementById('stats-month-filter').value;
-
-    
-
-    document.getElementById('stats-loading').style.display = 'block';
-
-    document.getElementById('stats-container').style.display = 'none';
-
-
-
-    try {
-
-        // 2. 출결 로그 가져오기
-
-        const logsSnap = await db.collection("attendance_logs").get();
-
-        const filteredLogs = [];
-
-        
-
-        logsSnap.forEach(doc => {
-
-            const data = doc.data();
-
-            // 로그의 날짜(YYYY-MM-DD)에서 월 정보를 추출합니다.
-
-            // 데이터의 month 필드가 따로 없다면 날짜 문자열의 6번째 글자부터 확인합니다.
-
-            const logDate = new Date(data.date);
-
-            const logMonth = (logDate.getMonth() + 1) + "월";
-
-
-
-            // [필터 조건] 선택한 월과 일치하거나, '전체보기'인 경우만 통계에 포함합니다.
-
-            const isTargetMonth = (selectedMonth === "all" || logMonth === selectedMonth);
-
-            const isPresent = (data.status !== "미입실" && data.status !== "귀가(누락)");
-
-
-
-            if (isTargetMonth && isPresent) {
-
-                filteredLogs.push(data);
-
+                    if (isTargetMonth && isPresent) {
+                        filteredLogs.push(data);
+                    }
+                });
             }
 
-        });
+            const dayStats = {
+                1: { name: '월', apply: 0, attend: 0 }, 2: { name: '화', apply: 0, attend: 0 },
+                3: { name: '수', apply: 0, attend: 0 }, 4: { name: '목', apply: 0, attend: 0 },
+                5: { name: '금', apply: 0, attend: 0 }, 6: { name: '토', apply: 0, attend: 0 },
+                0: { name: '일', apply: 0, attend: 0 }
+            };
+            const classStats = {};
 
+            Object.values(applicationData).forEach(student => {
+                if (selectedMonth !== "all" && student.targetMonth !== selectedMonth) return;
 
+                if (student.mon) dayStats[1].apply++; if (student.tue) dayStats[2].apply++;
+                if (student.wed) dayStats[3].apply++; if (student.thu) dayStats[4].apply++;
+                if (student.fri) dayStats[5].apply++; if (student.sat) dayStats[6].apply++;
+                if (student.sun) dayStats[0].apply++;
 
-        // 3. 통계 바구니 초기화
-
-        const dayStats = {
-
-            1: { name: '월', apply: 0, attend: 0 },
-
-            2: { name: '화', apply: 0, attend: 0 },
-
-            3: { name: '수', apply: 0, attend: 0 },
-
-            4: { name: '목', apply: 0, attend: 0 },
-
-            5: { name: '금', apply: 0, attend: 0 },
-
-            6: { name: '토', apply: 0, attend: 0 },
-
-            0: { name: '일', apply: 0, attend: 0 }
-
-        };
-
-        const classStats = {};
-
-
-
-        // 4. 신청 데이터(applicationData) 분석 (월 필터 적용)
-
-        Object.values(applicationData).forEach(student => {
-
-            // 학생 데이터의 targetMonth와 선택한 월을 비교합니다.
-
-            if (selectedMonth !== "all" && student.targetMonth !== selectedMonth) return;
-
-
-
-            if (student.mon) dayStats[1].apply++;
-
-            if (student.tue) dayStats[2].apply++;
-
-            if (student.wed) dayStats[3].apply++;
-
-            if (student.thu) dayStats[4].apply++;
-
-            if (student.fri) dayStats[5].apply++;
-
-            if (student.sat) dayStats[6].apply++;
-
-            if (student.sun) dayStats[0].apply++;
-
-
-
-// 🌟 [수정 1] 학번 자릿수(4자리/5자리)에 상관없이 '학년'과 '반'을 정확히 추출
-
-            const stuIdStr = String(student.stuId).trim();
-
-            let classNum = "기타";
-
-            
-
-            if (stuIdStr.length >= 4) {
-
-                const grade = stuIdStr.charAt(0); // 맨 앞 1자리는 무조건 학년
-
-                const banStr = stuIdStr.substring(1, stuIdStr.length - 2); // 맨 앞과 맨 뒤 2자리를 뺀 중간 부분
-
+                const stuIdStr = String(student.stuId).trim();
+                let classNum = "기타";
+                if (stuIdStr.length >= 4) {
+                    const grade = stuIdStr.charAt(0); 
+                    const banStr = stuIdStr.substring(1, stuIdStr.length - 2); 
+                    classNum = grade + "학년 " + parseInt(banStr, 10) + "반";
+                }
                 
-
-                // '02' 같은 글자를 숫자 2로 깔끔하게 바꿔주고 학년과 합칩니다. (예: 1학년 2반)
-
-                classNum = grade + "학년 " + parseInt(banStr, 10) + "반";
-
-            }
-
-            
-
-            if (!classStats[classNum]) classStats[classNum] = { apply: 0, attend: 0 };
-
-            classStats[classNum].apply++;
-
-        });
-
-
-
-        // 5. 실제 참여 로그 분석
-
-        filteredLogs.forEach(log => {
-
-            const logDate = new Date(log.date);
-
-            const dayIndex = logDate.getDay();
-
-            if (dayStats[dayIndex]) dayStats[dayIndex].attend++;
-
-
-
-// 🌟 [수정 2] 출결 로그에서도 동일하게 유연한 학년/반 추출 적용
-
-            const stuIdStr = String(log.stuId).trim();
-
-            let classNum = "기타";
-
-            
-
-            if (stuIdStr.length >= 4) {
-
-                const grade = stuIdStr.charAt(0);
-
-                const banStr = stuIdStr.substring(1, stuIdStr.length - 2);
-
-                classNum = grade + "학년 " + parseInt(banStr, 10) + "반";
-
-            }
-
-            
-
-            if (classStats[classNum]) classStats[classNum].attend++;
-
-        });
-
-
-
-        // 6. 화면 렌더링
-
-        document.getElementById('stats-info-text').innerText = `📍 현재 분석 범위: ${selectedMonth === 'all' ? '전체 누적 데이터' : selectedMonth + ' 신청 및 출결 데이터'}`;
-
-
-
-        const dayBody = document.getElementById('stat-day-body');
-
-        dayBody.innerHTML = '';
-
-        [1, 2, 3, 4, 5, 6, 0].forEach(idx => {
-
-            const stat = dayStats[idx];
-
-            dayBody.innerHTML += `<tr><td style="font-weight:bold;">${stat.name}요일</td><td>${stat.apply}명</td><td style="color:var(--primary); font-weight:bold;">${stat.attend}회</td></tr>`;
-
-        });
-
-
-
-        const classBody = document.getElementById('stat-class-body');
-
-        classBody.innerHTML = '';
-
-        Object.keys(classStats).sort().forEach(c => {
-
-            const stat = classStats[c];
-
-            classBody.innerHTML += `<tr><td style="font-weight:bold;">${c}</td><td>${stat.apply}명</td><td style="color:var(--success); font-weight:bold;">${stat.attend}회</td></tr>`;
-
-        });
-
-
-
-        document.getElementById('stats-loading').style.display = 'none';
-
-        document.getElementById('stats-container').style.display = 'block';
-
-
-
-    } catch (e) {
-
-        console.error(e);
-
-        alert("통계 분석 중 오류가 발생했습니다.");
-
-        document.getElementById('stats-loading').style.display = 'none';
-
-    }
-
-}
-
-
-
-    
-
-    
-
-    function resetManualForm() { document.getElementById('edit-doc-id').value = ""; document.querySelectorAll('#tab-manual input').forEach(i => i.value = ""); }
-
-   
-
-    db.collection("applications").onSnapshot(snap => {
-
-        applicationData = {}; snap.forEach(doc => applicationData[doc.id] = doc.data());
-
-        renderStatusTable(); renderDailySupervisorMap();
-
-    });
-
-
-
-    // 🌟👇👇 여기부터 추가 👇👇🌟
-
-    let rosterPhones = {}; 
-
-    async function loadRosterPhones() {
-
-        const doc = await db.collection("settings").doc("roster").get();
-
-        if (doc.exists && doc.data().phoneList) {
-
-            rosterPhones = JSON.parse(doc.data().phoneList);
-
+                if (!classStats[classNum]) classStats[classNum] = { apply: 0, attend: 0 };
+                classStats[classNum].apply++;
+            });
+
+            filteredLogs.forEach(log => {
+                const logDate = new Date(log.date);
+                const dayIndex = logDate.getDay();
+                if (dayStats[dayIndex]) dayStats[dayIndex].attend++;
+
+                const stuIdStr = String(log.stu_id).trim();
+                let classNum = "기타";
+                if (stuIdStr.length >= 4) {
+                    const grade = stuIdStr.charAt(0);
+                    const banStr = stuIdStr.substring(1, stuIdStr.length - 2);
+                    classNum = grade + "학년 " + parseInt(banStr, 10) + "반";
+                }
+                if (classStats[classNum]) classStats[classNum].attend++;
+            });
+
+            document.getElementById('stats-info-text').innerText = `📍 현재 분석 범위: ${selectedMonth === 'all' ? '전체 누적 데이터' : selectedMonth + ' 신청 및 출결 데이터'}`;
+
+            const dayBody = document.getElementById('stat-day-body');
+            dayBody.innerHTML = '';
+            [1, 2, 3, 4, 5, 6, 0].forEach(idx => {
+                const stat = dayStats[idx];
+                dayBody.innerHTML += `<tr><td style="font-weight:bold;">${stat.name}요일</td><td>${stat.apply}명</td><td style="color:var(--primary); font-weight:bold;">${stat.attend}회</td></tr>`;
+            });
+
+            const classBody = document.getElementById('stat-class-body');
+            classBody.innerHTML = '';
+            Object.keys(classStats).sort().forEach(c => {
+                const stat = classStats[c];
+                classBody.innerHTML += `<tr><td style="font-weight:bold;">${c}</td><td>${stat.apply}명</td><td style="color:var(--success); font-weight:bold;">${stat.attend}회</td></tr>`;
+            });
+
+            document.getElementById('stats-loading').style.display = 'none';
+            document.getElementById('stats-container').style.display = 'block';
+
+        } catch (e) {
+            console.error(e);
+            alert("통계 분석 중 오류가 발생했습니다.");
+            document.getElementById('stats-loading').style.display = 'none';
         }
-
     }
-
-    loadRosterPhones();
-
-    // 🌟👆👆 여기까지 추가 👆👆🌟
-
-    loadSeatLayout(); loadDailyDataAndRender();
-
 </script>
-
 </body>
 
 </html>
