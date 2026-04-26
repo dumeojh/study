@@ -65,239 +65,259 @@
 
  
 <script>
-    // 🚨 여기에 선생님의 Supabase 정보를 입력하세요! 🚨
-    const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
+ // 🚨 여기에 선생님의 Supabase 정보를 입력하세요! 🚨
+const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
 
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let serverRoster = {}; 
+let serverBarcodes = {}; 
+let currentStatus = "입실"; 
+const todayObj = new Date();
+const todayStr = todayObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); 
+
+let isProcessing = false; // 중복 스캔 방지용 락(Lock)
+let selectionTimer = null; 
+let currentStudentLogData = null; // 스마트 선택 시 기존 로그를 유지하기 위한 변수
+
+function updateClock() {
+    const now = new Date();
+    document.getElementById('live-clock').innerText = now.toLocaleTimeString('ko-KR', { hour12: false });
+    const days = ['일','월','화','수','목','금','토'];
+    document.getElementById('live-date').innerText = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]}요일)`;
+}
+setInterval(updateClock, 1000); updateClock();
+
+// Supabase에서 명단 가져오기
+async function fetchRoster() {
+    const { data, error } = await supabaseClient.from('settings').select('value').eq('key', 'roster').maybeSingle();
+    if (data && data.value) {
+        serverRoster = JSON.parse(data.value.list || "{}");
+        serverBarcodes = JSON.parse(data.value.barcodeList || "{}"); 
+    }
+}
+fetchRoster();
+
+function selectStatus(status, btnElement) {
+    currentStatus = status;
+    document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('selected'));
+    btnElement.classList.add('selected');
+    const guide = document.getElementById('guide-msg');
+    if(status === '귀가') guide.innerHTML = "<span style='color:red;'>귀가 처리 후에는 다시 입실할 수 없습니다.</span><br>학생증을 스캔하세요.";
+    else guide.innerText = "학생증을 스캔하거나 학번을 입력하세요.";
+    focusScanner();
+}
+
+const scannerInput = document.getElementById('scanner-input');
+const nameInput = document.getElementById('name-input');
+function focusScanner() { 
+    if(!isProcessing) scannerInput.focus(); 
+}
+document.addEventListener('click', focusScanner);
+setInterval(() => { 
+    if(!isProcessing && document.activeElement !== scannerInput && document.activeElement !== nameInput) focusScanner(); 
+}, 2000);
+
+let authMode = "1"; 
+
+// Supabase에서 설정 가져오기
+async function fetchSettings() {
+    const { data, error } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+    if (data && data.value && data.value.authMode) {
+        authMode = data.value.authMode;
+        if (authMode === "3") nameInput.style.display = 'block'; 
+    }
+}
+fetchSettings();
+
+scannerInput.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') { 
+        e.preventDefault(); 
+        if(isProcessing) return; // 처리 중이면 무시
+        if (authMode === "3" && scannerInput.value.trim() !== "") nameInput.focus();
+        else processCheckInOut(); 
+    }
+});
+nameInput.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') { 
+        e.preventDefault(); 
+        if(isProcessing) return; 
+        processCheckInOut(); 
+    }
+});
+
+function convertKorToEng(text) { 
+    const cho = ["r","R","s","e","E","f","a","q","Q","t","T","d","w","W","c","z","x","v","g"];
+    const jung = ["k","o","i","O","j","p","u","P","h","hk","ho","hl","y","n","nj","np","nl","b","m","ml","l"];
+    const jong = ["","r","R","rt","s","sw","sg","e","f","fr","fa","fq","ft","fx","fv","fg","a","q","qt","t","T","d","w","c","z","x","v","g"];
+    const jamoMap = {'ㄱ':'r','ㄲ':'R','ㄳ':'rt','ㄴ':'s','ㄵ':'sw','ㄶ':'sg','ㄷ':'e','ㄸ':'E','ㄹ':'f','ㄺ':'fr','ㄻ':'fa','ㄼ':'fq','ㄽ':'ft','ㄾ':'fx','ㄿ':'fv','ㅀ':'fg','ㅁ':'a','ㅂ':'q','ㅃ':'Q','ㅄ':'qt','ㅅ':'t','ㅆ':'T','ㅇ':'d','ㅈ':'w','ㅉ':'W','ㅊ':'c','ㅋ':'z','ㅌ':'x','ㅍ':'v','ㅎ':'g','ㅏ':'k','ㅐ':'o','ㅑ':'i','ㅒ':'O','ㅓ':'j','ㅔ':'p','ㅕ':'u','ㅖ':'P','ㅗ':'h','ㅘ':'hk','ㅙ':'ho','ㅚ':'hl','ㅛ':'y','ㅜ':'n','ㅝ':'nj','ㅞ':'np','ㅟ':'nl','ㅠ':'b','ㅡ':'m','ㅢ':'ml','ㅣ':'l'};
+    let result = "";
+    for (let i = 0; i < text.length; i++) {
+        let code = text.charCodeAt(i);
+        if (code >= 44032 && code <= 55203) { code -= 44032; result += cho[Math.floor(code / (21 * 28))] + jung[Math.floor((code % (21 * 28)) / 28)] + jong[(code % (21 * 28)) % 28]; } 
+        else if (code >= 12593 && code <= 12643) { result += jamoMap[text[i]] || text[i]; } 
+        else { result += text[i]; }
+    }
+    return result;
+}
+
+async function processCheckInOut() {
+    let rawId = scannerInput.value.trim();
+    if (!rawId) return;
     
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let serverRoster = {}; 
-    let serverBarcodes = {}; 
-    let currentStatus = "입실"; 
-    const todayObj = new Date();
-    const todayStr = todayObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); 
-
-    function updateClock() {
-        const now = new Date();
-        document.getElementById('live-clock').innerText = now.toLocaleTimeString('ko-KR', { hour12: false });
-        const days = ['일','월','화','수','목','금','토'];
-        document.getElementById('live-date').innerText = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]}요일)`;
-    }
-    setInterval(updateClock, 1000); updateClock();
-
-    // Supabase에서 명단 가져오기
-    async function fetchRoster() {
-        const { data, error } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
-        if (data && data.value) {
-            serverRoster = JSON.parse(data.value.list || "{}");
-            serverBarcodes = JSON.parse(data.value.barcodeList || "{}"); 
-        }
-    }
-    fetchRoster();
-
-    function playErrorBeep() { /* 기존과 동일한 비프음 로직 */ }
-
-    function selectStatus(status, btnElement) {
-        currentStatus = status;
-        document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('selected'));
-        btnElement.classList.add('selected');
-        const guide = document.getElementById('guide-msg');
-        if(status === '귀가') guide.innerHTML = "<span style='color:red;'>귀가 처리 후에는 다시 입실할 수 없습니다.</span><br>학생증을 스캔하세요.";
-        else guide.innerText = "학생증을 스캔하거나 학번을 입력하세요.";
-        focusScanner();
-    }
-
-    const scannerInput = document.getElementById('scanner-input');
-    const nameInput = document.getElementById('name-input');
-    function focusScanner() { scannerInput.focus(); }
-    document.addEventListener('click', focusScanner);
-    setInterval(() => { if(document.activeElement !== scannerInput && document.activeElement !== nameInput) focusScanner(); }, 2000);
-
-    let authMode = "1"; 
-
-    // Supabase에서 설정 가져오기
-    async function fetchSettings() {
-        const { data, error } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').single();
-        if (data && data.value && data.value.authMode) {
-            authMode = data.value.authMode;
-            if (authMode === "3") nameInput.style.display = 'block'; 
-        }
-    }
-    fetchSettings();
-
-    scannerInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') { 
-            e.preventDefault(); 
-            if (authMode === "3" && scannerInput.value.trim() !== "") nameInput.focus();
-            else processCheckInOut(); 
-        }
-    });
-    nameInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); processCheckInOut(); }
-    });
-
-    function convertKorToEng(text) { /* 영문 변환 기존 로직 유지 (생략 방지) */
-        const cho = ["r","R","s","e","E","f","a","q","Q","t","T","d","w","W","c","z","x","v","g"];
-        const jung = ["k","o","i","O","j","p","u","P","h","hk","ho","hl","y","n","nj","np","nl","b","m","ml","l"];
-        const jong = ["","r","R","rt","s","sw","sg","e","f","fr","fa","fq","ft","fx","fv","fg","a","q","qt","t","T","d","w","c","z","x","v","g"];
-        const jamoMap = {'ㄱ':'r','ㄲ':'R','ㄳ':'rt','ㄴ':'s','ㄵ':'sw','ㄶ':'sg','ㄷ':'e','ㄸ':'E','ㄹ':'f','ㄺ':'fr','ㄻ':'fa','ㄼ':'fq','ㄽ':'ft','ㄾ':'fx','ㄿ':'fv','ㅀ':'fg','ㅁ':'a','ㅂ':'q','ㅃ':'Q','ㅄ':'qt','ㅅ':'t','ㅆ':'T','ㅇ':'d','ㅈ':'w','ㅉ':'W','ㅊ':'c','ㅋ':'z','ㅌ':'x','ㅍ':'v','ㅎ':'g','ㅏ':'k','ㅐ':'o','ㅑ':'i','ㅒ':'O','ㅓ':'j','ㅔ':'p','ㅕ':'u','ㅖ':'P','ㅗ':'h','ㅘ':'hk','ㅙ':'ho','ㅚ':'hl','ㅛ':'y','ㅜ':'n','ㅝ':'nj','ㅞ':'np','ㅟ':'nl','ㅠ':'b','ㅡ':'m','ㅢ':'ml','ㅣ':'l'};
-        let result = "";
-        for (let i = 0; i < text.length; i++) {
-            let code = text.charCodeAt(i);
-            if (code >= 44032 && code <= 55203) { code -= 44032; result += cho[Math.floor(code / (21 * 28))] + jung[Math.floor((code % (21 * 28)) / 28)] + jong[(code % (21 * 28)) % 28]; } 
-            else if (code >= 12593 && code <= 12643) { result += jamoMap[text[i]] || text[i]; } 
-            else { result += text[i]; }
-        }
-        return result;
-    }
+    isProcessing = true; // 락 걸기
     
-    let selectionTimer = null; 
+    let id = convertKorToEng(rawId).toUpperCase(); 
+    const nameVal = nameInput.value.trim();
+    
+    if (serverBarcodes[id]) id = serverBarcodes[id];
+    
+    const studentName = serverRoster[id];
+    if (!studentName) {
+        showReceipt("오류", `[${id}]`, "등록되지 않은 학번입니다.", "명단을 확인해 주세요.", "#dc3545");
+        return;
+    }
 
-    async function processCheckInOut() {
-        let rawId = scannerInput.value.trim();
-        if (!rawId) return;
-        let id = convertKorToEng(rawId).toUpperCase(); 
-        const nameVal = nameInput.value.trim();
+    if (authMode === "3") {
+        if (!nameVal) { nameInput.focus(); isProcessing = false; return; }
+        if (studentName !== nameVal) {
+            showReceipt("오류", "이름 불일치", `학번 [${id}]의 이름이 틀립니다.`, "다시 입력해주세요.", "#dc3545");
+            focusScanner(); return;
+        }
+        executeLogic(id, studentName);
+    } else if (authMode === "2") {
+        showNameConfirm(id, studentName);
+    } else {
+        executeLogic(id, studentName);
+    }
+}
+
+function showNameConfirm(id, name) {
+    document.getElementById('r-name').innerText = `🙋 ${name} 학생`;
+    document.getElementById('r-status').innerText = "본인 확인";
+    document.getElementById('r-status').style.color = "#0d6efd";
+    document.getElementById('r-time').innerText = "화면의 이름이 본인이 맞습니까?";
+    document.getElementById('r-msg').innerHTML = `
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="confirmYes('${id}', '${name}')" style="flex: 1; padding: 25px; font-size: 20px; font-weight: bold; background: #0d6efd; color: white; border: none; border-radius: 10px; cursor: pointer;">예 (맞습니다)</button>
+            <button onclick="confirmNo()" style="flex: 1; padding: 25px; font-size: 20px; font-weight: bold; background: #6c757d; color: white; border: none; border-radius: 10px; cursor: pointer;">아니오</button>
+        </div>`;
+    document.getElementById('result-overlay').style.display = 'flex';
+    document.querySelector('.receipt').classList.remove('blink-warning');
+}
+
+function confirmYes(id, name) {
+    document.getElementById('r-msg').innerHTML = `<div style="margin-top: 20px; padding: 20px; font-size: 20px; font-weight: bold; color: #0d6efd; background: #f0f9ff; border-radius: 10px;">⏳ 출결 데이터를 확인 중입니다...</div>`;
+    executeLogic(id, name); 
+}
+
+function confirmNo() { 
+    document.getElementById('result-overlay').style.display = 'none'; 
+    scannerInput.value = ""; 
+    isProcessing = false;
+    focusScanner(); 
+}
+
+// Supabase 데이터베이스 처리
+async function executeLogic(id, studentName) {
+    scannerInput.value = ""; nameInput.value = ""; 
+    const now = new Date();
+    const currentMonthStr = (now.getMonth() + 1) + "월";
+    const todayDayEng = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
+
+    try {
+        // 이번 달 신청 내역 확인
+        const { data: appDataList, error: appError } = await supabaseClient
+            .from('applications')
+            .select('*')
+            .eq('stu_id', id)
+            .eq('target_month', currentMonthStr);
+
+        if (appError || !appDataList || appDataList.length === 0) {
+            showReceipt(studentName, "입실 불가", "신청 내역 없음", `이번 달(${currentMonthStr}) 야자 신청자가 아닙니다.`, "#dc3545");
+            return; 
+        }
         
-        if (serverBarcodes[id]) id = serverBarcodes[id];
-        
-        const studentName = serverRoster[id];
-        if (!studentName) {
-            showReceipt("오류", `[${id}]`, "등록되지 않은 학번입니다.", "명단을 확인해 주세요.", "#dc3545");
-            scannerInput.value = ""; nameInput.value = "";
-            return;
+        const appData = appDataList[0];
+        if (!appData[todayDayEng]) {
+             showReceipt(studentName, "입실 불가", "오늘 신청 아님", "오늘은 야자를 신청한 요일이 아닙니다.", "#dc3545");
+             return; 
         }
 
-        if (authMode === "3") {
-            if (!nameVal) { nameInput.focus(); return; }
-            if (studentName !== nameVal) {
-                showReceipt("오류", "이름 불일치", `학번 [${id}]의 이름이 틀립니다.`, "다시 입력해주세요.", "#dc3545");
-                scannerInput.value = ""; nameInput.value = "";
-                focusScanner(); return;
-            }
-            executeLogic(id, studentName);
-        } else if (authMode === "2") {
-            showNameConfirm(id, studentName);
-        } else {
-            executeLogic(id, studentName);
-        }
-    }
-
-    function showNameConfirm(id, name) {
-        document.getElementById('r-name').innerText = `🙋 ${name} 학생`;
-        document.getElementById('r-status').innerText = "본인 확인";
-        document.getElementById('r-status').style.color = "#0d6efd";
-        document.getElementById('r-time').innerText = "화면의 이름이 본인이 맞습니까?";
-        document.getElementById('r-msg').innerHTML = `
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button onclick="confirmYes('${id}', '${name}')" style="flex: 1; padding: 25px; font-size: 20px; font-weight: bold; background: #0d6efd; color: white; border: none; border-radius: 10px; cursor: pointer;">예 (맞습니다)</button>
-                <button onclick="confirmNo()" style="flex: 1; padding: 25px; font-size: 20px; font-weight: bold; background: #6c757d; color: white; border: none; border-radius: 10px; cursor: pointer;">아니오</button>
-            </div>`;
-        document.getElementById('result-overlay').style.display = 'flex';
-        document.querySelector('.receipt').classList.remove('blink-warning');
-    }
-
-    function confirmYes(id, name) {
-        document.getElementById('r-msg').innerHTML = `<div style="margin-top: 20px; padding: 20px; font-size: 20px; font-weight: bold; color: #0d6efd; background: #f0f9ff; border-radius: 10px;">⏳ 출결 데이터를 확인 중입니다...</div>`;
-        executeLogic(id, name); 
-    }
-
-    function confirmNo() { document.getElementById('result-overlay').style.display = 'none'; scannerInput.value = ""; focusScanner(); }
-
-    // Supabase 데이터베이스 처리
-    async function executeLogic(id, studentName) {
-        scannerInput.value = ""; nameInput.value = ""; 
-        const now = new Date();
-        const currentMonthStr = (now.getMonth() + 1) + "월";
-        const todayDayEng = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
-
-        try {
-            // 이번 달 신청 내역 확인 (Supabase)
-            const { data: appDataList, error: appError } = await supabaseClient
-                .from('applications')
-                .select('*')
-                .eq('stu_id', id)
-                .eq('target_month', currentMonthStr);
-
-            if (appError || !appDataList || appDataList.length === 0) {
-                showReceipt(studentName, "입실 불가", "신청 내역 없음", `이번 달(${currentMonthStr}) 야자 신청자가 아닙니다.`, "#dc3545");
-                return; 
-            }
-            
-            const appData = appDataList[0];
-            if (!appData[todayDayEng]) {
-                 showReceipt(studentName, "입실 불가", "오늘 신청 아님", "오늘은 야자를 신청한 요일이 아닙니다.", "#dc3545");
-                 return; 
-            }
-
-            // 출결 로그 확인 (Supabase)
-            const logId = `${todayStr}_${id}`;
-            const { data: logData, error: logError } = await supabaseClient
-                .from('attendance_logs')
-                .select('*')
-                .eq('id', logId)
-                .single();
-
-            const lastStatus = logData ? logData.status : "미입실";
-
-            if (logData && logData.last_update_time) {
-                const lastUpdateTime = new Date(logData.last_update_time);
-                const diffSec = Math.floor((now - lastUpdateTime) / 1000);
-                if (diffSec < 40) {
-                    showReceipt(studentName, "방금 처리됨", `${diffSec}초 전에 [${lastStatus}] 처리되었습니다.`, "잠시 후 이용해 주세요.", "#6c757d");
-                    return;
-                }
-            }
-
-            if (lastStatus === "미입실") saveAttendance(id, studentName, "입실", now, logData);
-            else if (lastStatus === "입실" || lastStatus === "복귀") showSmartSelection(id, studentName, logData); 
-            else if (lastStatus === "외출") saveAttendance(id, studentName, "복귀", now, logData);
-            else if (lastStatus === "귀가") showReceipt(studentName, "이미 귀가함", "최종 귀가 처리된 학생입니다.", "재입실은 관리자에게 문의하세요.", "#6c757d");
-
-        } catch (e) { showReceipt("오류", "통신 실패", "연결 상태 확인 요망", e.message, "#dc3545"); }
-    }
-
-    function showSmartSelection(id, name, currentLog) {
-        document.getElementById('r-name').innerText = `🙋 ${name} 학생`;
-        document.getElementById('r-status').innerText = "상태 선택";
-        document.getElementById('r-status').style.color = "#333";
-        document.getElementById('r-time').innerText = "현재 입실 중입니다. 다음 작업을 선택하세요.";
-        document.getElementById('r-msg').innerHTML = `
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button onclick="confirmSelection('${id}', '${name}', '외출')" style="flex: 1; padding: 25px; font-size: 20px; font-weight: bold; background: var(--out); border: none; border-radius: 10px; cursor: pointer;">잠시 외출</button>
-                <button onclick="confirmSelection('${id}', '${name}', '귀가')" style="flex: 1; padding: 25px; font-size: 20px; font-weight: bold; background: var(--home); color: white; border: none; border-radius: 10px; cursor: pointer;">최종 귀가</button>
-            </div>
-            <div id="cancel-timer" style="margin-top: 15px; color: #dc3545; font-weight: bold;">(10초 뒤 자동 취소됩니다)</div>
-        `;
-        document.getElementById('result-overlay').style.display = 'flex';
-
-        let timeLeft = 10;
-        if(selectionTimer) clearInterval(selectionTimer);
-        selectionTimer = setInterval(() => {
-            timeLeft--;
-            document.getElementById('cancel-timer').innerText = `(${timeLeft}초 뒤 자동 취소됩니다)`;
-            if (timeLeft <= 0) {
-                clearInterval(selectionTimer);
-                document.getElementById('result-overlay').style.display = 'none';
-                focusScanner();
-            }
-        }, 1000);
-    }
-
-    function confirmSelection(id, name, status) {
-        if(selectionTimer) clearInterval(selectionTimer);
-        saveAttendance(id, name, status, new Date());
-    }
-
-    // Supabase에 데이터 저장 (Upsert 방식)
-    async function saveAttendance(id, name, status, timeObj, existingLog = null) {
+        // 출결 로그 확인
         const logId = `${todayStr}_${id}`;
-        const timeStr = timeObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
-        
-        let newHistory = existingLog ? (existingLog.history || []) : [];
-        newHistory.push(`${status} (${timeStr})`);
+        const { data: logData, error: logError } = await supabaseClient
+            .from('attendance_logs')
+            .select('*')
+            .eq('id', logId)
+            .maybeSingle();
 
+        const lastStatus = logData ? logData.status : "미입실";
+
+        if (logData && logData.last_update_time) {
+            const lastUpdateTime = new Date(logData.last_update_time);
+            const diffSec = Math.floor((now - lastUpdateTime) / 1000);
+            if (diffSec < 40) {
+                showReceipt(studentName, "방금 처리됨", `${diffSec}초 전에 [${lastStatus}] 처리되었습니다.`, "잠시 후 다시 스캔해 주세요.", "#6c757d");
+                return;
+            }
+        }
+
+        // 현재 상태 전역 변수에 저장 (스마트 선택에서 사용)
+        currentStudentLogData = logData;
+
+        if (lastStatus === "미입실") saveAttendance(id, studentName, "입실", now, logData);
+        else if (lastStatus === "입실" || lastStatus === "복귀") showSmartSelection(id, studentName); 
+        else if (lastStatus === "외출") saveAttendance(id, studentName, "복귀", now, logData);
+        else if (lastStatus === "귀가") showReceipt(studentName, "이미 귀가함", "최종 귀가 처리된 학생입니다.", "관리자에게 문의하세요.", "#6c757d");
+
+    } catch (e) { showReceipt("오류", "통신 실패", "연결 상태 확인 요망", e.message, "#dc3545"); }
+}
+
+function showSmartSelection(id, name) {
+    document.getElementById('r-name').innerText = `🙋 ${name} 학생`;
+    document.getElementById('r-status').innerText = "상태 선택";
+    document.getElementById('r-status').style.color = "#333";
+    document.getElementById('r-time').innerText = "현재 입실 중입니다. 다음 작업을 선택하세요.";
+    document.getElementById('r-msg').innerHTML = `
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="confirmSelection('${id}', '${name}', '외출')" style="flex: 1; padding: 25px; font-size: 20px; font-weight: bold; background: var(--out); border: none; border-radius: 10px; cursor: pointer;">잠시 외출</button>
+            <button onclick="confirmSelection('${id}', '${name}', '귀가')" style="flex: 1; padding: 25px; font-size: 20px; font-weight: bold; background: var(--home); color: white; border: none; border-radius: 10px; cursor: pointer;">최종 귀가</button>
+        </div>
+        <div id="cancel-timer" style="margin-top: 15px; color: #dc3545; font-weight: bold;">(10초 뒤 자동 취소됩니다)</div>
+    `;
+    document.getElementById('result-overlay').style.display = 'flex';
+
+    let timeLeft = 10;
+    if(selectionTimer) clearInterval(selectionTimer);
+    selectionTimer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('cancel-timer').innerText = `(${timeLeft}초 뒤 자동 취소됩니다)`;
+        if (timeLeft <= 0) {
+            clearInterval(selectionTimer);
+            document.getElementById('result-overlay').style.display = 'none';
+            isProcessing = false;
+            focusScanner();
+        }
+    }, 1000);
+}
+
+function confirmSelection(id, name, status) {
+    if(selectionTimer) clearInterval(selectionTimer);
+    // 스마트 선택 시 전역 변수에 저장해둔 기존 로그 데이터를 함께 넘겨줍니다.
+    saveAttendance(id, name, status, new Date(), currentStudentLogData);
+}
+
+// Supabase에 데이터 저장 (Upsert 방식)
+async function saveAttendance(id, name, status, timeObj, existingLog = null) {
+    const logId = `${todayStr}_${id}`;
+    const timeStr = timeObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    
+    let newHistory = existingLog ? (existingLog.history || []) : [];
+    newHistory.push(`${status} (${timeStr})`);
+
+    try {
         const { error } = await supabaseClient.from('attendance_logs').upsert({
             id: logId,
             date: todayStr,
@@ -308,43 +328,44 @@
             history: newHistory
         });
 
-        if(error) {
-            alert("저장 중 오류 발생: " + error.message);
-            return;
-        }
+        if(error) throw error;
 
         let color = status === "입실" ? "#0d6efd" : (status === "복귀" ? "#198754" : (status === "외출" ? "#b38200" : "#dc3545"));
         showReceipt(name, status + " 완료", `처리시간: ${timeStr}`, "정상 처리되었습니다.", color);
+    } catch(e) {
+        showReceipt("오류", "저장 실패", "연결 오류", e.message, "#dc3545");
     }
+}
 
-    function showReceipt(name, status, timeInfo, msg, color, isUrgent = false) { 
-        const container = document.querySelector('.kiosk-box');
-        const originalBg = "#ffffff"; 
-        if (status.includes("귀가")) container.style.backgroundColor = "#fff5f5"; 
-        else if (status.includes("입실") || status.includes("복귀")) container.style.backgroundColor = "#f0f9ff"; 
+function showReceipt(name, status, timeInfo, msg, color, isUrgent = false) { 
+    const container = document.querySelector('.kiosk-box');
+    const originalBg = "#ffffff"; 
+    if (status.includes("귀가")) container.style.backgroundColor = "#fff5f5"; 
+    else if (status.includes("입실") || status.includes("복귀")) container.style.backgroundColor = "#f0f9ff"; 
 
-        const receiptBox = document.querySelector('.receipt');
-        if (isUrgent) receiptBox.classList.add('blink-warning'); 
-        else receiptBox.classList.remove('blink-warning'); 
+    const receiptBox = document.querySelector('.receipt');
+    if (isUrgent) receiptBox.classList.add('blink-warning'); 
+    else receiptBox.classList.remove('blink-warning'); 
 
-        document.getElementById('r-name').innerText = name;
-        document.getElementById('r-status').innerText = status;
-        document.getElementById('r-status').style.color = color;
-        document.getElementById('r-time').innerText = timeInfo;
-        document.getElementById('r-msg').innerText = msg;
-        
-        const overlay = document.getElementById('result-overlay');
-        overlay.style.display = 'flex';
+    document.getElementById('r-name').innerText = name;
+    document.getElementById('r-status').innerText = status;
+    document.getElementById('r-status').style.color = color;
+    document.getElementById('r-time').innerText = timeInfo;
+    document.getElementById('r-msg').innerText = msg;
+    
+    const overlay = document.getElementById('result-overlay');
+    overlay.style.display = 'flex';
 
-        setTimeout(() => {
-            overlay.style.display = 'none';
-            container.style.backgroundColor = originalBg;
-            selectStatus('입실', document.querySelector('.btn-in')); 
-            const scannerInput = document.getElementById('scanner-input');
-            scannerInput.value = "";
-            focusScanner();
-        }, 2500); 
-    }
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        container.style.backgroundColor = originalBg;
+        selectStatus('입실', document.querySelector('.btn-in')); 
+        const scannerInput = document.getElementById('scanner-input');
+        scannerInput.value = "";
+        isProcessing = false; // 락 해제
+        focusScanner();
+    }, 2500); 
+}
 </script>
 </body>
 </html>
