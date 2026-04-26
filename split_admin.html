@@ -810,18 +810,57 @@
         setInterval(loadDailyDataAndRender, 5000); 
     });
 
-    // =========================================================
-    // 4. 화면 렌더링 함수들 (기존 선생님의 디자인 및 로직 완벽 유지)
-    // =========================================================
+
+
+// 🌟 탭을 전환할 때마다 현재 시간을 계산하여 드롭다운 메뉴를 자동으로 맞춰주는 함수
+    async function autoSetCurrentTime() {
+        // 환경설정에서 지정한 타임별 시작 시간을 불러옵니다.
+        const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+        let t1 = "16:00", t2 = "18:50", t3 = "20:10";
+        
+        if (schedDoc && schedDoc.value) {
+            t1 = schedDoc.value.t1 || t1;
+            t2 = schedDoc.value.t2 || t2;
+            t3 = schedDoc.value.t3 || t3;
+        }
+
+        const now = new Date();
+        const currentMin = now.getHours() * 60 + now.getMinutes();
+        const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+
+        let defaultSlot = 0;
+        if (currentMin >= timeToMin(t3)) defaultSlot = 3;
+        else if (currentMin >= timeToMin(t2)) defaultSlot = 2;
+        else if (currentMin >= timeToMin(t1)) defaultSlot = 1;
+
+        // 타임 선택창의 값을 언제나 '현재 시간에 맞는 타임'으로 강제 고정합니다.
+        document.getElementById('daily-time').value = defaultSlot;
+    }
+
+    // 🌟 탭 이동 시 작동하는 메인 함수 (자동 시간 적용 로직 추가)
     function switchTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tabId).classList.add('active'); 
         if(btn) btn.classList.add('active');
-        if(tabId === 'tab-status') renderStatusTable();
-        if(tabId === 'tab-stats') calculateAndRenderStats(); 
-        if(tabId === 'tab-daily-list') renderDailyList(); 
+
+        // 감독용 화면이나 일일 현황 탭을 누르면 -> 시간 먼저 맞추고 -> 화면을 그립니다!
+        if(tabId === 'tab-daily') {
+            autoSetCurrentTime().then(() => renderDailySupervisorMap());
+        } 
+        else if(tabId === 'tab-daily-list') {
+            autoSetCurrentTime().then(() => renderDailyList());
+        }
+        else if(tabId === 'tab-status') {
+            renderStatusTable();
+        }
+        else if(tabId === 'tab-stats') {
+            calculateAndRenderStats(); 
+        }
     }
+
+
+
 
 
 function renderDailySupervisorMap() {
