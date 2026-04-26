@@ -234,13 +234,14 @@
         focusScanner(); 
     }
 
-    async function executeLogic(id, studentName) {
+async function executeLogic(id, studentName) {
         scannerInput.value = ""; nameInput.value = ""; 
         const now = new Date();
         const currentMonthStr = (now.getMonth() + 1) + "월";
         const todayDayEng = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
 
         try {
+            // 1. 이번 달 야자 신청자인지 확인
             const { data: appDataList, error: appError } = await supabaseClient
                 .from('applications')
                 .select('*')
@@ -253,10 +254,32 @@
             }
             
             const appData = appDataList[0];
+            // 2. 오늘 요일 신청자인지 확인
             if (!appData[todayDayEng]) {
                  showReceipt(studentName, "입실 불가", "오늘 신청 아님", "오늘은 야자를 신청한 요일이 아닙니다.", "#dc3545");
                  return; 
             }
+
+            // =========================================================================
+            // 🌟 [추가할 부분] 자율석 학생일 경우, 오늘 발권 내역이 있는지 확인!
+            // =========================================================================
+            if (appData.type === "자율석") {
+                const { data: ticketData, error: ticketError } = await supabaseClient
+                    .from('daily_reservations')
+                    .select('seat_num')
+                    .eq('date', todayStr)
+                    .eq('stu_id', id)
+                    .maybeSingle();
+
+                // 티켓 발권 내역이 없다면 강제 종료 및 에러 메시지 출력
+                if (!ticketData || !ticketData.seat_num) {
+                    showReceipt(studentName, "입실 불가", "자리 미발권", "자율석 발권기에서 먼저 자리를 선택해주세요! 🎟️", "#dc3545");
+                    return; 
+                }
+            }
+            // =========================================================================
+
+
 
             const logId = `${todayStr}_${id}`;
             const { data: logData, error: logError } = await supabaseClient
