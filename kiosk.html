@@ -129,6 +129,12 @@
         }
     }
     fetchSettings();
+    // 🌟 추가: 키오스크가 켜져 있는 동안 1시간마다 명단과 설정을 자동으로 새로 고칩니다.
+setInterval(() => {
+    console.log("실시간 데이터(명단/설정) 동기화 중...");
+    fetchRoster();
+    fetchSettings();
+}, 60 * 60 * 1000); // 60분마다 실행
 
     // ★ 타자 속도 측정을 위해 첫 글자를 입력한 시간 기록
     scannerInput.addEventListener('input', function (e) {
