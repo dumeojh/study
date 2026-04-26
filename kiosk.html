@@ -312,7 +312,7 @@ function confirmSelection(id, name, status) {
 
 
 
-// Supabase에 데이터 저장 (Upsert 방식)
+// Supabase에 데이터 저장 (Insert와 Update 명확히 분리)
 async function saveAttendance(id, name, status, timeObj, existingLog = null) {
     const logId = `${todayStr}_${id}`;
     const timeStr = timeObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
@@ -321,15 +321,34 @@ async function saveAttendance(id, name, status, timeObj, existingLog = null) {
     newHistory.push(`${status} (${timeStr})`);
 
     try {
-        const { error } = await supabaseClient.from('attendance_logs').upsert({
-            id: logId,
-            date: todayStr,
-            stu_id: id,
-            stu_name: name,
-            status: status,
-            last_update_time: timeObj.toISOString(),
-            history: newHistory
-        }, { onConflict: 'id' }); // 🌟 에러 해결의 핵심! (id가 같으면 덮어써라)
+        let error;
+        
+        if (existingLog) {
+            // 🌟 1. 이미 오늘 기록이 있으면 안전하게 '수정(Update)'만 진행
+            const { error: updateErr } = await supabaseClient
+                .from('attendance_logs')
+                .update({
+                    status: status,
+                    last_update_time: timeObj.toISOString(),
+                    history: newHistory
+                })
+                .eq('id', logId);
+            error = updateErr;
+        } else {
+            // 🌟 2. 오늘 첫 스캔이면 '새로 추가(Insert)' 진행
+            const { error: insertErr } = await supabaseClient
+                .from('attendance_logs')
+                .insert([{
+                    id: logId,
+                    date: todayStr,
+                    stu_id: id,
+                    stu_name: name,
+                    status: status,
+                    last_update_time: timeObj.toISOString(),
+                    history: newHistory
+                }]);
+            error = insertErr;
+        }
 
         if(error) throw error;
 
@@ -339,6 +358,7 @@ async function saveAttendance(id, name, status, timeObj, existingLog = null) {
         showReceipt("오류", "저장 실패", "연결 오류", e.message, "#dc3545");
     }
 }
+
 
 function showReceipt(name, status, timeInfo, msg, color, isUrgent = false) { 
     const container = document.querySelector('.kiosk-box');
