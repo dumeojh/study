@@ -330,11 +330,10 @@ async function checkPass() {
     function modifyGrid(a) { saveHistory(); const i = parseInt(document.getElementById('target-index').value)-1; if(i<0)return; if(a==='insertRow'){seatMapData.splice(i,0,Array.from({length:cols},()=>({type:0,label:""}))); rows++;} else if(a==='deleteRow'){seatMapData.splice(i,1); rows--;} else if(a==='insertCol'){seatMapData.forEach(r=>r.splice(i,0,{type:0,label:""})); cols++;} else if(a==='deleteCol'){seatMapData.forEach(r=>r.splice(i,1)); cols--;} drawEditGrid(); }
     function drawEditGrid() { const g = document.getElementById('seat-grid'); g.innerHTML = ''; g.style.gridTemplateColumns = `repeat(${cols}, 42px)`; seatMapData.forEach(row => row.forEach(cell => { const d = document.createElement('div'); d.className = `seat-cell seat-${cell.type}`; d.innerText = cell.label; d.onclick = () => { saveHistory(); if([1,2,5].includes(currentTool)) cell.label = prompt("라벨:", cell.label)||cell.label; cell.type = currentTool; drawEditGrid(); }; g.appendChild(d); })); }
 
-
 // 1. 달력 저장
 async function saveCalendarSchedule() { 
     updateDefaultDays();
-    const { error } = await supabase.from('settings').upsert({
+    const { error } = await supabaseClient.from('settings').upsert({
         key: 'calendarSchedule',
         value: {
             data: JSON.stringify(currentSchedule),
@@ -347,7 +346,7 @@ async function saveCalendarSchedule() {
 
 // 2. 신청 기간 저장
 async function saveApplyPeriod() { 
-    const { error } = await supabase.from('settings').upsert({
+    const { error } = await supabaseClient.from('settings').upsert({
         key: 'applyPeriod',
         value: {
             targetMonth: document.getElementById('apply-target-month').value,
@@ -361,7 +360,7 @@ async function saveApplyPeriod() {
 
 // 3. 도면 배포 저장
 async function saveSeatLayout() { 
-    const { error } = await supabase.from('settings').upsert({
+    const { error } = await supabaseClient.from('settings').upsert({
         key: 'seatLayout',
         value: { rows, cols, grid: JSON.stringify(seatMapData) }
     });
@@ -371,7 +370,7 @@ async function saveSeatLayout() {
 
 // 4. 운영 시간 저장
 async function saveTimeSettings() { 
-    const { error } = await supabase.from('settings').upsert({
+    const { error } = await supabaseClient.from('settings').upsert({
         key: 'schedule',
         value: {
             authMode: document.querySelector('input[name="auth-mode"]:checked').value,
@@ -390,10 +389,11 @@ async function saveTimeSettings() {
     else alert("설정이 저장되었습니다."); 
 }
 
+// 5. 서버에서 데이터 불러오기
 async function loadAllSettings() {
     try {
         // 1. 달력 일정
-        const { data: cal } = await supabase.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
+        const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
         if(cal && cal.value) {
             const calData = cal.value;
             if (calData.data) currentSchedule = JSON.parse(calData.data); 
@@ -407,7 +407,7 @@ async function loadAllSettings() {
         renderCalendar();
 
         // 2. 신청 기간
-        const { data: p } = await supabase.from('settings').select('value').eq('key', 'applyPeriod').maybeSingle();
+        const { data: p } = await supabaseClient.from('settings').select('value').eq('key', 'applyPeriod').maybeSingle();
         if(p && p.value) { 
             document.getElementById('apply-start').value = p.value.start || ""; 
             document.getElementById('apply-end').value = p.value.end || ""; 
@@ -417,7 +417,7 @@ async function loadAllSettings() {
         }
 
         // 3. 기초 명단
-        const { data: r } = await supabase.from('settings').select('value').eq('key', 'roster').maybeSingle();
+        const { data: r } = await supabaseClient.from('settings').select('value').eq('key', 'roster').maybeSingle();
         if(r && r.value) { 
             if(r.value.list) {
                 const list = JSON.parse(r.value.list); 
@@ -427,7 +427,7 @@ async function loadAllSettings() {
         }
 
         // 4. 좌석 도면
-        const { data: s } = await supabase.from('settings').select('value').eq('key', 'seatLayout').maybeSingle();
+        const { data: s } = await supabaseClient.from('settings').select('value').eq('key', 'seatLayout').maybeSingle();
         if(s && s.value) { 
             rows = s.value.rows || 20; 
             cols = s.value.cols || 30; 
@@ -438,7 +438,7 @@ async function loadAllSettings() {
         }
 
         // 5. 운영 시간 및 설정
-        const { data: t } = await supabase.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+        const { data: t } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
         if(t && t.value) { 
             const d = t.value; 
             if (d.authMode) {
@@ -478,8 +478,8 @@ async function loadAllSettings() {
     }
 }
 
-
 //////////////////////////////
+// 6. 엑셀 업로드 처리
 async function handleExcelUpload() {
     const file = document.getElementById('excel-input').files[0]; 
     if(!file) return;
@@ -507,7 +507,7 @@ async function handleExcelUpload() {
         });
         
         // 수파베이스에 엑셀 명단 저장
-        const { error } = await supabase.from('settings').upsert({
+        const { error } = await supabaseClient.from('settings').upsert({
             key: 'roster',
             value: {
                 list: JSON.stringify(roster),
