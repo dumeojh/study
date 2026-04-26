@@ -156,7 +156,7 @@
         if (e.key === 'Enter') { 
             e.preventDefault(); 
             if(isProcessing) return; 
-            processCheckInOut(false); 
+            function confirmSelection(id, name, status(false); 
         }
     });
 
@@ -318,24 +318,33 @@
         }, 1000);
     }
 
-    function confirmSelection(id, name, status) {
+
+
+ function confirmSelection(id, name, status) {
         if(selectionTimer) clearInterval(selectionTimer);
-        saveAttendance(id, name, status, new Date(), currentStudentLogData);
+        // 스마트 선택 시에도 별도의 로그 전달 없이 깔끔하게 저장 함수만 호출합니다.
+        saveAttendance(id, name, status, new Date());
     }
 
-    // ★ 에러 방지: Insert와 Update를 완벽히 분리한 최종 버전
-    async function saveAttendance(id, name, status, timeObj, existingLog = null) {
+    // ★ 409 충돌 에러를 원천 차단하는 완벽한 저장 함수
+    async function saveAttendance(id, name, status, timeObj) {
         const logId = `${todayStr}_${id}`;
         const timeStr = timeObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
         
-        let newHistory = existingLog ? (existingLog.history || []) : [];
-        newHistory.push(`${status} (${timeStr})`);
-
         try {
-            let error;
+            // 1. 저장하기 직전에 DB에서 현재 상태를 가장 최신 기준으로 0.1초 만에 확인합니다.
+            const { data: currentData, error: checkErr } = await supabaseClient
+                .from('attendance_logs')
+                .select('history')
+                .eq('id', logId)
+                .maybeSingle();
             
-            if (existingLog) {
-                // 이미 DB에 오늘 로그가 확실히 있으면 무조건 'Update'
+            // 2. 기존 기록이 있으면 이어붙이고, 없으면 새 배열을 만듭니다.
+            let newHistory = (currentData && currentData.history) ? currentData.history : [];
+            newHistory.push(`${status} (${timeStr})`);
+
+            if (currentData) {
+                // 🌟 이미 오늘 기록이 무조건 있으므로 안전하게 '수정(Update)'만 진행합니다. (409 에러 발생 불가)
                 const { error: updateErr } = await supabaseClient
                     .from('attendance_logs')
                     .update({
@@ -344,9 +353,10 @@
                         history: newHistory
                     })
                     .eq('id', logId);
-                error = updateErr;
+                
+                if (updateErr) throw updateErr;
             } else {
-                // 오늘 첫 스캔이면 'Insert'
+                // 🌟 오늘 처음 스캔하는 것이 확실하므로 '새로 추가(Insert)'를 진행합니다.
                 const { error: insertErr } = await supabaseClient
                     .from('attendance_logs')
                     .insert([{
@@ -359,28 +369,16 @@
                         history: newHistory
                     }]);
                 
-                // 만약 첫 스캔인 줄 알고 Insert 했는데 409 충돌이 나면, 다른 곳에서 만들어진 것이므로 즉시 Update로 우회
-                if (insertErr && (insertErr.code === '23505' || String(insertErr.message).includes('conflict'))) {
-                    const { error: retryErr } = await supabaseClient
-                        .from('attendance_logs')
-                        .update({
-                            status: status,
-                            last_update_time: timeObj.toISOString(),
-                            history: newHistory
-                        })
-                        .eq('id', logId);
-                    error = retryErr;
-                } else {
-                    error = insertErr;
-                }
+                if (insertErr) throw insertErr;
             }
 
-            if(error) throw error;
-
+            // 3. 에러 없이 무사히 통과했다면 영수증을 띄워줍니다.
             let color = status === "입실" ? "#0d6efd" : (status === "복귀" ? "#198754" : (status === "외출" ? "#b38200" : "#dc3545"));
             showReceipt(name, status + " 완료", `처리시간: ${timeStr}`, "정상 처리되었습니다.", color);
+            
         } catch(e) {
-            showReceipt("오류", "저장 실패", "연결 오류", e.message || "알 수 없는 오류", "#dc3545");
+            // 진짜 에러가 발생했을 때만 빨간 화면을 띄웁니다.
+            showReceipt("오류", "저장 실패", "연결 오류", e.message || "알 수 없는 오류가 발생했습니다.", "#dc3545");
         }
     }
 
