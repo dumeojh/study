@@ -781,7 +781,8 @@
         if(tabId === 'tab-daily-list') renderDailyList(); 
     }
 
-    function renderDailySupervisorMap() {
+
+function renderDailySupervisorMap() {
         if(seatMapData.length === 0) return;
         const container = document.getElementById('supervisor-grid');
         container.innerHTML = ''; 
@@ -790,6 +791,9 @@
         const dateStr = document.getElementById('daily-date').value;
         const targetDateObj = new Date(dateStr);
         const dayIdx = targetDateObj.getDay();
+
+        // 🌟 [버그 수정 1] 달력에서 선택한 날짜의 '월'을 추출합니다 (예: "4월")
+        const targetMonthStr = (targetDateObj.getMonth() + 1) + "월";
 
         let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
         let reason = "";
@@ -827,7 +831,8 @@
         });
 
         Object.entries(applicationData).forEach(([docId, d]) => {
-            if(d.type === "고정석" && d[targetDay] && d[targetDay].includes(timeStr) && cellEls[d.seatNum]) {
+            // 🌟 [버그 수정 2] d.targetMonth === targetMonthStr 조건을 추가하여 해당 월 신청자만 도면에 표시!
+            if(d.targetMonth === targetMonthStr && d.type === "고정석" && d[targetDay] && d[targetDay].includes(timeStr) && cellEls[d.seatNum]) {
                 const target = cellEls[d.seatNum]; 
                 const log = attendanceLogsData[String(d.stuId)];
                 target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#1565c0;">${d.stuName}</span>`;
@@ -870,13 +875,18 @@
         });
     }
 
-    function renderDailyList() {
+function renderDailyList() {
         const tbody = document.getElementById('daily-list-body');
         if (!tbody) return;
         tbody.innerHTML = '';
         
         const targetDateStr = document.getElementById('daily-date').value;
-        const targetDay = ['sun','mon','tue','wed','thu','fri','sat'][new Date(targetDateStr).getDay()];
+        const targetDateObj = new Date(targetDateStr);
+        const targetDay = ['sun','mon','tue','wed','thu','fri','sat'][targetDateObj.getDay()];
+        
+        // 🌟 [버그 수정 3] 리스트를 그릴 때도 달력에서 선택한 날짜의 '월'을 추출합니다.
+        const targetMonthStr = (targetDateObj.getMonth() + 1) + "월";
+
         const sortBy = document.getElementById('sort-daily-list').value;
         const filterStatusElement = document.getElementById('filter-daily-status');
         const statusFilter = filterStatusElement ? filterStatusElement.value : 'all';
@@ -886,7 +896,8 @@
         let targetStudentsMap = new Map();
 
         Object.values(applicationData).forEach(app => {
-            if (app.type === "고정석" && app[targetDay]) {
+            // 🌟 [버그 수정 4] app.targetMonth === targetMonthStr 조건을 추가하여 해당 월 신청자만 목록에 포함!
+            if (app.targetMonth === targetMonthStr && app.type === "고정석" && app[targetDay]) {
                 targetStudentsMap.set(String(app.stuId), {
                     stuId: app.stuId, stuName: app.stuName, seatNum: app.seatNum, 
                     appliedTimes: app[targetDay] + "타임", type: "고정석", 
