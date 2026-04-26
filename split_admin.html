@@ -141,18 +141,41 @@
 
         .input-group-item input, .input-group-item select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; height: 42px; }
 
-        .time-input-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  🌟 수정된 폼 레이아웃 (입력칸 크기 축소 및 가운데 정렬) */
+.time-input-row { 
+    display: flex; 
+    gap: 10px; 
+    flex-wrap: wrap; 
+    justify-content: center; /* 가운데로 예쁘게 모아줍니다 */
+}
 
-        .time-item { flex: 1; min-width: 50px; text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
-
-
+.time-item { 
+    flex: 0 1 65px; /* 넓이가 무한정 늘어나지 않도록 고정 크기 부여 */
+    text-align: center; 
+    background: white; 
+    padding: 10px; 
+    border-radius: 8px; 
+    border: 1px solid #ddd; 
+}
 
         /* 월화수목금토일 font-size: 16px; 로 수정 */
+.time-item label { 
+    display: block; 
+    font-weight: bold; 
+    margin-bottom: 5px; 
+    font-size: 14px; /* 글자 크기 살짝 조정 */
+}
 
-        .time-item label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 16px; }
-
-        .time-item input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ddd; border-radius: 4px; text-align: center; font-size: 16px; font-weight: bold; }
-
+.time-item input { 
+    width: 100%; 
+    box-sizing: border-box; 
+    padding: 6px; /* 내부 여백 축소 */
+    border: 1px solid #ddd; 
+    border-radius: 4px; 
+    text-align: center; 
+    font-size: 16px; 
+    font-weight: bold; 
+}
 /* 태그 누락자 표시: 눈에 띄는 주황색 계열 */
 
 .status-missing-tag { 
