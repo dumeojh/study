@@ -112,18 +112,11 @@
 
 <script>
 // =========================================================
-// 1. Firebase 초기화
+// 1. Supabase 초기화
 // =========================================================
-const firebaseConfig = {
-    apiKey: "AIzaSyBP6oveXbGlNn_0XqttHbU2ZDUYhH2nf4c",
-    authDomain: "self-study-project-82bdf.firebaseapp.com",
-    projectId: "self-study-project-82bdf",
-    storageBucket: "self-study-project-82bdf.firebasestorage.app",
-    messagingSenderId: "482006075036",
-    appId: "1:482006075036:web:473445e0f86d48cd22cf59"
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // =========================================================
 // 2. 전역 변수 및 기초 UI 설정
@@ -136,38 +129,32 @@ let takenSeats = [];
 const daysEng = ['mon','tue','wed','thu','fri','sat','sun'];
 
 // =========================================================
-// 3. 신청 기간 확인 함수 (🌟신청 월 강제 고정 기능 추가🌟)
+// 3. 신청 기간 확인 함수 (수파베이스 연동)
 // =========================================================
 async function checkApplyPeriod() {
     const searchBtn = document.getElementById('search-btn');
     const noticeBox = document.querySelector('.notice');
 
     try {
-        const doc = await db.collection("settings").doc("applyPeriod").get();
-        if (doc.exists) {
-            const data = doc.data();
+        const { data, error } = await supabaseClient.from("settings").select("value").eq("key", "applyPeriod").maybeSingle();
+        if (data && data.value) {
+            const pData = data.value;
             
-            // 🌟 1. [추가] 관리자가 설정한 '신청 대상 월' 강제 적용 및 잠금
-            if (data.targetMonth) {
+            // 관리자가 설정한 '신청 대상 월' 강제 적용 및 잠금
+            if (pData.targetMonth) {
                 const monthSelect = document.getElementById('target-month');
-                
-                // 설정된 월로 값 변경
-                monthSelect.value = data.targetMonth;
-                
-                // 학생이 마음대로 바꾸지 못하도록 선택 박스 잠금(비활성화)
+                monthSelect.value = pData.targetMonth;
                 monthSelect.disabled = true; 
-                
-                // 시각적으로 잠겨있음을 알 수 있도록 회색 바탕 처리
                 monthSelect.style.backgroundColor = "#e9ecef";
                 monthSelect.style.color = "#6c757d";
                 monthSelect.style.cursor = "not-allowed";
                 monthSelect.style.border = "1px solid #ced4da";
             }
 
-            // 2. 기존 신청 기간(날짜/시간) 체크 로직
+            // 신청 기간(날짜/시간) 체크 로직
             const now = new Date();
-            const startTime = new Date(data.start);
-            const endTime = new Date(data.end);
+            const startTime = new Date(pData.start);
+            const endTime = new Date(pData.end);
 
             if (now < startTime || now > endTime) {
                 searchBtn.disabled = true;
@@ -175,7 +162,7 @@ async function checkApplyPeriod() {
                 searchBtn.innerText = "현재는 신청 기간이 아닙니다";
                 
                 noticeBox.innerHTML = `⚠️ <b>지금은 신청 기간이 아닙니다.</b><br>
-                    신청 가능 기간: ${data.start.replace('T', ' ')} ~ ${data.end.replace('T', ' ')}`;
+                    신청 가능 기간: ${pData.start.replace('T', ' ')} ~ ${pData.end.replace('T', ' ')}`;
                 noticeBox.style.background = "#f8d7da";
                 noticeBox.style.color = "#721c24";
                 noticeBox.style.borderLeft = "4px solid #dc3545";
@@ -186,26 +173,27 @@ async function checkApplyPeriod() {
 checkApplyPeriod();
 
 // =========================================================
-// 4. 데이터 불러오기 및 요일 표 생성 (🌟수정된 부분🌟)
+// 4. 데이터 불러오기 및 요일 표 생성 (수파베이스 연동)
 // =========================================================
 async function fetchInitialData() {
     try {
-        const rosterDoc = await db.collection("settings").doc("roster").get();
-        if (rosterDoc.exists) serverRoster = JSON.parse(rosterDoc.data().list || "{}");
+        const { data: rosterDoc } = await supabaseClient.from("settings").select("value").eq("key", "roster").maybeSingle();
+        if (rosterDoc && rosterDoc.value && rosterDoc.value.list) {
+            serverRoster = JSON.parse(rosterDoc.value.list || "{}");
+        }
         
-        const layoutDoc = await db.collection("settings").doc("seatLayout").get();
-        if (layoutDoc.exists) {
-            const data = layoutDoc.data();
+        const { data: layoutDoc } = await supabaseClient.from("settings").select("value").eq("key", "seatLayout").maybeSingle();
+        if (layoutDoc && layoutDoc.value) {
+            const data = layoutDoc.value;
             layoutRows = data.rows; layoutCols = data.cols;
             const rawGrid = JSON.parse(data.grid);
             seatMapData = rawGrid.map(row => row.map(c => typeof c === 'number' ? {type: c, label: ""} : c));
         }
 
-        // 🌟 새로 추가됨: 환경설정에서 '기본 운영 요일'을 가져와서 표를 만듭니다!
-        const calDoc = await db.collection("settings").doc("calendarSchedule").get();
-        let activeDays = [1, 2, 3, 4, 5]; // DB에 값이 없으면 기본으로 월~금 세팅 (0:일, 1:월... 6:토)
-        if (calDoc.exists && calDoc.data().defaultDays) {
-            activeDays = calDoc.data().defaultDays;
+        const { data: calDoc } = await supabaseClient.from("settings").select("value").eq("key", "calendarSchedule").maybeSingle();
+        let activeDays = [1, 2, 3, 4, 5]; 
+        if (calDoc && calDoc.value && calDoc.value.defaultDays) {
+            activeDays = calDoc.value.defaultDays;
         }
 
         const daysMap = [
@@ -218,23 +206,22 @@ async function fetchInitialData() {
         const tbody = document.getElementById('schedule-body');
         tbody.innerHTML = ''; 
         
-        // 표에 보여줄 순서: 월(1) -> 화(2) -> 수(3) -> 목(4) -> 금(5) -> 토(6) -> 일(0)
         const displayOrder = [1, 2, 3, 4, 5, 6, 0];
         
         displayOrder.forEach(dayIdx => {
-            // 관리자가 체크한 요일(activeDays)에만 해당 요일의 행(tr)을 화면에 그립니다.
             if (activeDays.includes(dayIdx)) {
                 const dayInfo = daysMap.find(d => d.idx === dayIdx);
                 tbody.innerHTML += `<tr><td><strong>${dayInfo.kor}</strong></td>${[1,2,3].map(t => `<td><input type="checkbox" class="time-chk" id="${dayInfo.eng}-${t}" value="${t}" onchange="validateForm()"><label class="time-label" for="${dayInfo.eng}-${t}">${t}T</label></td>`).join('')}</tr>`;
             }
         });
 
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error("초기 데이터 로딩 에러:", e); }
 }
 fetchInitialData();
 
-// (이 밑으로는 기존의 function buildSeatGrid() 등 코드가 이어집니다.)
-
+// =========================================================
+// 5. 좌석 그리기 및 선택 로직 (수정 없음)
+// =========================================================
 function buildSeatGrid() {
     const container = document.getElementById('student-seat-grid');
     container.style.gridTemplateColumns = `repeat(${layoutCols}, 35px)`;
@@ -276,12 +263,15 @@ function pickSeat(label, cellElement) {
     validateForm();
 }
 
+// =========================================================
+// 6. 학생 정보 조회 및 기존 신청 내역 확인 (수파베이스 연동)
+// =========================================================
 async function verifyStudent() {
     const now = new Date();
     try {
-        const periodDoc = await db.collection("settings").doc("applyPeriod").get();
-        if (periodDoc.exists) {
-            const pData = periodDoc.data();
+        const { data: periodDoc } = await supabaseClient.from("settings").select("value").eq("key", "applyPeriod").maybeSingle();
+        if (periodDoc && periodDoc.value) {
+            const pData = periodDoc.value;
             if (now < new Date(pData.start) || now > new Date(pData.end)) {
                 alert("죄송합니다. 현재는 신청 기간이 아닙니다.");
                 location.reload(); 
@@ -300,29 +290,32 @@ async function verifyStudent() {
     document.getElementById('search-btn').innerText = "조회 중...";
     
     try {
-        const q = await db.collection("applications").where("stuId", "==", id).where("targetMonth", "==", month).get();
+        // 내 신청 내역 조회
+        const { data: myApp, error: myErr } = await supabaseClient.from("applications")
+            .select("*").eq("stu_id", id).eq("target_month", month);
         
-        const takenQuery = await db.collection("applications")
-            .where("targetMonth", "==", month)
-            .where("type", "==", "고정석")
-            .get();
+        // 해당 월의 모든 고정석 예약 좌석 조회
+        const { data: takenApps, error: takenErr } = await supabaseClient.from("applications")
+            .select("id, seat_num").eq("target_month", month).eq("type", "고정석");
         
         takenSeats = []; 
         
         document.getElementById('apply-section').style.display = 'block'; 
         document.getElementById('search-section').style.display = 'none';
 
-        if (!q.empty) {
-            const doc = q.docs[0]; 
-            currentDocId = doc.id; 
-            const data = doc.data();
-            previousSavedSeat = data.seatNum || "";
+        if (myApp && myApp.length > 0) {
+            const data = myApp[0]; 
+            currentDocId = data.id; // Supabase의 UUID
+            previousSavedSeat = data.seat_num || "";
             
-            takenQuery.forEach(tDoc => {
-                if (tDoc.id !== currentDocId && tDoc.data().seatNum) {
-                    takenSeats.push(tDoc.data().seatNum);
-                }
-            });
+            // 다른 사람의 고정석 추출
+            if (takenApps) {
+                takenApps.forEach(tDoc => {
+                    if (tDoc.id !== currentDocId && tDoc.seat_num) {
+                        takenSeats.push(tDoc.seat_num);
+                    }
+                });
+            }
 
             selectType(data.type === "고정석" ? 1 : 0);
             
@@ -340,9 +333,11 @@ async function verifyStudent() {
         } else { 
             currentDocId = null; 
             previousSavedSeat = ""; 
-            takenQuery.forEach(tDoc => {
-                if (tDoc.data().seatNum) takenSeats.push(tDoc.data().seatNum);
-            });
+            if (takenApps) {
+                takenApps.forEach(tDoc => {
+                    if (tDoc.seat_num) takenSeats.push(tDoc.seat_num);
+                });
+            }
             alert(`신규 신청을 진행하세요.`); 
         }
         validateForm(); 
@@ -366,6 +361,9 @@ function validateForm() {
     document.getElementById('submit-btn').disabled = !(selectedType !== null && ok);
 }
 
+// =========================================================
+// 7. 데이터베이스에 저장하기 (수파베이스 연동)
+// =========================================================
 async function submitForm() {
     const btn = document.getElementById('submit-btn'); 
     btn.innerText = "저장 중..."; 
@@ -378,12 +376,11 @@ async function submitForm() {
     const stuNameVal = document.getElementById('stu-name').value;
 
     const p = { 
-        targetMonth: targetMonthVal, 
-        stuId: stuIdVal, 
-        stuName: stuNameVal, 
+        target_month: targetMonthVal, 
+        stu_id: stuIdVal, 
+        stu_name: stuNameVal, 
         type: typeVal, 
-        seatNum: seatNumVal, 
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        seat_num: seatNumVal
     };
 
     daysEng.forEach(d => { 
@@ -391,37 +388,37 @@ async function submitForm() {
     });
 
     try {
-        // 🌟 [수정된 부분] 트랜잭션 밖에서 먼저 중복 좌석을 검사합니다.
+        // 중복 좌석 검사
         if (typeVal === "고정석") {
-            const dupQuery = await db.collection("applications")
-                .where("targetMonth", "==", targetMonthVal)
-                .where("type", "==", "고정석")
-                .where("seatNum", "==", seatNumVal)
-                .get();
+            const { data: dupQuery, error: dupErr } = await supabaseClient.from("applications")
+                .select("id").eq("target_month", targetMonthVal).eq("type", "고정석").eq("seat_num", seatNumVal);
             
             let isTaken = false;
-            dupQuery.forEach(doc => {
-                // 내 기존 신청서가 아니라면 남이 선점한 자리임
-                if (doc.id !== currentDocId) isTaken = true;
-            });
+            if (dupQuery) {
+                dupQuery.forEach(doc => {
+                    if (doc.id !== currentDocId) isTaken = true;
+                });
+            }
 
             if (isTaken) {
-                // 에러를 발생시켜 아래 저장 코드가 실행되지 않게 막음
                 throw "이미 다른 학생이 먼저 선택한 좌석입니다.\n새로고침 후 다른 자리를 선택해주세요.";
             }
         }
 
-        // 🌟 중복 검사 통과 후 안전하게 저장
+        // 중복 검사 통과 후 안전하게 저장
         if (currentDocId) {
-            await db.collection("applications").doc(currentDocId).update(p);
+            // 기존 신청서 수정 (Update)
+            const { error: updateErr } = await supabaseClient.from("applications").update(p).eq("id", currentDocId);
+            if(updateErr) throw updateErr.message;
         } else {
-            await db.collection("applications").add(p);
+            // 신규 신청서 생성 (Insert)
+            const { error: insertErr } = await supabaseClient.from("applications").insert([p]);
+            if(insertErr) throw insertErr.message;
         }
 
         alert("신청이 완료되었습니다."); 
         location.reload();
     } catch(e) { 
-        // 에러 메시지 출력 방식 수정
         alert("오류: " + (typeof e === 'string' ? e : e.message)); 
         btn.innerText = "신청하기"; 
         btn.disabled = false; 
