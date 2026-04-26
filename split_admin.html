@@ -715,7 +715,10 @@
             if (cal.value.defaultDays) globalCalendarSchedule.defaultDays = cal.value.defaultDays;
         }
 
-        // 🌟 [추가된 부분] 4. 운영 시간 데이터를 불러와서 타임 선택창에 시간 표시하기
+
+
+  
+ // 🌟 4. 운영 시간 데이터를 불러와서 타임 선택창에 시간 표시 + 현재 시간 자동 선택
         const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
         if (schedDoc && schedDoc.value) {
             const sched = schedDoc.value;
@@ -724,12 +727,31 @@
             const t2 = sched.t2 || "18:50"; const t2_end = sched.t2_end || "20:10";
             const t3 = sched.t3 || "20:10"; const t3_end = sched.t3_end || "21:30";
             
-            // 드롭다운 메뉴 업데이트
+            // 현재 시간을 분(minute) 단위로 계산합니다.
+            const now = new Date();
+            const currentMin = now.getHours() * 60 + now.getMinutes();
+            
+            // "HH:MM" 문자열을 분 단위 숫자로 바꾸는 함수
+            const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+            
+            // 기본값을 0타임으로 설정
+            let defaultSlot = 0; 
+            
+            // 현재 시간에 맞춰 가장 알맞은 타임 찾기
+            if (currentMin >= timeToMin(t3)) {
+                defaultSlot = 3; 
+            } else if (currentMin >= timeToMin(t2)) {
+                defaultSlot = 2; 
+            } else if (currentMin >= timeToMin(t1)) {
+                defaultSlot = 1; 
+            }
+
+            // 드롭다운 메뉴 업데이트 (defaultSlot과 일치하는 곳에 'selected' 추가)
             document.getElementById('daily-time').innerHTML = `
-                <option value="0">0타임 (정규 일과)</option>
-                <option value="1" selected>1타임 (${t1} ~ ${t1_end})</option>
-                <option value="2">2타임 (${t2} ~ ${t2_end})</option>
-                <option value="3">3타임 (${t3} ~ ${t3_end})</option>
+                <option value="0" ${defaultSlot === 0 ? 'selected' : ''}>0타임 (정규 일과)</option>
+                <option value="1" ${defaultSlot === 1 ? 'selected' : ''}>1타임 (${t1} ~ ${t1_end})</option>
+                <option value="2" ${defaultSlot === 2 ? 'selected' : ''}>2타임 (${t2} ~ ${t2_end})</option>
+                <option value="3" ${defaultSlot === 3 ? 'selected' : ''}>3타임 (${t3} ~ ${t3_end})</option>
             `;
         }
 
