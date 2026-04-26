@@ -152,11 +152,11 @@
         }
     });
 
-    nameInput.addEventListener('keypress', function (e) {
+nameInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') { 
             e.preventDefault(); 
             if(isProcessing) return; 
-            function confirmSelection(id, name, status(false); 
+            processCheckInOut(false); // 정상적인 처리 함수
         }
     });
 
