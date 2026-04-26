@@ -184,7 +184,19 @@
         .tag-home { background: #fff0f0; color: #dc3545; border: 1px solid #f5c2c7; }
 
         
+/* 신청하지 않았으나 현재 자리에 있는 학생용 */
+.seat-unscheduled-present { 
+    background-color: #fd7e14 !important; /* 주황색 */
+    color: white !important; 
+    border: 2px solid #e8590c !important;
+}
 
+/* 🌟 연장/조기 입실 (신청X + 입실O): 주황색 바탕 + 주황 실선 테두리 */
+.status-present-extra { 
+    background: #ffe8d6 !important; 
+    border: 2px solid #fd7e14 !important; 
+    color: #e65100 !important; 
+}
     </style>
 
 </head>
@@ -911,49 +923,79 @@ function renderDailySupervisorMap() {
             });
         });
 
-        Object.entries(applicationData).forEach(([docId, d]) => {
-            // 🌟 [버그 수정 2] d.targetMonth === targetMonthStr 조건을 추가하여 해당 월 신청자만 도면에 표시!
-            if(d.targetMonth === targetMonthStr && d.type === "고정석" && d[targetDay] && d[targetDay].includes(timeStr) && cellEls[d.seatNum]) {
+Object.entries(applicationData).forEach(([docId, d]) => {
+            // 1. 이번 달 고정석이고 도면에 좌석이 있는지 1차 확인 (신청 시간 필터링 제외)
+            if(d.targetMonth === targetMonthStr && d.type === "고정석" && cellEls[d.seatNum]) {
                 const target = cellEls[d.seatNum]; 
                 const log = attendanceLogsData[String(d.stuId)];
-                target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#1565c0;">${d.stuName}</span>`;
                 
-                if (log) {
-                    if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
-                    else if (log.status === "외출") target.classList.add('status-out'); 
-                    else if (log.status === "귀가") target.classList.add('status-finish'); 
-                    else target.classList.add('status-present-fixed'); 
-                } else {
-                    target.classList.add('status-absent'); 
+                // 2. 현재 타임 신청 여부 및 실제 입실(복귀) 상태 확인
+                const isApplied = d[targetDay] && d[targetDay].includes(timeStr);
+                const isPresent = log && (log.status === "입실" || log.status === "복귀");
+
+                // 3. 렌더링 조건: 해당 타임 신청자이거나, 신청은 안 했지만 자리에 있는 경우
+                if (isApplied || isPresent) {
+                    if (!isApplied && isPresent) {
+                        // 🌟 신청 X + 입실 O (연장/조기)
+                        target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#fd7e14; font-weight:bold;">${d.stuName}</span><br><span style="font-size:9px; color:#fd7e14; letter-spacing:-1px;">(연장)</span>`;
+                        target.classList.add('status-present-extra');
+                    } else {
+                        // 기존 로직 (신청 O)
+                        target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#1565c0;">${d.stuName}</span>`;
+                        if (log) {
+                            if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
+                            else if (log.status === "외출") target.classList.add('status-out'); 
+                            else if (log.status === "귀가") target.classList.add('status-finish'); 
+                            else target.classList.add('status-present-fixed'); 
+                        } else {
+                            target.classList.add('status-absent'); 
+                        }
+                    }
+                    target.style.cursor = "pointer";
+                    target.onclick = () => openDailyStatus(d.stuId, d.stuName, d.seatNum, rosterPhones[String(d.stuId)]);
                 }
-                target.style.cursor = "pointer";
-                target.onclick = () => openDailyStatus(d.stuId, d.stuName, d.seatNum, rosterPhones[String(d.stuId)]);
             }
         });
 
-        dailyReservationsData.forEach(d => {
-            if(d.times && d.times.includes(timeStr) && cellEls[d.seatNum]) {
+dailyReservationsData.forEach(d => {
+            // 1. 도면에 유효한 좌석이 있는지만 먼저 확인
+            if(cellEls[d.seatNum]) {
                 const target = cellEls[d.seatNum];
                 const log = attendanceLogsData[String(d.stuId)];
                 
-                target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#2e7d32;">${d.stuName}</span>`;
+                // 2. 신청 여부 및 입실 상태 확인
+                const isApplied = d.times && d.times.includes(timeStr);
+                const isPresent = log && (log.status === "입실" || log.status === "복귀");
 
-                if (log) {
-                    if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
-                    else if (log.status === "외출") target.classList.add('status-out'); 
-                    else if (log.status === "귀가") target.classList.add('status-finish'); 
-                    else target.classList.add('status-present-auto'); 
-                } else {
-                    target.classList.add('status-absent'); 
-                }
+                // 3. 렌더링 조건 체크
+                if (isApplied || isPresent) {
+                    if (!isApplied && isPresent) {
+                        // 🌟 신청 X + 입실 O (연장/조기)
+                        target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#fd7e14; font-weight:bold;">${d.stuName}</span><br><span style="font-size:9px; color:#fd7e14; letter-spacing:-1px;">(연장)</span>`;
+                        target.classList.add('status-present-extra');
+                    } else {
+                        // 기존 로직 (신청 O)
+                        target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#2e7d32;">${d.stuName}</span>`;
+                        if (log) {
+                            if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
+                            else if (log.status === "외출") target.classList.add('status-out'); 
+                            else if (log.status === "귀가") target.classList.add('status-finish'); 
+                            else target.classList.add('status-present-auto'); 
+                        } else {
+                            target.classList.add('status-absent'); 
+                        }
+                    }
 
-                const appEntry = Object.entries(applicationData).find(([id, app]) => String(app.stuId) === String(d.stuId));
-                if (appEntry) {
-                    target.style.cursor = "pointer";
-                    target.onclick = () => openDailyStatus(appEntry[1].stuId, appEntry[1].stuName, d.seatNum, rosterPhones[String(appEntry[1].stuId)]);
+                    const appEntry = Object.entries(applicationData).find(([id, app]) => String(app.stuId) === String(d.stuId));
+                    if (appEntry) {
+                        target.style.cursor = "pointer";
+                        target.onclick = () => openDailyStatus(appEntry[1].stuId, appEntry[1].stuName, d.seatNum, rosterPhones[String(appEntry[1].stuId)]);
+                    }
                 }
             }
         });
+
+
     }
 
 
