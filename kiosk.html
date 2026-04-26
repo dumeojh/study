@@ -62,7 +62,6 @@
     </div>
 </div>
 
-
 <script>
     // 🚨 여기에 선생님의 Supabase 정보를 입력하세요! 🚨
     const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
@@ -143,7 +142,7 @@
             e.preventDefault(); 
             if(isProcessing) return; 
 
-            // ★ 바코드 스캐너 판별: 첫 글자부터 엔터까지 걸린 시간이 200ms 이하(매우 빠름)면 스캐너로 간주
+            // ★ 바코드 스캐너 판별: 입력 속도가 200ms 이하면 스캐너로 간주
             let typeSpeed = Date.now() - firstCharTime;
             let isScanner = (typeSpeed < 200);
 
@@ -152,11 +151,11 @@
         }
     });
 
-nameInput.addEventListener('keypress', function (e) {
+    nameInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') { 
             e.preventDefault(); 
             if(isProcessing) return; 
-            processCheckInOut(false); // 정상적인 처리 함수
+            processCheckInOut(false); 
         }
     });
 
@@ -184,7 +183,6 @@ nameInput.addEventListener('keypress', function (e) {
         let id = convertKorToEng(rawId).toUpperCase(); 
         const nameVal = nameInput.value.trim();
         
-        // 엑셀에 바코드 번호가 등록된 학생이라면 무조건 스캐너로 인식
         if (serverBarcodes[id]) {
             id = serverBarcodes[id];
             isScanner = true;
@@ -204,10 +202,8 @@ nameInput.addEventListener('keypress', function (e) {
             }
             executeLogic(id, studentName);
         } else if (authMode === "2" && !isScanner) {
-            // ★ 핵심 변경점: 2단계 모드이더라도 '키보드 타이핑'일 때만 이름 확인 창을 띄웁니다!
             showNameConfirm(id, studentName);
         } else {
-            // 바코드 스캐너로 찍었거나, 1단계 모드일 때는 즉시 처리!
             executeLogic(id, studentName);
         }
     }
@@ -282,9 +278,9 @@ nameInput.addEventListener('keypress', function (e) {
 
             currentStudentLogData = logData;
 
-            if (lastStatus === "미입실") saveAttendance(id, studentName, "입실", now, logData);
+            if (lastStatus === "미입실") saveAttendance(id, studentName, "입실", now);
             else if (lastStatus === "입실" || lastStatus === "복귀") showSmartSelection(id, studentName); 
-            else if (lastStatus === "외출") saveAttendance(id, studentName, "복귀", now, logData);
+            else if (lastStatus === "외출") saveAttendance(id, studentName, "복귀", now);
             else if (lastStatus === "귀가") showReceipt(studentName, "이미 귀가함", "최종 귀가 처리된 학생입니다.", "관리자에게 문의하세요.", "#6c757d");
 
         } catch (e) { showReceipt("오류", "통신 실패", "연결 상태 확인 요망", e.message, "#dc3545"); }
@@ -318,33 +314,26 @@ nameInput.addEventListener('keypress', function (e) {
         }, 1000);
     }
 
-
-
- function confirmSelection(id, name, status) {
+    function confirmSelection(id, name, status) {
         if(selectionTimer) clearInterval(selectionTimer);
-        // 스마트 선택 시에도 별도의 로그 전달 없이 깔끔하게 저장 함수만 호출합니다.
         saveAttendance(id, name, status, new Date());
     }
 
-    // ★ 409 충돌 에러를 원천 차단하는 완벽한 저장 함수
     async function saveAttendance(id, name, status, timeObj) {
         const logId = `${todayStr}_${id}`;
         const timeStr = timeObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
         
         try {
-            // 1. 저장하기 직전에 DB에서 현재 상태를 가장 최신 기준으로 0.1초 만에 확인합니다.
             const { data: currentData, error: checkErr } = await supabaseClient
                 .from('attendance_logs')
                 .select('history')
                 .eq('id', logId)
                 .maybeSingle();
             
-            // 2. 기존 기록이 있으면 이어붙이고, 없으면 새 배열을 만듭니다.
             let newHistory = (currentData && currentData.history) ? currentData.history : [];
             newHistory.push(`${status} (${timeStr})`);
 
             if (currentData) {
-                // 🌟 이미 오늘 기록이 무조건 있으므로 안전하게 '수정(Update)'만 진행합니다. (409 에러 발생 불가)
                 const { error: updateErr } = await supabaseClient
                     .from('attendance_logs')
                     .update({
@@ -356,7 +345,6 @@ nameInput.addEventListener('keypress', function (e) {
                 
                 if (updateErr) throw updateErr;
             } else {
-                // 🌟 오늘 처음 스캔하는 것이 확실하므로 '새로 추가(Insert)'를 진행합니다.
                 const { error: insertErr } = await supabaseClient
                     .from('attendance_logs')
                     .insert([{
@@ -372,12 +360,10 @@ nameInput.addEventListener('keypress', function (e) {
                 if (insertErr) throw insertErr;
             }
 
-            // 3. 에러 없이 무사히 통과했다면 영수증을 띄워줍니다.
             let color = status === "입실" ? "#0d6efd" : (status === "복귀" ? "#198754" : (status === "외출" ? "#b38200" : "#dc3545"));
             showReceipt(name, status + " 완료", `처리시간: ${timeStr}`, "정상 처리되었습니다.", color);
             
         } catch(e) {
-            // 진짜 에러가 발생했을 때만 빨간 화면을 띄웁니다.
             showReceipt("오류", "저장 실패", "연결 오류", e.message || "알 수 없는 오류가 발생했습니다.", "#dc3545");
         }
     }
@@ -407,7 +393,7 @@ nameInput.addEventListener('keypress', function (e) {
             selectStatus('입실', document.querySelector('.btn-in')); 
             const scannerInput = document.getElementById('scanner-input');
             scannerInput.value = "";
-            isProcessing = false; // 락 해제
+            isProcessing = false; 
             focusScanner();
         }, 2500); 
     }
