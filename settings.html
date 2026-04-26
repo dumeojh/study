@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root { --primary: #007bff; --danger: #dc3545; --success: #28a745; --gray: #6c757d; --warning: #ffc107; }
@@ -221,24 +221,10 @@
 </div>
 
 <script>
-    // 1. Firebase 설정 (안전망 포함)
-    const firebaseConfig = {
-        apiKey: "AIzaSyBP6oveXbGlNn_0XqttHbU2ZDUYhH2nf4c",
-        authDomain: "self-study-project-82bdf.firebaseapp.com",
-        projectId: "self-study-project-82bdf",
-        storageBucket: "self-study-project-82bdf.firebasestorage.app",
-        messagingSenderId: "482006075036",
-        appId: "1:482006075036:web:473445e0f86d48cd22cf59"
-    };
-
-    let db;
-    try {
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
-    } catch (error) {
-        alert("파이어베이스 연결 에러! 인터넷 상태나 스크립트를 확인하세요.");
-        console.error(error);
-    }
+// <script> 태그 시작 부분에 추가 (선생님의 Supabase 정보 입력)
+const SUPABASE_URL = 'https://본인의_수파베이스_URL.supabase.co';
+const SUPABASE_KEY = '본인의_수파베이스_ANON_KEY';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // 전역 변수들
     let currentTool = 0, seatMapData = [], rows = 20, cols = 30, currentSchedule = {}, historyStack = [];
