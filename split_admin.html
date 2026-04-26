@@ -1097,7 +1097,10 @@ function renderDailyList() {
         targetStudents.forEach(st => {
             const log = attendanceLogsData[String(st.stuId)];
             let status = "미입실"; let tagTime = "-"; let statusColor = "var(--danger)"; 
-            let historyHtml = `<span style="color:#aaa; font-size:11px;">스캔 기록 없음</span>`;
+
+
+let historyHtml = `<span style="color:#aaa; font-size:11px;">스캔 기록 없음</span>`;
+            let groupedHistory = { 0: [], 1: [], 2: [], 3: [] }; // 🌟 여기로 꺼냅니다!
 
             if (log) {
                 status = log.status;
@@ -1107,7 +1110,9 @@ function renderDailyList() {
                 }
                 
                 if (log.history && log.history.length > 0) {
-                    let groupedHistory = { 0: [], 1: [], 2: [], 3: [] };
+                    // (let groupedHistory = ... 선언부는 지웠으므로 바로 forEach 시작)
+
+
                     log.history.forEach(h => {
                         const tmMatch = h.match(/(\d{2}:\d{2})/);
                         let slot = 0; 
@@ -1167,36 +1172,71 @@ if (tmMatch) {
 
             if (statusFilter !== "all" && mappedGroup !== statusFilter) return; 
 
+
+// =====================================================================
+            // 🌟 [핵심 수정 부분] 신청 라벨과 현재 상태 라벨 동시 생성
+            // =====================================================================
             let appliedBadges = "";
+            let currentBadges = "";
+
             [0, 1, 2, 3].forEach(t => {
                 const isApplied = st.rawTimes.includes(String(t));
+                const isCurrentSlot = (t === currentSlot);
+                const hasLogs = groupedHistory[t] && groupedHistory[t].length > 0;
+
+                // --- 1. [신청] 라벨 ---
                 if (isApplied) {
                     appliedBadges += `<span style="background:#6c757d; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:bold;">${t}T</span>`;
                 } else {
                     appliedBadges += `<span style="border:1px dashed #adb5bd; color:#adb5bd; background:transparent; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px;">${t}T</span>`;
                 }
+
+                // --- 2. [현재] 라벨 (감독 도면 CSS 완벽 일치) ---
+                let bg = "transparent", border = "1px dashed #adb5bd", fontCol = "#adb5bd", fontWeight = "normal";
+
+                if (isCurrentSlot) {
+                    // 🚨 현재 진행 중인 타임 (도면과 동일한 색상/테두리 적용)
+                    fontWeight = "bold";
+                    if (status === "미입실") {
+                        if (isApplied) { bg = "#fff0f0"; border = "2px dashed #dc3545"; fontCol = "#dc3545"; }
+                    } else if (status === "외출") {
+                        if (isApplied || hasLogs || status === "외출") { bg = "#e0d4f7"; border = "2px dashed #6f42c1"; fontCol = "#4a2785"; }
+                    } else if (status === "귀가" || status === "귀가(누락)") {
+                        if (isApplied) { 
+                            if (status === "귀가(누락)") { bg = "#fff3cd"; border = "3px solid #fd7e14"; fontCol = "#fd7e14"; }
+                            else { bg = "#f8f9fa"; border = "2px solid #6c757d"; fontCol = "#6c757d"; }
+                        }
+                    } else if (status === "입실" || status === "복귀") {
+                        if (isApplied) {
+                            if (st.type === "고정석") { bg = "#fff3cd"; border = "2px solid #ffc107"; fontCol = "#856404"; } // 노란 실선
+                            else { bg = "#d1e7dd"; border = "2px solid #2e7d32"; fontCol = "#0f5132"; } // 초록 실선
+                        } else {
+                            bg = "#ffe8d6"; border = "2px solid #fd7e14"; fontCol = "#e65100"; // 연장(주황 실선)
+                        }
+                    }
+                } else if (t < currentSlot) {
+                    // ⏱️ 지나간 타임
+                    if (isApplied) {
+                        if (status !== "미입실") { bg = "#e9ecef"; border = "1px solid #6c757d"; fontCol = "#495057"; fontWeight = "bold"; } // 출석 인정
+                        else { bg = "#fff0f0"; border = "1px dashed #dc3545"; fontCol = "#dc3545"; } // 결석 (빨간 점선)
+                    } else if (hasLogs) {
+                        bg = "#ffe8d6"; border = "1px solid #fd7e14"; fontCol = "#e65100"; fontWeight = "bold"; // 연장 출석
+                    }
+                } else {
+                    // ⏳ 다가올 타임
+                    if (isApplied) { bg = "transparent"; border = "1px solid #adb5bd"; fontCol = "#6c757d"; }
+                }
+
+                currentBadges += `<span style="background:${bg}; color:${fontCol}; border:${border}; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:${fontWeight};">${t}T</span>`;
             });
-
-            let currentStatusBadge = `<span style="color:${statusColor}; font-weight:bold;">${status}</span>`;
-            let resultText = "진행 중 🏃";
-            let resultColor = "#b38200"; 
-            
-            if (status === "귀가") { resultText = "귀가 완료 🏠"; resultColor = "var(--gray)"; } 
-            else if (status === "귀가(누락)") { resultText = "태그 누락 🚨"; resultColor = "var(--danger)"; } 
-            else if (status === "미입실") { resultText = "결석/미입실 ❌"; resultColor = "var(--danger)"; }
-
-            // 🌟 [수정 부분 3] 좌석 정보 표시 시 '미발권'일 경우 시각적 강조
-            let seatDisplayHtml = st.seatNum;
-            if (st.seatNum === "미발권") {
-                seatDisplayHtml = `<span style="color: #dc3545; font-size: 13px; border: 1px solid #dc3545; padding: 2px 5px; border-radius: 4px; background: #fff0f0;">미발권</span>`;
-            }
 
             let timeBoxHtml = `
                 <div style="text-align: left; margin-top: 8px; font-size: 11px; background: #f8f9fa; padding: 6px; border-radius: 6px; border: 1px solid #e9ecef; width: max-content; margin-left: auto; margin-right: auto;">
                     <div style="margin-bottom: 5px;"><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">신청:</span>${appliedBadges}</div>
-                    <div style="margin-bottom: 5px;"><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">현재:</span>${currentStatusBadge}</div>
+                    <div style="margin-bottom: 5px;"><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">현재:</span>${currentBadges}</div>
                     <div><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">결과:</span><span style="color: ${resultColor}; font-weight: bold;">${resultText}</span></div>
                 </div>`;
+            // =====================================================================
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
