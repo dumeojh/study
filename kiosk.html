@@ -309,6 +309,9 @@ function confirmSelection(id, name, status) {
     saveAttendance(id, name, status, new Date(), currentStudentLogData);
 }
 
+
+
+
 // Supabase에 데이터 저장 (Upsert 방식)
 async function saveAttendance(id, name, status, timeObj, existingLog = null) {
     const logId = `${todayStr}_${id}`;
@@ -326,7 +329,7 @@ async function saveAttendance(id, name, status, timeObj, existingLog = null) {
             status: status,
             last_update_time: timeObj.toISOString(),
             history: newHistory
-        });
+        }, { onConflict: 'id' }); // 🌟 에러 해결의 핵심! (id가 같으면 덮어써라)
 
         if(error) throw error;
 
