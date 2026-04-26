@@ -319,12 +319,16 @@
         saveAttendance(id, name, status, new Date());
     }
 
+
+
+// ★ 자물쇠가 풀린 DB를 위한 완벽한 덮어쓰기 저장 함수
     async function saveAttendance(id, name, status, timeObj) {
         const logId = `${todayStr}_${id}`;
         const timeStr = timeObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
         
         try {
-            const { data: currentData, error: checkErr } = await supabaseClient
+            // 1. 기존 로그 가져오기 (이제 자물쇠가 풀려서 완벽하게 가져옵니다!)
+            const { data: currentData } = await supabaseClient
                 .from('attendance_logs')
                 .select('history')
                 .eq('id', logId)
@@ -333,32 +337,20 @@
             let newHistory = (currentData && currentData.history) ? currentData.history : [];
             newHistory.push(`${status} (${timeStr})`);
 
-            if (currentData) {
-                const { error: updateErr } = await supabaseClient
-                    .from('attendance_logs')
-                    .update({
-                        status: status,
-                        last_update_time: timeObj.toISOString(),
-                        history: newHistory
-                    })
-                    .eq('id', logId);
-                
-                if (updateErr) throw updateErr;
-            } else {
-                const { error: insertErr } = await supabaseClient
-                    .from('attendance_logs')
-                    .insert([{
-                        id: logId,
-                        date: todayStr,
-                        stu_id: id,
-                        stu_name: name,
-                        status: status,
-                        last_update_time: timeObj.toISOString(),
-                        history: newHistory
-                    }]);
-                
-                if (insertErr) throw insertErr;
-            }
+            // 2. 덮어쓰기 (Upsert: 있으면 수정, 없으면 새로 추가를 DB가 알아서 처리)
+            const { error } = await supabaseClient
+                .from('attendance_logs')
+                .upsert({
+                    id: logId,
+                    date: todayStr,
+                    stu_id: id,
+                    stu_name: name,
+                    status: status,
+                    last_update_time: timeObj.toISOString(),
+                    history: newHistory
+                }); 
+            
+            if (error) throw error;
 
             let color = status === "입실" ? "#0d6efd" : (status === "복귀" ? "#198754" : (status === "외출" ? "#b38200" : "#dc3545"));
             showReceipt(name, status + " 완료", `처리시간: ${timeStr}`, "정상 처리되었습니다.", color);
