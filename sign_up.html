@@ -362,7 +362,7 @@ function validateForm() {
 }
 
 // =========================================================
-// 7. 데이터베이스에 저장하기 (수파베이스 연동)
+// 7. 데이터베이스에 저장하기 (수파베이스 연동 - Upsert 적용)
 // =========================================================
 async function submitForm() {
     const btn = document.getElementById('submit-btn'); 
@@ -372,8 +372,8 @@ async function submitForm() {
     const targetMonthVal = document.getElementById('target-month').value;
     const typeVal = selectedType === 1 ? "고정석" : "자율석";
     const seatNumVal = selectedType === 1 ? selectedSeatId : "";
-    const stuIdVal = document.getElementById('stu-id').value;
-    const stuNameVal = document.getElementById('stu-name').value;
+    const stuIdVal = document.getElementById('stu-id').value.trim();
+    const stuNameVal = document.getElementById('stu-name').value.trim();
 
     const p = { 
         target_month: targetMonthVal, 
@@ -388,15 +388,15 @@ async function submitForm() {
     });
 
     try {
-        // 중복 좌석 검사
+        // 1. 중복 좌석 검사 (내가 아닌 다른 사람이 고정석을 먼저 선점했는지 확인)
         if (typeVal === "고정석") {
             const { data: dupQuery, error: dupErr } = await supabaseClient.from("applications")
-                .select("id").eq("target_month", targetMonthVal).eq("type", "고정석").eq("seat_num", seatNumVal);
+                .select("stu_id").eq("target_month", targetMonthVal).eq("type", "고정석").eq("seat_num", seatNumVal);
             
             let isTaken = false;
             if (dupQuery) {
                 dupQuery.forEach(doc => {
-                    if (doc.id !== currentDocId) isTaken = true;
+                    if (doc.stu_id !== stuIdVal) isTaken = true; 
                 });
             }
 
@@ -405,16 +405,13 @@ async function submitForm() {
             }
         }
 
-        // 중복 검사 통과 후 안전하게 저장
-        if (currentDocId) {
-            // 기존 신청서 수정 (Update)
-            const { error: updateErr } = await supabaseClient.from("applications").update(p).eq("id", currentDocId);
-            if(updateErr) throw updateErr.message;
-        } else {
-            // 신규 신청서 생성 (Insert)
-            const { error: insertErr } = await supabaseClient.from("applications").insert([p]);
-            if(insertErr) throw insertErr.message;
-        }
+        // 2. 수파베이스 덮어쓰기(upsert) 사용
+        // target_month와 stu_id가 같으면 기존 데이터를 덮어쓰고, 없으면 새로 저장합니다.
+        const { error: upsertErr } = await supabaseClient.from("applications").upsert(p, {
+            onConflict: 'target_month, stu_id'
+        });
+
+        if(upsertErr) throw upsertErr.message;
 
         alert("신청이 완료되었습니다."); 
         location.reload();
