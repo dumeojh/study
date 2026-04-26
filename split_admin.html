@@ -731,15 +731,18 @@
 
 
 
-  
- // 🌟 4. 운영 시간 데이터를 불러와서 타임 선택창에 시간 표시 + 현재 시간 자동 선택
-// 🌟 수정: 서버에서 가져온 실제 시간을 전역 변수에 저장합니다.
-const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
-if (schedDoc && schedDoc.value) {
-    const sched = schedDoc.value;
-    currentSchedule.t1 = sched.t1 || "16:00";
-    currentSchedule.t2 = sched.t2 || "18:50";
-    currentSchedule.t3 = sched.t3 || "20:10";
+// 🌟 4. 운영 시간 데이터를 불러와서 타임 선택창에 시간 표시 + 현재 시간 자동 선택
+        const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+        if (schedDoc && schedDoc.value) {
+            const sched = schedDoc.value;
+            currentSchedule.t1 = sched.t1 || "16:00";
+            currentSchedule.t2 = sched.t2 || "18:50";
+            currentSchedule.t3 = sched.t3 || "20:10";
+            
+            // 💡 추가: 드롭다운 메뉴 표시에 사용할 종료 시간 변수
+            const t1_end = sched.t1_end || "18:10";
+            const t2_end = sched.t2_end || "20:10";
+            const t3_end = sched.t3_end || "21:30";
             
             // 현재 시간을 분(minute) 단위로 계산합니다.
             const now = new Date();
@@ -751,23 +754,25 @@ if (schedDoc && schedDoc.value) {
             // 기본값을 0타임으로 설정
             let defaultSlot = 0; 
             
-            // 현재 시간에 맞춰 가장 알맞은 타임 찾기
-            if (currentMin >= timeToMin(t3)) {
+            // 💡 수정: 선언되지 않은 t3 대신 currentSchedule.t3 사용
+            if (currentMin >= timeToMin(currentSchedule.t3)) {
                 defaultSlot = 3; 
-            } else if (currentMin >= timeToMin(t2)) {
+            } else if (currentMin >= timeToMin(currentSchedule.t2)) {
                 defaultSlot = 2; 
-            } else if (currentMin >= timeToMin(t1)) {
+            } else if (currentMin >= timeToMin(currentSchedule.t1)) {
                 defaultSlot = 1; 
             }
 
-            // 드롭다운 메뉴 업데이트 (defaultSlot과 일치하는 곳에 'selected' 추가)
+            // 💡 수정: 변수를 정확하게 매칭하여 HTML 생성
             document.getElementById('daily-time').innerHTML = `
                 <option value="0" ${defaultSlot === 0 ? 'selected' : ''}>0타임 (정규 일과)</option>
-                <option value="1" ${defaultSlot === 1 ? 'selected' : ''}>1타임 (${t1} ~ ${t1_end})</option>
-                <option value="2" ${defaultSlot === 2 ? 'selected' : ''}>2타임 (${t2} ~ ${t2_end})</option>
-                <option value="3" ${defaultSlot === 3 ? 'selected' : ''}>3타임 (${t3} ~ ${t3_end})</option>
+                <option value="1" ${defaultSlot === 1 ? 'selected' : ''}>1타임 (${currentSchedule.t1} ~ ${t1_end})</option>
+                <option value="2" ${defaultSlot === 2 ? 'selected' : ''}>2타임 (${currentSchedule.t2} ~ ${t2_end})</option>
+                <option value="3" ${defaultSlot === 3 ? 'selected' : ''}>3타임 (${currentSchedule.t3} ~ ${t3_end})</option>
             `;
         }
+
+
 
         // 5. 신청 내역 데이터
         const { data: apps } = await supabaseClient.from('applications').select('*');
