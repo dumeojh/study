@@ -221,16 +221,17 @@
 </div>
 
 <script>
-// <script> 태그 시작 부분에 추가 (선생님의 Supabase 정보 입력)
-const SUPABASE_URL = 'https://본인의_수파베이스_URL.supabase.co';
-const SUPABASE_KEY = '본인의_수파베이스_ANON_KEY';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 
     // 전역 변수들
     let currentTool = 0, seatMapData = [], rows = 20, cols = 30, currentSchedule = {}, historyStack = [];
     let defaultOperatingDays = [1, 2, 3, 4, 5]; 
 
- async function checkPass() {
+
+async function checkPass() {
     const email = document.getElementById('email-input').value.trim();
     const pass = document.getElementById('pass-input').value.trim();
     
@@ -240,15 +241,14 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     }
     
     try {
-        // 수파베이스 로그인 요청
-        const { data, error } = await supabase.auth.signInWithPassword({
+        // supabaseClient 로 변경
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
             email: email,
             password: pass,
         });
         
-        if (error) throw error; // 에러가 있으면 catch로 넘김
+        if (error) throw error; 
         
-        // 로그인 성공 시 화면 열기
         document.getElementById('auth-overlay').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         loadAllSettings();
@@ -478,6 +478,8 @@ async function loadAllSettings() {
     }
 }
 
+
+//////////////////////////////
 async function handleExcelUpload() {
     const file = document.getElementById('excel-input').files[0]; 
     if(!file) return;
