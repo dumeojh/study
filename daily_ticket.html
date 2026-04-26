@@ -105,194 +105,158 @@
 </div>
 
 <script>
+    // =========================================================
+    // 1. Supabase 초기화
+    // =========================================================
+    const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let schoolSchedule = null; // 운영 시간 저장용
-    
-    // --- 파이어베이스 설정 ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyBP6oveXbGlNn_0XqttHbU2ZDUYhH2nf4c",
-        authDomain: "self-study-project-82bdf.firebaseapp.com",
-        projectId: "self-study-project-82bdf",
-        storageBucket: "self-study-project-82bdf.firebasestorage.app",
-        messagingSenderId: "482006075036",
-        appId: "1:482006075036:web:473445e0f86d48cd22cf59"
-    };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    // 전역 변수
+    let schoolSchedule = null; 
     let serverRoster = {}; 
     let seatMapData = []; let layoutRows = 0; let layoutCols = 0;
     
     let todayObj = new Date();
-    // 한국 시간 기준 날짜 문자열 생성 (YYYY-MM-DD)
     const todayStr = todayObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); 
     const currentMonthStr = (todayObj.getMonth() + 1) + "월";
     const daysEng = ['sun','mon','tue','wed','thu','fri','sat'];
     const todayDayEng = daysEng[todayObj.getDay()];
 
-    // 화면 상단 날짜 표시
     const daysKor = ['일','월','화','수','목','금','토'];
     document.getElementById('today-date-display').innerText = `${todayObj.getFullYear()}년 ${todayObj.getMonth()+1}월 ${todayObj.getDate()}일 (${daysKor[todayObj.getDay()]}요일)`;
 
-    let studentSchedule = ""; // 오늘 하기로 한 타임 (예: "1,2")
+    let studentSchedule = ""; 
     let selectedSeatId = "";
-    let todayReservations = []; // 오늘 다른 학생들이 예약한 자율석 정보
+    let todayReservations = []; 
 
-// 1. 초기 데이터 로딩 (명단 + 도면 + 오늘의 예약 내역 + 공지사항)
+    // =========================================================
+    // 2. 초기 데이터 로딩 (설정, 명단, 도면, 오늘 예약내역)
+    // =========================================================
     async function fetchInitialData() {
-        const schedDoc = await db.collection("settings").doc("schedule").get();
-        if (schedDoc.exists) {
-            schoolSchedule = schedDoc.data();
-            
-            // 🌟 [새로 추가된 부분] 환경설정에서 가져온 공지사항을 화면에 뿌려줍니다.
-            // 만약 선생님이 공지사항을 비워두셨다면 || 뒤에 있는 기본 문구가 출력됩니다.
-            document.getElementById('main-notice').innerText = schoolSchedule.ticket_notice || "자율석 신청 학생만 이용할 수 있습니다.";
-        }
-
         try {
-            const rosterDoc = await db.collection("settings").doc("roster").get();
-            if (rosterDoc.exists) serverRoster = JSON.parse(rosterDoc.data().list || "{}");
+            // 1. 운영 시간 및 공지사항
+            const { data: schedDoc } = await supabaseClient.from("settings").select("value").eq("key", "schedule").maybeSingle();
+            if (schedDoc && schedDoc.value) {
+                schoolSchedule = schedDoc.value;
+                document.getElementById('main-notice').innerText = schoolSchedule.ticket_notice || "자율석 신청 학생만 이용할 수 있습니다.";
+            }
+
+            // 2. 기초 명단
+            const { data: rosterDoc } = await supabaseClient.from("settings").select("value").eq("key", "roster").maybeSingle();
+            if (rosterDoc && rosterDoc.value) {
+                serverRoster = JSON.parse(rosterDoc.value.list || "{}");
+            }
             
-            const layoutDoc = await db.collection("settings").doc("seatLayout").get();
-            if (layoutDoc.exists) {
-                const data = layoutDoc.data();
+            // 3. 좌석 도면
+            const { data: layoutDoc } = await supabaseClient.from("settings").select("value").eq("key", "seatLayout").maybeSingle();
+            if (layoutDoc && layoutDoc.value) {
+                const data = layoutDoc.value;
                 layoutRows = data.rows; layoutCols = data.cols;
                 seatMapData = JSON.parse(data.grid).map(row => row.map(c => typeof c === 'number' ? {type: c, label: ""} : c));
             }
 
-// [수정된 코드] 오늘 날짜 문서 단 1개만 읽어오기 (읽기 횟수 획기적 감소)
-            const resDoc = await db.collection("daily_reservations_v2").doc(todayStr).get();
-            if (resDoc.exists) {
-                // Object.values를 통해 맵 형태의 데이터를 기존 코드와 호환되는 배열 형태로 변환
-                todayReservations = Object.values(resDoc.data()); 
-            } else {
-                todayReservations = [];
+            // 4. 오늘의 발권 내역 모두 가져오기
+            const { data: resData } = await supabaseClient.from("daily_reservations").select("*").eq("date", todayStr);
+            if (resData) {
+                todayReservations = resData;
             }
 
         } catch(e) { console.error("데이터 로드 에러:", e); }
     }
     fetchInitialData();
 
+    // =========================================================
+    // 3. 발권 자격 확인 및 조회
+    // =========================================================
+    async function verifyForTicket() {
+        const btn = document.getElementById('login-btn');
+        const id = document.getElementById('stu-id').value.trim();
+        const name = document.getElementById('stu-name').value.trim();
 
+        if (!id || !name) return alert("학번과 이름을 모두 입력해주세요.");
 
-    
-async function verifyForTicket() {
-    // 1. 버튼 및 입력값 초기 선언 (Reference Error 방지)
-    const btn = document.getElementById('login-btn');
-    const id = document.getElementById('stu-id').value.trim();
-    const name = document.getElementById('stu-name').value.trim();
+        // [운영 시간 제약 확인]
+        if (schoolSchedule) {
+            const now = new Date();
+            const currentMin = now.getHours() * 60 + now.getMinutes();
 
-    // 2. 기본 입력 유효성 검사
-    if (!id || !name) {
-        alert("학번과 이름을 모두 입력해주세요.");
-        return;
-    }
-
-// 3. [운영 시간 제약 확인 - 환경설정 연동]
-    if (schoolSchedule) {
-        const now = new Date();
-        // 현재 시간을 '분(minute)' 단위로 변환합니다. (예: 오후 4시 30분 -> 16*60 + 30 = 990분)
-        const currentMin = now.getHours() * 60 + now.getMinutes();
-
-        // 환경설정에서 저장한 1타임 시작 시간과 3타임 종료 시간을 가져옵니다.
-        const [t1H, t1M] = schoolSchedule.t1.split(':').map(Number);
-        const [endH, endM] = schoolSchedule.t3_end.split(':').map(Number); 
-        
-        // 🌟 [핵심 변경] 환경설정에서 설정한 '발권 시작 전 리드타임(분)'을 가져옵니다. (없으면 기본값 30)
-        const leadTime = parseInt(schoolSchedule.ticket_lead_time || "30");
-        
-        // 1타임 시작 시간에서 리드타임(분)을 빼서 실제 '발권 시작 시간'을 계산합니다.
-        const startMin = (t1H * 60 + t1M) - leadTime; 
-        // 발권 마감 시간은 3타임 종료 시간과 동일합니다.
-        const endMin = endH * 60 + endM;
-
-        // 현재 시간이 발권 시작 시간보다 전이거나, 종료 시간보다 후라면 차단합니다.
-        if (currentMin < startMin || currentMin > endMin) {
-            // 학생에게 보여줄 알림창을 위해, 분 단위로 된 시간을 다시 "16:30" 형식의 문자로 바꿉니다.
-            const startH = Math.floor(startMin / 60);
-            const startM = startMin % 60;
-            // padStart(2, '0')은 숫자가 한 자리일 때 앞에 '0'을 붙여줍니다. (예: 9분 -> 09분)
-            const startTimeStr = `${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}`;
+            const [t1H, t1M] = schoolSchedule.t1.split(':').map(Number);
+            const [endH, endM] = schoolSchedule.t3_end.split(':').map(Number); 
             
-            // 학생 화면에 띄울 경고창입니다.
-            alert(`지금은 발권 가능 시간이 아닙니다.\n오늘 발권 가능 시간: ${startTimeStr} ~ ${schoolSchedule.t3_end}`);
-            return; // 여기서 함수를 종료하여 뒤의 명단 확인 단계로 넘어가지 못하게 막습니다.
+            const leadTime = parseInt(schoolSchedule.ticket_lead_time || "30");
+            const startMin = (t1H * 60 + t1M) - leadTime; 
+            const endMin = endH * 60 + endM;
+
+            if (currentMin < startMin || currentMin > endMin) {
+                const startH = Math.floor(startMin / 60);
+                const startM = startMin % 60;
+                const startTimeStr = `${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}`;
+                alert(`지금은 발권 가능 시간이 아닙니다.\n오늘 발권 가능 시간: ${startTimeStr} ~ ${schoolSchedule.t3_end}`);
+                return; 
+            }
         }
-    }
 
-    // 4. 명단 확인 및 상태 업데이트
-    if (serverRoster[id] !== name) {
-        alert("명단에 없거나 학번/이름이 일치하지 않습니다.");
-        return;
-    }
-
-    btn.innerText = "확인 중..."; 
-    btn.disabled = true;
-
-    try {
-        // 5. 이번 달 자율학습 신청 내역 확인
-        const q = await db.collection("applications")
-            .where("stuId", "==", id)
-            .where("targetMonth", "==", currentMonthStr)
-            .get();
-
-        if (q.empty) {
-            alert(`🚨 ${currentMonthStr} 자율학습 신청 내역이 없습니다.`);
-            btn.innerText = "조회하기"; btn.disabled = false;
+        // 명단 확인
+        if (serverRoster[id] !== name) {
+            alert("명단에 없거나 학번/이름이 일치하지 않습니다.");
             return;
         }
 
-        const data = q.docs[0].data();
+        btn.innerText = "확인 중..."; 
+        btn.disabled = true;
 
-        // 6. 신청 종류 확인 (고정석 학생은 발권 불필요)
-        if (data.type !== "자율석") {
-            alert("🚨 고정석 신청 학생입니다.\n고정석은 매일 발권할 필요 없이 지정된 자리로 바로 가면 됩니다.");
+        try {
+            // 이번 달 신청 내역 확인
+            const { data: apps, error } = await supabaseClient.from("applications")
+                .select("*").eq("stu_id", id).eq("target_month", currentMonthStr);
+
+            if (!apps || apps.length === 0) {
+                alert(`🚨 ${currentMonthStr} 자율학습 신청 내역이 없습니다.`);
+                btn.innerText = "조회하기"; btn.disabled = false; return;
+            }
+
+            const data = apps[0];
+
+            if (data.type !== "자율석") {
+                alert("🚨 고정석 신청 학생입니다.\n고정석은 매일 발권할 필요 없이 지정된 자리로 바로 가면 됩니다.");
+                btn.innerText = "조회하기"; btn.disabled = false; return;
+            }
+
+            studentSchedule = data[todayDayEng]; 
+            if (!studentSchedule) {
+                alert("오늘은 자율학습을 신청한 요일이 아닙니다. 일정을 확인해주세요! 😊");
+                btn.innerText = "조회하기"; btn.disabled = false; return;
+            }
+
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('ticket-section').style.display = 'block';
+            
+            document.getElementById('student-info').innerHTML = `
+                <strong>${name} 학생, 환영합니다!</strong><br>
+                <span style="font-size:14px; color:#666;">오늘 예정된 자습: [ ${studentSchedule} ] 타임</span>
+            `;
+
+            // 중복 예약(이미 발권) 검사
+            const myTicket = todayReservations.find(r => r.stu_id === id);
+            if (myTicket) {
+                document.getElementById('map-area').style.display = 'none';
+                document.getElementById('my-ticket-area').style.display = 'block';
+                document.getElementById('my-seat-name').innerText = myTicket.seat_num;
+                document.getElementById('my-time-info').innerText = `${myTicket.times} 타임`;
+            } else {
+                buildTicketGrid();
+            }
+
+        } catch(e) {
+            console.error("조회 오류:", e);
+            alert("데이터를 조회하는 중 오류가 발생했습니다: " + e.message);
             btn.innerText = "조회하기"; btn.disabled = false;
-            return;
         }
-
-        // 7. 오늘(해당 요일) 자습 신청 여부 확인
-        studentSchedule = data[todayDayEng]; // 예: data['mon'] -> "1,2"
-        if (!studentSchedule) {
-            alert("오늘은 자율학습을 신청한 요일이 아닙니다. 일정을 확인해주세요! 😊");
-            btn.innerText = "조회하기"; btn.disabled = false;
-            return;
-        }
-
-        // 8. 발권 자격 증명 완료 -> 화면 전환
-        document.getElementById('login-section').style.display = 'none';
-        document.getElementById('ticket-section').style.display = 'block';
-        
-        document.getElementById('student-info').innerHTML = `
-            <strong>${name} 학생, 환영합니다!</strong><br>
-            <span style="font-size:14px; color:#666;">오늘 예정된 자습: [ ${studentSchedule} ] 타임</span>
-        `;
-
-        // 9. 오늘 이미 발권했는지 중복 예약 검사
-        const myTicket = todayReservations.find(r => r.stuId === id);
-        if (myTicket) {
-            // 이미 발권한 내역이 있음 -> 티켓 화면 바로 표시
-            document.getElementById('map-area').style.display = 'none';
-            document.getElementById('my-ticket-area').style.display = 'block';
-            document.getElementById('my-seat-name').innerText = myTicket.seatNum;
-            document.getElementById('my-time-info').innerText = `${myTicket.times} 타임`;
-        } else {
-            // 아직 발권 전 -> 좌석 선택 도면 그리기
-            buildTicketGrid();
-        }
-
-    } catch(e) {
-        console.error("조회 오류:", e);
-        alert("데이터를 조회하는 중 오류가 발생했습니다: " + e.message);
-        btn.innerText = "조회하기";
-        btn.disabled = false;
     }
-}
 
-
-    
-    // 3. 자율석 전용 좌석표 그리기
+    // =========================================================
+    // 4. 자율석 도면 그리기
+    // =========================================================
     function buildTicketGrid() {
         const container = document.getElementById('ticket-seat-grid');
         container.style.gridTemplateColumns = `repeat(${layoutCols}, 45px)`;
@@ -304,20 +268,16 @@ async function verifyForTicket() {
                 const div = document.createElement('div');
                 div.className = 'seat-cell';
                 
-                // 자율석(2)인 경우만 선택 가능하도록 로직 적용
                 if (cellData.type === 2) {
                     const seatLabel = cellData.label || `자율-${r+1}-${c+1}`;
                     div.innerText = seatLabel;
                     
-                    // 타임 겹침 검사 (내가 신청한 타임과, 이 자리를 이미 예약한 학생의 타임이 겹치는가?)
                     let isTaken = false;
                     const myTimes = studentSchedule.split(',');
                     
-                    // 이 좌석에 대한 오늘의 모든 예약 내역 뒤지기
-                    const seatReservations = todayReservations.filter(res => res.seatNum === seatLabel);
+                    const seatReservations = todayReservations.filter(res => res.seat_num === seatLabel);
                     for (let res of seatReservations) {
                         const bookedTimes = res.times.split(',');
-                        // 교집합이 하나라도 있으면 사용 불가 (겹침)
                         const overlap = myTimes.some(t => bookedTimes.includes(t));
                         if (overlap) { isTaken = true; break; }
                     }
@@ -329,9 +289,8 @@ async function verifyForTicket() {
                         div.onclick = () => pickTicketSeat(seatLabel, div);
                     }
                 } else if (cellData.type === 0) {
-                    div.classList.add('seat-empty'); // 통로
+                    div.classList.add('seat-empty');
                 } else {
-                    // 고정석(1), 벽(3), 문(4), 특수(5)는 회색으로 비활성화 처리
                     div.classList.add('seat-static');
                     div.innerText = cellData.label || "";
                 }
@@ -348,29 +307,29 @@ async function verifyForTicket() {
         document.getElementById('issue-btn').innerText = `[ ${label} ] 자리로 발권하기`;
     }
 
-    // 4. 발권 확정 (서버 전송)
+    // =========================================================
+    // 5. 서버에 발권 내역 저장 (수파베이스)
+    // =========================================================
     async function issueTicket() {
         const btn = document.getElementById('issue-btn');
         btn.innerText = "발권 처리 중..."; btn.disabled = true;
+        const stuId = document.getElementById('stu-id').value.trim();
+        const stuName = document.getElementById('stu-name').value.trim();
 
         const ticketData = {
-            date: todayStr, // YYYY-MM-DD
-            stuId: document.getElementById('stu-id').value.trim(),
-            stuName: document.getElementById('stu-name').value.trim(),
-            seatNum: selectedSeatId,
-            times: studentSchedule, // 예: "1,2"
-            timestamp: new Date()
+            date: todayStr, 
+            stu_id: stuId,
+            stu_name: stuName,
+            seat_num: selectedSeatId,
+            times: studentSchedule 
         };
 
         try {
-            // daily_reservations 컬렉션에 새 문서 추가
-// [수정된 코드] 문서 추가(add) 대신, 오늘 날짜 문서 1개에 학번을 Key로 덮어쓰기(merge)
-            const stuId = document.getElementById('stu-id').value.trim();
-            await db.collection("daily_reservations_v2").doc(todayStr).set({
-                [stuId]: ticketData 
-            }, { merge: true });
+            // daily_reservations 테이블에 새 문서 추가 (중복 시 덮어쓰기)
+            const { error } = await supabaseClient.from("daily_reservations").upsert(ticketData, { onConflict: 'date, stu_id' });
             
-            // 시각적 피드백을 위해 내 티켓 화면으로 바로 넘기기
+            if (error) throw error;
+            
             document.getElementById('map-area').style.display = 'none';
             document.getElementById('my-ticket-area').style.display = 'block';
             document.getElementById('my-seat-name').innerText = selectedSeatId;
