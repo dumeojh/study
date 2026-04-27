@@ -184,6 +184,7 @@
                     <th>학급 (반)</th>
                     <th>신청 인원 (명)</th>
                     <th>월간 누적 신청 타임 (회)</th>
+                    <th>월간 누적 출석 타임 (회)</th>
                 </tr>
             </thead>
             <tbody id="class-stat-body">
@@ -450,7 +451,8 @@
         tbody.innerHTML = '';
 
         if (!applicationData || applicationData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="3" style="color:#6c757d; padding:20px;">해당 월의 신청 데이터가 없습니다.</td></tr>`;
+            // 🌟 열이 4개로 늘어났으므로 colspan="4"로 수정
+            tbody.innerHTML = `<tr><td colspan="4" style="color:#6c757d; padding:20px;">해당 월의 신청 데이터가 없습니다.</td></tr>`;
             return;
         }
 
@@ -467,7 +469,8 @@
             const className = `${grade}학년 ${classNum}반`;
 
             if (!classStats[className]) {
-                classStats[className] = { students: new Set(), totalTimes: 0, orderCode: parseInt(classCode) };
+                // 🌟 출석 횟수(attendedTimes) 저장 공간 추가
+                classStats[className] = { students: new Set(), totalTimes: 0, attendedTimes: 0, orderCode: parseInt(classCode) };
             }
             classStats[className].students.add(stuIdStr);
         });
@@ -483,6 +486,9 @@
             }
 
             if (isOperating) {
+                // 🌟 해당 날짜의 출결 기록 불러오기
+                const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
+                
                 applicationData.forEach(app => {
                     if (app[dayKey]) {
                         const stuIdStr = String(app.stu_id);
@@ -494,6 +500,12 @@
                         const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
                         if (classStats[className]) {
                             classStats[className].totalTimes += timesCount;
+                            
+                            // 🌟 학생의 출결 기록 확인 후 출석 타임 누적
+                            const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
+                            if (studentLog && studentLog.status !== "미입실") {
+                                classStats[className].attendedTimes += timesCount;
+                            }
                         }
                     }
                 });
@@ -505,25 +517,34 @@
         let html = "";
         let totalStudents = 0;
         let totalAllTimes = 0;
+        let totalAttendedTimes = 0;
 
         sortedClasses.forEach(cls => {
             const stuCount = classStats[cls].students.size;
             const times = classStats[cls].totalTimes;
+            const attended = classStats[cls].attendedTimes; // 🌟
+            
             totalStudents += stuCount;
             totalAllTimes += times;
+            totalAttendedTimes += attended; // 🌟
+
+            let rate = times > 0 ? Math.round((attended / times) * 100) : 0;
 
             html += `<tr>
                 <td style="font-weight:bold; color:var(--primary);">${cls}</td>
                 <td>${stuCount}명</td>
                 <td>${times}회</td>
+                <td style="font-weight:bold; color:#0d6efd;">${attended}회 <span style="font-size:13px; color:#6c757d; font-weight:normal;">(${rate}%)</span></td>
             </tr>`;
         });
 
         if (sortedClasses.length > 0) {
+            let totalRate = totalAllTimes > 0 ? Math.round((totalAttendedTimes / totalAllTimes) * 100) : 0;
             html += `<tr style="background:#eef6ff; font-weight:bold; color:#052c65;">
                 <td>합계</td>
                 <td>${totalStudents}명</td>
                 <td>${totalAllTimes}회</td>
+                <td>${totalAttendedTimes}회 <span style="font-size:13px; color:#6c757d; font-weight:normal;">(${totalRate}%)</span></td>
             </tr>`;
         }
 
@@ -668,15 +689,12 @@
                 if (rate >= 80) rateColor = "color: #198754;";
                 else if (rate < 50) rateColor = "color: #dc3545;";
 
-                // 🌟 정렬 기준에 따라 폰트 크기와 색상을 동적으로 변경 🌟
                 let applyHtml, attendHtml;
                 
                 if (sortValue === "attend_times_desc") {
-                    // 타임이 기준일 때: 타임 글씨를 크게, 일 글씨를 작게
                     applyHtml = `<span style="font-size:12px;">${stat.appliedDays}일</span> <span style="font-size:14px; font-weight:bold;">(${stat.appliedTimes}타임)</span>`;
                     attendHtml = `<span style="font-size:12px; font-weight:normal; color:#6ea8fe;">${stat.attendedDays}일</span> <span style="font-size:16px; font-weight:900;">(${stat.attendedTimes}타임)</span>`;
                 } else {
-                    // 일이 기준일 때 (기본): 일 글씨를 크게, 타임 글씨를 작게
                     applyHtml = `<span style="font-size:14px; font-weight:bold;">${stat.appliedDays}일</span> <span style="font-size:12px;">(${stat.appliedTimes}타임)</span>`;
                     attendHtml = `<span style="font-size:16px; font-weight:900;">${stat.attendedDays}일</span> <span style="font-size:12px; font-weight:normal; color:#6ea8fe;">(${stat.attendedTimes}타임)</span>`;
                 }
