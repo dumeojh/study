@@ -121,6 +121,31 @@
         .stat-class-table th { background: #f8f9fa; padding: 12px; border: 1px solid #dee2e6; font-size: 15px; color: #495057; }
         .stat-class-table td { border: 1px solid #dee2e6; padding: 12px; text-align: center; font-size: 15px; background: white; }
         .stat-class-table tbody tr:hover { background-color: #f1f8ff; }
+
+        /* 개인별 통계 필터 영역 스타일 */
+        .filter-area {
+            display: flex;
+            gap: 20px;
+            background: #eef6ff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #b6d4fe;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        .filter-area select {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .filter-area label {
+            font-weight: bold;
+            color: #052c65;
+            margin-right: 8px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -167,6 +192,24 @@
     </div>
 
     <div id="tab-personal" class="tab-content">
+        
+        <div class="filter-area">
+            <div>
+                <label for="class-filter">🏫 반별 검색:</label>
+                <select id="class-filter" onchange="applyPersonalFilterAndSort()">
+                    <option value="all">전체 보기</option>
+                    </select>
+            </div>
+            <div>
+                <label for="sort-filter">↕️ 정렬 기준:</label>
+                <select id="sort-filter" onchange="applyPersonalFilterAndSort()">
+                    <option value="stu_id_asc">학번 순 (기본)</option>
+                    <option value="attend_days_desc">출석 횟수 (일) 높은 순</option>
+                    <option value="attend_times_desc">출석 횟수 (타임) 높은 순</option>
+                </select>
+            </div>
+        </div>
+
         <table class="stat-class-table">
             <thead>
                 <tr>
@@ -192,6 +235,9 @@
     let applicationData = [];
     let attendanceLogsData = [];
     let calendarSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
+    
+    // 🌟 추가됨: 필터링 및 정렬을 위해 학생들 통계 데이터를 담아둘 전역 변수
+    let globalPersonalStatsData = []; 
 
     document.addEventListener("DOMContentLoaded", () => {
         const now = new Date();
@@ -229,11 +275,8 @@
                 if (cal.value.defaultDays) calendarSchedule.defaultDays = cal.value.defaultDays;
             }
 
-            // 1. 달력 그리기
             renderCalendar(year, month, lastDateObj.getDate());
-            // 2. 반별 통계 계산
             renderClassStats(year, month, lastDateObj.getDate());
-            // 3. 🌟 추가됨: 개인별 통계 계산 🌟
             renderPersonalStats(year, month, lastDateObj.getDate());
 
         } catch (error) {
@@ -489,73 +532,66 @@
         tbody.innerHTML = html;
     }
 
-    // 🌟 새로 추가된 개인별 통계 계산 함수 🌟
     function renderPersonalStats(year, month, lastDate) {
         const tbody = document.getElementById('personal-stat-body');
-        tbody.innerHTML = ''; // 기존 내용 지우기
-
-        // 데이터가 없으면 안내 문구 표시
+        const classFilter = document.getElementById('class-filter');
+        
         if (!applicationData || applicationData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="color:#6c757d; padding:20px;">해당 월의 신청 데이터가 없습니다.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="color:#6c757d; padding:20px; text-align:center;">해당 월의 신청 데이터가 없습니다.</td></tr>`;
+            classFilter.innerHTML = '<option value="all">전체 보기</option>';
             return;
         }
 
-        let personalStats = {}; // 학생별 통계를 담을 객체 생성
+        let personalStats = {}; 
         const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
-        // 1. 학생별 기본 정보 초기화 (신청 데이터 기준)
         applicationData.forEach(app => {
             const stuIdStr = String(app.stu_id);
-            if (stuIdStr.length < 4) return; // 학번이 비정상적이면 건너뛰기
+            if (stuIdStr.length < 4) return;
             
+            // 반 이름 미리 저장해두기 (나중에 필터링하기 쉽게)
+            const classCode = stuIdStr.slice(0, -2);
+            const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
+
             if (!personalStats[stuIdStr]) {
                 personalStats[stuIdStr] = {
                     stu_id: stuIdStr,
-                    stu_name: app.stu_name || '-', // 이름이 DB에 있다면 가져오고 없으면 '-'
-                    appliedDays: 0,   // 며칠을 신청했는지
-                    appliedTimes: 0,  // 몇 타임을 신청했는지 (0T, 1T 등 합산)
-                    attendedDays: 0,  // 며칠을 출석했는지
-                    attendedTimes: 0  // 몇 타임을 출석했는지
+                    stu_name: app.stu_name || '-',
+                    className: className, // ✨ 학급 정보 추가
+                    appliedDays: 0,
+                    appliedTimes: 0,
+                    attendedDays: 0,
+                    attendedTimes: 0
                 };
             }
         });
 
-        // 2. 달력의 1일부터 말일까지 하루씩 검사하면서 출석 횟수 계산
         for (let d = 1; d <= lastDate; d++) {
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const dayIdx = new Date(year, month - 1, d).getDay();
-            const dayKey = daysEng[dayIdx]; // 'mon', 'tue' 등 요일 키값
+            const dayKey = daysEng[dayIdx];
 
-            // 오늘이 휴무일인지 운영일인지 판단
             let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
             if (calendarSchedule.data[dateStr] !== undefined) {
                 isOperating = calendarSchedule.data[dateStr].active;
             }
 
-            // 야자 운영일인 경우에만 계산
             if (isOperating) {
-                // 해당 날짜의 전체 출석 기록을 가져옴
                 const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
                 
                 applicationData.forEach(app => {
-                    // 이 학생이 오늘(해당 요일) 야자를 신청했다면
                     if (app[dayKey]) {
                         const stuIdStr = String(app.stu_id);
                         if (stuIdStr.length < 4) return;
                         
                         const stat = personalStats[stuIdStr];
-                        
-                        // 오늘 신청한 타임 개수 파악 (예: "1,2" 이면 2타임)
                         const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
                         
-                        // 신청 일수와 타임수 증가
                         stat.appliedDays += 1;
                         stat.appliedTimes += timesCount;
 
-                        // 출결 데이터에서 이 학생의 오늘 기록 찾기
                         const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
                         
-                        // 기록이 있고 "미입실"이 아니라면 정상 출석으로 인정!
                         if (studentLog && studentLog.status !== "미입실") {
                             stat.attendedDays += 1;
                             stat.attendedTimes += timesCount;
@@ -565,39 +601,104 @@
             }
         }
 
-        // 3. 학번 순서대로 정렬하여 표에 출력하기
-        // 객체(personalStats)를 배열로 변환 후 정렬
-        const sortedStudents = Object.values(personalStats).sort((a, b) => parseInt(a.stu_id) - parseInt(b.stu_id));
+        // 🌟 계산이 끝난 데이터를 전역 배열에 저장합니다 (필터링/정렬용)
+        globalPersonalStatsData = Object.values(personalStats);
 
-        let html = "";
-        sortedStudents.forEach(stat => {
-            // 학번에서 학급 추출 (예: 2101 -> 2학년 1반)
-            const classCode = stat.stu_id.slice(0, -2);
-            const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
-            
-            // 출석률 계산 (%)
-            let rate = 0;
-            if (stat.appliedTimes > 0) {
-                rate = Math.round((stat.attendedTimes / stat.appliedTimes) * 100);
+        // --- 드롭다운에 '존재하는 반' 목록 자동으로 채우기 ---
+        let classesSet = new Set();
+        globalPersonalStatsData.forEach(stat => classesSet.add(stat.className));
+        
+        // 반 이름을 순서대로 정렬 (1학년 1반, 1학년 2반...)
+        const sortedClassNames = Array.from(classesSet).sort();
+        
+        const currentSelectedClass = classFilter.value; // 현재 선택된 반 기억하기
+        let optionsHtml = '<option value="all">전체 보기</option>';
+        sortedClassNames.forEach(c => {
+            optionsHtml += `<option value="${c}">${c}</option>`;
+        });
+        classFilter.innerHTML = optionsHtml;
+
+        // 이전에 선택했던 반이 목록에 있으면 그대로 유지 (새로고침 방지)
+        if (sortedClassNames.includes(currentSelectedClass)) {
+            classFilter.value = currentSelectedClass;
+        } else {
+            classFilter.value = "all";
+        }
+
+        // 🌟 필터 및 정렬을 적용해서 화면에 그리기
+        applyPersonalFilterAndSort();
+    }
+
+    // 🌟 새로 추가된 핵심 함수: 조건에 맞춰 데이터를 거르고 정렬한 뒤 화면에 표시합니다.
+    function applyPersonalFilterAndSort() {
+        const tbody = document.getElementById('personal-stat-body');
+        const classValue = document.getElementById('class-filter').value;
+        const sortValue = document.getElementById('sort-filter').value;
+
+        // 1. 선택한 반만 거르기 (필터링)
+        let filteredData = globalPersonalStatsData;
+        if (classValue !== "all") {
+            // 전체 보기가 아니라면 선택한 반과 일치하는 학생만 남김
+            filteredData = globalPersonalStatsData.filter(stat => stat.className === classValue);
+        }
+
+        // 2. 정렬하기 (학번 / 출석 일수 / 출석 타임)
+        filteredData.sort((a, b) => {
+            if (sortValue === "stu_id_asc") {
+                // 학번 순 (작은 숫자부터)
+                return parseInt(a.stu_id) - parseInt(b.stu_id);
+            } 
+            else if (sortValue === "attend_days_desc") {
+                // 출석 횟수(일)가 높은 순
+                if (b.attendedDays !== a.attendedDays) {
+                    return b.attendedDays - a.attendedDays;
+                } else if (b.attendedTimes !== a.attendedTimes) {
+                    // 일수가 같다면 출석 타임이 높은 순
+                    return b.attendedTimes - a.attendedTimes;
+                } else {
+                    // 둘 다 같으면 학번 순
+                    return parseInt(a.stu_id) - parseInt(b.stu_id);
+                }
+            } 
+            else if (sortValue === "attend_times_desc") {
+                // 출석 횟수(타임)가 높은 순
+                if (b.attendedTimes !== a.attendedTimes) {
+                    return b.attendedTimes - a.attendedTimes;
+                } else {
+                    // 타임이 같으면 학번 순
+                    return parseInt(a.stu_id) - parseInt(b.stu_id);
+                }
             }
-            
-            // 출석률에 따른 색상 변경 (80% 이상 초록색, 50% 미만 빨간색)
-            let rateColor = "color: #333;";
-            if (rate >= 80) rateColor = "color: #198754;";
-            else if (rate < 50) rateColor = "color: #dc3545;";
-
-            // 표의 한 줄(tr)을 생성
-            html += `<tr>
-                <td>${className}</td>
-                <td style="font-weight:bold;">${stat.stu_id}</td>
-                <td>${stat.stu_name}</td>
-                <td style="color:#6c757d;">${stat.appliedDays}일 <span style="font-size:12px;">(${stat.appliedTimes}타임)</span></td>
-                <td style="font-weight:bold; color:#0d6efd;">${stat.attendedDays}일 <span style="font-size:12px;">(${stat.attendedTimes}타임)</span></td>
-                <td style="font-weight:bold; ${rateColor}">${rate}%</td>
-            </tr>`;
+            return 0;
         });
 
-        tbody.innerHTML = html; // 완성된 HTML을 표 안에 삽입
+        // 3. 필터/정렬된 데이터로 HTML 표 만들기
+        let html = "";
+        if (filteredData.length === 0) {
+            html = `<tr><td colspan="6" style="color:#6c757d; padding:20px; text-align:center;">조건에 맞는 학생 데이터가 없습니다.</td></tr>`;
+        } else {
+            filteredData.forEach(stat => {
+                let rate = 0;
+                if (stat.appliedTimes > 0) {
+                    rate = Math.round((stat.attendedTimes / stat.appliedTimes) * 100);
+                }
+                
+                let rateColor = "color: #333;";
+                if (rate >= 80) rateColor = "color: #198754;";
+                else if (rate < 50) rateColor = "color: #dc3545;";
+
+                html += `<tr>
+                    <td>${stat.className}</td>
+                    <td style="font-weight:bold;">${stat.stu_id}</td>
+                    <td>${stat.stu_name}</td>
+                    <td style="color:#6c757d;">${stat.appliedDays}일 <span style="font-size:12px;">(${stat.appliedTimes}타임)</span></td>
+                    <td style="font-weight:bold; color:#0d6efd;">${stat.attendedDays}일 <span style="font-size:12px;">(${stat.attendedTimes}타임)</span></td>
+                    <td style="font-weight:bold; ${rateColor}">${rate}%</td>
+                </tr>`;
+            });
+        }
+        
+        tbody.innerHTML = html;
     }
 </script>
 
