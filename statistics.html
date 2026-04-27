@@ -40,13 +40,7 @@
         #loading { display: none; text-align: center; padding: 50px; font-size: 18px; font-weight: bold; color: var(--primary); }
 
         /* 기존 .box-apply 코드를 아래 코드로 교체하세요 */
-.box-apply { 
-    background: #ffffff; 
-    border: 1.5px dashed #adb5bd; /* 깔끔한 회색 점선 */
-    border-radius: 5px; 
-    padding: 6px; 
-    color: #495057; 
-}
+
 .apply-times {
     display: flex;
     justify-content: space-between; /* 간격을 균일하게 배치 */
@@ -56,37 +50,45 @@
     color: #0d6efd; /* 파란색으로 강조 */
     padding: 0 2px;
 }
-/* --- 변경할 CSS 코드 --- */
-.box-apply { 
-    display: flex; 
-    align-items: center; 
-    gap: 3px; 
-    margin-bottom: 4px; 
-    background: transparent; 
-    border: none; 
-    padding: 0;
-}
-.apply-label {
-    font-size: 11px;
-    font-weight: bold;
-    color: #333;
-    margin-right: 2px;
-}
-.time-slot {
-    flex: 1; /* 가로 너비를 동일하게 분배 */
-    text-align: center;
-    border: 1px dashed #adb5bd; /* 둥근 점선 테두리 */
-    border-radius: 4px;
-    padding: 2px 1px;
-    font-size: 10px;
-    color: #6c757d;
-    background: #fff;
-    letter-spacing: -0.5px;
-}
+
+
 .time-slot b {
     color: #333; /* 인원수 숫자는 진하게 표시 */
 }
 
+
+
+
+/* --- 신청 현황 그리드 디자인 (위아래 정렬 완벽 일치) --- */
+.apply-grid {
+    display: grid;
+    grid-template-columns: 26px 1fr 1fr 1fr 1fr; /* 라벨 칸(26px) + 나머지 4칸을 동일한 비율(1fr)로 분배 */
+    gap: 3px; /* 박스 상하좌우 간격 */
+    margin-bottom: 5px;
+    align-items: center;
+}
+.grid-title {
+    font-size: 10px;
+    font-weight: bold;
+    color: #495057;
+    text-align: left;
+    letter-spacing: -0.5px;
+}
+.grid-item {
+    text-align: center;
+    border: 1px dashed #adb5bd; /* 점선 테두리 */
+    border-radius: 3px;
+    padding: 2px 0;
+    font-size: 10px;
+    background: #f8f9fa; /* 윗줄(구분)은 연한 회색 배경으로 시각적 분리 */
+    color: #6c757d;
+}
+.grid-item.val {
+    background: #ffffff; /* 아랫줄(신청 인원)은 흰색 배경 */
+    color: #111; /* 글씨 진하게 */
+    font-weight: bold;
+    font-size: 11px;
+}
 </style>
 </head>
 <body>
@@ -252,15 +254,23 @@
                 } else {
                     // 통계 박스 출력
 // --- 변경할 JavaScript 통계 박스 출력 부분 ---
+// --- 변경할 JavaScript 통계 박스 출력 부분 ---
 html += `
     <div class="stat-box">
-        <div class="box-apply">
-            <span class="apply-label">신청:</span>
-            <div class="time-slot">0T:<b>${t0}</b></div>
-            <div class="time-slot">1T:<b>${t1}</b></div>
-            <div class="time-slot">2T:<b>${t2}</b></div>
-            <div class="time-slot">3T:<b>${t3}</b></div>
+        <div class="apply-grid">
+            <div class="grid-title">구분</div>
+            <div class="grid-item">0T</div>
+            <div class="grid-item">1T</div>
+            <div class="grid-item">2T</div>
+            <div class="grid-item">3T</div>
+            
+            <div class="grid-title" style="color:#0d6efd;">신청</div>
+            <div class="grid-item val">${t0}</div>
+            <div class="grid-item val">${t1}</div>
+            <div class="grid-item val">${t2}</div>
+            <div class="grid-item val">${t3}</div>
         </div>
+        
         <div class="box-current">
             🏃 현재 진행: <span style="font-size:12px;">${currentPresent}명</span>
         </div>
