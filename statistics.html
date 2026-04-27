@@ -292,12 +292,16 @@ if (dateStr < todayStr) {
     row3Color = "#adb5bd"; // 미래는 연한 회색
 }
 
-// 🚨 주의: 선생님의 DB 출결 로그(attendanceLogsData)를 분석하여 0T~3T별 참여 인원을 구하는 로직이 필요합니다.
-// 지금은 UI 확인을 위해 임시 변수(c0~c3)를 만들어 두었습니다. 나중에 실제 출결 데이터 숫자로 연결해 주세요!
+
+
+
 let c0 = 0, c1 = 0, c2 = 0, c3 = 0; 
-// 예시: 만약 1타임에 귀가 누락자가 있어서 에러 표시를 하고 싶다면 아래처럼 클래스를 다르게 주면 됩니다.
-let c1Class = "status-val"; // 정상일 때
-// let c1Class = "status-error"; // 누락자 발생 시 이 클래스로 변경되도록 나중에 로직 구성
+
+// 0T, 1T, 2T, 3T 각각의 색상을 따로따로 제어하기 위해 4개의 변수를 만듭니다.
+let c0Class = "status-val";
+let c1Class = "status-val"; 
+let c2Class = "status-val";
+let c3Class = "status-val";
 
 // --- 변경할 JavaScript 통계 박스 출력 부분 ---
 html += `
@@ -316,9 +320,10 @@ html += `
             <div class="grid-item val">${t3}</div>
 
             <div class="grid-title" style="color:${row3Color};">${row3Label}</div>
-            <div class="grid-item ${c1Class}">${c0}</div> <div class="grid-item ${c1Class}">${c1}</div>
-            <div class="grid-item ${c1Class}">${c2}</div>
-            <div class="grid-item ${c1Class}">${c3}</div>
+            <div class="grid-item ${c0Class}">${c0}</div> 
+            <div class="grid-item ${c1Class}">${c1}</div>
+            <div class="grid-item ${c2Class}">${c2}</div>
+            <div class="grid-item ${c3Class}">${c3}</div>
         </div>
         
         <div style="display:flex; justify-content:space-between; margin-top:2px;">
