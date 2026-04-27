@@ -121,6 +121,19 @@
     position: relative;
     z-index: 1;
 }
+
+/* --- 탭 메뉴 및 반별 통계 표 디자인 --- */
+.tab-menu { display: flex; gap: 10px; margin-bottom: 20px; }
+.tab-btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; background: #e9ecef; color: #495057; transition: 0.3s; }
+.tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3); }
+.tab-content { display: none; animation: fadeIn 0.3s ease; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+.stat-class-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.stat-class-table th { background: #f8f9fa; padding: 12px; border: 1px solid #dee2e6; font-size: 15px; color: #495057; }
+.stat-class-table td { border: 1px solid #dee2e6; padding: 12px; text-align: center; font-size: 15px; background: white; }
+.stat-class-table tbody tr:hover { background-color: #f1f8ff; }
 </style>
 </head>
 <body>
@@ -133,6 +146,11 @@
         </div>
     </div>
 
+<div class="tab-menu">
+        <button class="tab-btn active" onclick="switchTab('tab-calendar', this)">📅 달력 현황</button>
+        <button class="tab-btn" onclick="switchTab('tab-class', this)">🏫 반별 통계 현황</button>
+    </div>
+
     <div class="controls">
         <b style="font-size: 16px;">조회할 연도 및 월:</b>
         <input type="month" id="month-picker" onchange="fetchDataAndRender()">
@@ -142,7 +160,23 @@
 
     <div id="loading">데이터를 분석 중입니다... ⏳</div>
     
-    <div id="calendar-container"></div>
+    <div id="tab-calendar" class="tab-content active">
+        <div id="calendar-container"></div>
+    </div>
+
+    <div id="tab-class" class="tab-content">
+        <table class="stat-class-table">
+            <thead>
+                <tr>
+                    <th>학급 (반)</th>
+                    <th>신청 인원 (명)</th>
+                    <th>월간 누적 신청 타임 (회)</th>
+                </tr>
+            </thead>
+            <tbody id="class-stat-body">
+                </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
@@ -198,6 +232,8 @@
 
             // 달력 그리기
             renderCalendar(year, month, lastDateObj.getDate());
+            // 👇 추가할 부분: 달력 그린 후 반별 통계도 함께 계산!
+            renderClassStats(year, month, lastDateObj.getDate());
 
         } catch (error) {
             console.error("데이터 로딩 오류:", error);
