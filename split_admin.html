@@ -259,15 +259,10 @@
 <div class="tab-menu">
 
         <button class="tab-btn active" onclick="switchTab('tab-daily', this)">🧑‍🏫 오늘 감독용 좌석표</button>
-
         <button class="tab-btn" onclick="switchTab('tab-daily-list', this)">📋 오늘 일일 현황</button>
-
         <button class="tab-btn" onclick="switchTab('tab-status', this)">📊 월별 신청 현황</button>
-
         <button class="tab-btn" onclick="switchTab('tab-manual', this)">📝 개별 수정/추가</button>
-
-        <button class="tab-btn" onclick="switchTab('tab-stats', this)">📈 통계 분석</button>
-
+        <button class="tab-btn" onclick="location.href='statistics.html'">📈 통계 분석</button>
     </div>
 
 
@@ -553,124 +548,6 @@
 
     
 
-
-
-<div id="tab-stats" class="tab-content">
-
-        <div class="form-card">
-
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-
-                <h3 style="margin: 0;">📊 월별 통계 분석</h3>
-
-                <div style="display: flex; gap: 10px; align-items: center;">
-
-<select id="stats-month-filter" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd; font-weight: bold;">
-
-    <option value="all">전체 누적</option>
-
-    <option value="1월">1월</option>
-
-    <option value="2월">2월</option>
-
-    <option value="3월">3월</option>
-
-    <option value="4월" selected>4월</option>
-
-    <option value="5월">5월</option>
-
-    <option value="6월">6월</option>
-
-    <option value="7월">7월</option>
-
-    <option value="8월">8월</option>
-
-    <option value="9월">9월</option>
-
-    <option value="10월">10월</option>
-
-    <option value="11월">11월</option>
-
-    <option value="12월">12월</option>
-
-</select>
-
-                    <button class="btn btn-primary" onclick="calculateAndRenderStats()">🔄 통계 분석 시작</button>
-
-                </div>
-
-            </div>
-
-            
-
-            <div id="stats-loading" style="text-align: center; padding: 30px; display: none; color: var(--primary); font-weight: bold; font-size: 16px;">
-
-                데이터를 분석 중입니다... ⏳
-
-            </div>
-
-            
-
-            <div id="stats-container" style="display: none;">
-
-                <div id="stats-info-text" style="margin-bottom: 15px; font-weight: bold; color: var(--primary);"></div>
-
-                
-
-                <h4 style="margin-top: 10px; color: #333;">📅 요일별 통계 (신청 vs 참여)</h4>
-
-                <table style="margin-bottom: 30px;">
-
-                    <thead>
-
-                        <tr>
-
-                            <th>요일</th>
-
-                            <th>해당 월 신청 인원</th>
-
-                            <th>실제 참여(스캔) 횟수</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody id="stat-day-body"></tbody>
-
-                </table>
-
-
-
-                <h4 style="color: #333;">🏫 반별 통계 (신청 vs 참여)</h4>
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>학급(반)</th>
-
-                            <th>신청 인원</th>
-
-                            <th>누적 참여 횟수</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody id="stat-class-body"></tbody>
-
-                </table>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    
-
 </div>
 
 
@@ -896,9 +773,7 @@
         else if(tabId === 'tab-status') {
             renderStatusTable();
         }
-        else if(tabId === 'tab-stats') {
-            calculateAndRenderStats(); 
-        }
+  
     }
 
 
@@ -1476,97 +1351,6 @@ async function closeMissingTags() {
 }
 
 
-
-    async function calculateAndRenderStats() {
-        const selectedMonth = document.getElementById('stats-month-filter').value;
-        document.getElementById('stats-loading').style.display = 'block';
-        document.getElementById('stats-container').style.display = 'none';
-
-        try {
-            const { data: logsData } = await supabaseClient.from("attendance_logs").select("*");
-            const filteredLogs = [];
-            
-            if (logsData) {
-                logsData.forEach(data => {
-                    const logDate = new Date(data.date);
-                    const logMonth = (logDate.getMonth() + 1) + "월";
-                    const isTargetMonth = (selectedMonth === "all" || logMonth === selectedMonth);
-                    const isPresent = (data.status !== "미입실" && data.status !== "귀가(누락)");
-
-                    if (isTargetMonth && isPresent) {
-                        filteredLogs.push(data);
-                    }
-                });
-            }
-
-            const dayStats = {
-                1: { name: '월', apply: 0, attend: 0 }, 2: { name: '화', apply: 0, attend: 0 },
-                3: { name: '수', apply: 0, attend: 0 }, 4: { name: '목', apply: 0, attend: 0 },
-                5: { name: '금', apply: 0, attend: 0 }, 6: { name: '토', apply: 0, attend: 0 },
-                0: { name: '일', apply: 0, attend: 0 }
-            };
-            const classStats = {};
-
-            Object.values(applicationData).forEach(student => {
-                if (selectedMonth !== "all" && student.targetMonth !== selectedMonth) return;
-
-                if (student.mon) dayStats[1].apply++; if (student.tue) dayStats[2].apply++;
-                if (student.wed) dayStats[3].apply++; if (student.thu) dayStats[4].apply++;
-                if (student.fri) dayStats[5].apply++; if (student.sat) dayStats[6].apply++;
-                if (student.sun) dayStats[0].apply++;
-
-                const stuIdStr = String(student.stuId).trim();
-                let classNum = "기타";
-                if (stuIdStr.length >= 4) {
-                    const grade = stuIdStr.charAt(0); 
-                    const banStr = stuIdStr.substring(1, stuIdStr.length - 2); 
-                    classNum = grade + "학년 " + parseInt(banStr, 10) + "반";
-                }
-                
-                if (!classStats[classNum]) classStats[classNum] = { apply: 0, attend: 0 };
-                classStats[classNum].apply++;
-            });
-
-            filteredLogs.forEach(log => {
-                const logDate = new Date(log.date);
-                const dayIndex = logDate.getDay();
-                if (dayStats[dayIndex]) dayStats[dayIndex].attend++;
-
-                const stuIdStr = String(log.stu_id).trim();
-                let classNum = "기타";
-                if (stuIdStr.length >= 4) {
-                    const grade = stuIdStr.charAt(0);
-                    const banStr = stuIdStr.substring(1, stuIdStr.length - 2);
-                    classNum = grade + "학년 " + parseInt(banStr, 10) + "반";
-                }
-                if (classStats[classNum]) classStats[classNum].attend++;
-            });
-
-            document.getElementById('stats-info-text').innerText = `📍 현재 분석 범위: ${selectedMonth === 'all' ? '전체 누적 데이터' : selectedMonth + ' 신청 및 출결 데이터'}`;
-
-            const dayBody = document.getElementById('stat-day-body');
-            dayBody.innerHTML = '';
-            [1, 2, 3, 4, 5, 6, 0].forEach(idx => {
-                const stat = dayStats[idx];
-                dayBody.innerHTML += `<tr><td style="font-weight:bold;">${stat.name}요일</td><td>${stat.apply}명</td><td style="color:var(--primary); font-weight:bold;">${stat.attend}회</td></tr>`;
-            });
-
-            const classBody = document.getElementById('stat-class-body');
-            classBody.innerHTML = '';
-            Object.keys(classStats).sort().forEach(c => {
-                const stat = classStats[c];
-                classBody.innerHTML += `<tr><td style="font-weight:bold;">${c}</td><td>${stat.apply}명</td><td style="color:var(--success); font-weight:bold;">${stat.attend}회</td></tr>`;
-            });
-
-            document.getElementById('stats-loading').style.display = 'none';
-            document.getElementById('stats-container').style.display = 'block';
-
-        } catch (e) {
-            console.error(e);
-            alert("통계 분석 중 오류가 발생했습니다.");
-            document.getElementById('stats-loading').style.display = 'none';
-        }
-    }
 
     // 🌟 관리자 페이지 실행 시 과거 미마감 데이터 자동 청소
 async function autoSweepPastAttendance() {
