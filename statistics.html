@@ -39,102 +39,89 @@
         /* 로딩 스피너 */
         #loading { display: none; text-align: center; padding: 50px; font-size: 18px; font-weight: bold; color: var(--primary); }
 
-        /* 기존 .box-apply 코드를 아래 코드로 교체하세요 */
+        .apply-times {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-top: 4px;
+            font-weight: bold;
+            color: #0d6efd;
+            padding: 0 2px;
+        }
 
-.apply-times {
-    display: flex;
-    justify-content: space-between; /* 간격을 균일하게 배치 */
-    font-size: 11px;
-    margin-top: 4px;
-    font-weight: bold;
-    color: #0d6efd; /* 파란색으로 강조 */
-    padding: 0 2px;
-}
+        .time-slot b {
+            color: #333;
+        }
 
+        /* --- 신청 현황 그리드 디자인 --- */
+        .apply-grid {
+            display: grid;
+            grid-template-columns: 26px 1fr 1fr 1fr 1fr;
+            gap: 3px;
+            margin-bottom: 5px;
+            align-items: center;
+        }
+        .grid-title {
+            font-size: 10px;
+            font-weight: bold;
+            color: #495057;
+            text-align: left;
+            letter-spacing: -0.5px;
+        }
+        .grid-item {
+            text-align: center;
+            border-radius: 4px;
+            padding: 2px 0;
+            font-size: 10px;
+        }
+        .grid-item.header {
+            background: #6c757d;
+            color: #ffffff;
+            border: 1px solid #5c636a !important;
+            font-weight: bold;
+        }
+        .grid-item.val {
+            background: #ffffff;
+            color: #111;
+            font-weight: bold;
+            font-size: 11px;
+            border: 1px dashed #adb5bd;
+        }
+        .grid-item.status-val {
+            background: #ffffff;
+            color: #198754;
+            font-weight: bold;
+            font-size: 11px;
+            border: 1px dashed #adb5bd;
+        }
+        .grid-item.status-error {
+            background: #f8d7da;
+            color: #dc3545;
+            border: 1px dashed #dc3545;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        .today-cell {
+            border: 2px solid #0d6efd !important;
+            background-color: #f4f8ff !important;
+            box-shadow: inset 0 0 8px rgba(13, 110, 253, 0.1);
+            position: relative;
+            z-index: 1;
+        }
 
-.time-slot b {
-    color: #333; /* 인원수 숫자는 진하게 표시 */
-}
+        /* --- 탭 메뉴 및 표 디자인 --- */
+        .tab-menu { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; background: #e9ecef; color: #495057; transition: 0.3s; }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3); }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-
-
-/* --- 신청 현황 그리드 디자인 --- */
-.apply-grid {
-    display: grid;
-    grid-template-columns: 26px 1fr 1fr 1fr 1fr;
-    gap: 3px;
-    margin-bottom: 5px;
-    align-items: center;
-}
-.grid-title {
-    font-size: 10px;
-    font-weight: bold;
-    color: #495057;
-    text-align: left;
-    letter-spacing: -0.5px;
-}
-/* 공통 박스 설정 */
-.grid-item {
-    text-align: center;
-    border-radius: 4px;
-    padding: 2px 0;
-    font-size: 10px;
-}
-/* 윗줄 (0T, 1T, 2T, 3T) - 진한 배경 + 실선 테두리 */
-.grid-item.header {
-    background: #6c757d; /* 1T처럼 진한 배경 */
-    color: #ffffff; /* 흰색 글씨 */
-    border: 1px solid #5c636a !important; /* 확실하고 단단한 실선 테두리 */
-    font-weight: bold;
-}
-/* 아랫줄 (신청 인원 수) - 기존 점선 유지 */
-.grid-item.val {
-    background: #ffffff;
-    color: #111;
-    font-weight: bold;
-    font-size: 11px;
-    border: 1px dashed #adb5bd; /* 점선 테두리 */
-}
-
-/* --- 세 번째 줄 (현재/결과 데이터) 디자인 --- */
-.grid-item.status-val {
-    background: #ffffff;
-    color: #198754; /* 현재 진행상황은 눈에 띄는 초록색 톤으로 */
-    font-weight: bold;
-    font-size: 11px;
-    border: 1px dashed #adb5bd; /* 신청과 동일한 점선 */
-}
-/* 귀가 누락자가 발생했을 때 경고용 디자인 */
-.grid-item.status-error {
-    background: #f8d7da; /* 연한 빨간 배경 */
-    color: #dc3545; /* 빨간 글씨 */
-    border: 1px dashed #dc3545; /* 테두리도 빨갛게 */
-    font-weight: bold;
-    font-size: 11px;
-}
-
-/* --- 오늘 날짜 강조 디자인 --- */
-.today-cell {
-    border: 2px solid #0d6efd !important; /* 파란색 굵은 테두리 */
-    background-color: #f4f8ff !important; /* 아주 연한 파란색 배경 */
-    box-shadow: inset 0 0 8px rgba(13, 110, 253, 0.1); /* 안쪽으로 살짝 은은한 그림자 */
-    position: relative;
-    z-index: 1;
-}
-
-/* --- 탭 메뉴 및 반별 통계 표 디자인 --- */
-.tab-menu { display: flex; gap: 10px; margin-bottom: 20px; }
-.tab-btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; background: #e9ecef; color: #495057; transition: 0.3s; }
-.tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3); }
-.tab-content { display: none; animation: fadeIn 0.3s ease; }
-.tab-content.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-.stat-class-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-.stat-class-table th { background: #f8f9fa; padding: 12px; border: 1px solid #dee2e6; font-size: 15px; color: #495057; }
-.stat-class-table td { border: 1px solid #dee2e6; padding: 12px; text-align: center; font-size: 15px; background: white; }
-.stat-class-table tbody tr:hover { background-color: #f1f8ff; }
-</style>
+        .stat-class-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .stat-class-table th { background: #f8f9fa; padding: 12px; border: 1px solid #dee2e6; font-size: 15px; color: #495057; }
+        .stat-class-table td { border: 1px solid #dee2e6; padding: 12px; text-align: center; font-size: 15px; background: white; }
+        .stat-class-table tbody tr:hover { background-color: #f1f8ff; }
+    </style>
 </head>
 <body>
 
@@ -146,9 +133,10 @@
         </div>
     </div>
 
-<div class="tab-menu">
+    <div class="tab-menu">
         <button class="tab-btn active" onclick="switchTab('tab-calendar', this)">📅 달력 현황</button>
         <button class="tab-btn" onclick="switchTab('tab-class', this)">🏫 반별 통계 현황</button>
+        <button class="tab-btn" onclick="switchTab('tab-personal', this)">👤 개인별 통계 현황</button>
     </div>
 
     <div class="controls">
@@ -174,13 +162,29 @@
                 </tr>
             </thead>
             <tbody id="class-stat-body">
-                </tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="tab-personal" class="tab-content">
+        <table class="stat-class-table">
+            <thead>
+                <tr>
+                    <th>학급 (반)</th>
+                    <th>학번</th>
+                    <th>이름</th>
+                    <th>신청 횟수 (일/타임)</th>
+                    <th>출석 횟수 (일/타임)</th>
+                    <th>월간 출석률</th>
+                </tr>
+            </thead>
+            <tbody id="personal-stat-body">
+            </tbody>
         </table>
     </div>
 </div>
 
 <script>
-    // 🚨 수파베이스 정보 (기존과 동일)
     const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -189,7 +193,6 @@
     let attendanceLogsData = [];
     let calendarSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
 
-    // 페이지 로드 시 현재 월로 기본 설정
     document.addEventListener("DOMContentLoaded", () => {
         const now = new Date();
         const monthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -207,33 +210,31 @@
         const [year, month] = picker.split('-').map(Number);
         const targetMonthStr = month + "월";
         const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-        // 이번 달의 마지막 날 계산
         const lastDateObj = new Date(year, month, 0);
         const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDateObj.getDate()).padStart(2, '0')}`;
 
         try {
-            // 1. 해당 월의 신청 내역 모두 가져오기
             const { data: apps } = await supabaseClient.from('applications').select('*').eq('target_month', targetMonthStr);
             applicationData = apps || [];
 
-            // 2. 해당 월의 출결 로그 모두 가져오기 (해당 월 1일 ~ 말일)
             const { data: logs } = await supabaseClient.from('attendance_logs')
-                .select('date, status, stu_id') // 👈 학번(stu_id) 추가 완료!
+                .select('date, status, stu_id')
                 .gte('date', startDate)
                 .lte('date', endDate);
             attendanceLogsData = logs || [];
 
-            // 3. 환경설정의 달력 휴무일 정보 가져오기
             const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
             if (cal && cal.value) {
                 if (cal.value.data) calendarSchedule.data = JSON.parse(cal.value.data);
                 if (cal.value.defaultDays) calendarSchedule.defaultDays = cal.value.defaultDays;
             }
 
-            // 달력 그리기
+            // 1. 달력 그리기
             renderCalendar(year, month, lastDateObj.getDate());
-            // 👇 추가할 부분: 달력 그린 후 반별 통계도 함께 계산!
+            // 2. 반별 통계 계산
             renderClassStats(year, month, lastDateObj.getDate());
+            // 3. 🌟 추가됨: 개인별 통계 계산 🌟
+            renderPersonalStats(year, month, lastDateObj.getDate());
 
         } catch (error) {
             console.error("데이터 로딩 오류:", error);
@@ -245,7 +246,7 @@
     }
 
     function renderCalendar(year, month, lastDate) {
-        const firstDayIdx = new Date(year, month - 1, 1).getDay(); // 1일의 요일 (0:일 ~ 6:토)
+        const firstDayIdx = new Date(year, month - 1, 1).getDay();
         const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
         
         let html = `
@@ -257,18 +258,15 @@
                 </thead>
                 <tbody><tr>`;
 
-        // 시작 요일 앞 빈칸 채우기
         for (let i = 0; i < firstDayIdx; i++) {
             html += `<td></td>`;
         }
 
-        // 날짜 채우기
         for (let d = 1; d <= lastDate; d++) {
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const dayIdx = new Date(year, month - 1, d).getDay();
             const dayKey = daysEng[dayIdx];
 
-            // 휴무일 체크
             let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
             let reason = "";
             if (calendarSchedule.data[dateStr] !== undefined) {
@@ -276,26 +274,18 @@
                 reason = calendarSchedule.data[dateStr].reason;
             }
 
-            // 숫자 색상 (일/토)
             let dateClass = "date-num";
             if (dayIdx === 0) dateClass += " sunday";
             if (dayIdx === 6) dateClass += " saturday";
 
-// --- 오늘 날짜인지 확인하여 칸(td)에 디자인 클래스 추가 ---
-            const realToday = new Date().toLocaleDateString('en-CA'); // 오늘 날짜 가져오기
-            let tdClass = "";
-            if (dateStr === realToday) {
-                tdClass = "today-cell"; // 오늘이면 강조 클래스 부여
-            }
+            const realToday = new Date().toLocaleDateString('en-CA');
+            let tdClass = dateStr === realToday ? "today-cell" : "";
 
             html += `<td class="${tdClass}"><span class="${dateClass}">${d}</span>`;            
 
-
             if (!isOperating) {
-                // 운영 안 하는 날
                 html += `<div class="box-holiday">${reason || "야자 미운영"}</div>`;
             } else {
-                // 1. 해당 요일 신청자 집계 (0T, 1T, 2T, 3T)
                 let t0 = 0, t1 = 0, t2 = 0, t3 = 0;
                 applicationData.forEach(app => {
                     if (app[dayKey]) {
@@ -306,10 +296,9 @@
                     }
                 });
 
-                // 2. 현재 참여 및 결과 집계
-                let currentPresent = 0; // 진행 중 (입실, 복귀, 외출)
-                let finalResult = 0;    // 결과 완료 (귀가)
-                let absent = 0;         // 미입실 (결석/누락)
+                let currentPresent = 0;
+                let finalResult = 0;
+                let absent = 0;
 
                 const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
                 
@@ -319,104 +308,84 @@
                     } else if (log.status === "귀가") {
                         finalResult++;
                     } else {
-                        // 미입실, 귀가(누락)
                         absent++;
                     }
                 });
 
-                // 신청자가 아예 없고 출석 기록도 없으면 빈칸 유지
                 if ((t0+t1+t2+t3) === 0 && dayLogs.length === 0) {
                     html += `<div style="text-align:center; color:#adb5bd; font-size:11px; margin-top:20px;">신청 데이터 없음</div>`;
                 } else {
-                    // 통계 박스 출력
-// --- 변경할 JavaScript 통계 박스 출력 부분 ---
-// --- 변경할 JavaScript 통계 박스 출력 부분 ---
-// --- 날짜를 비교하여 세 번째 줄 라벨 결정 (과거/오늘/미래) ---
-const todayStr = new Date().toLocaleDateString('en-CA'); // 오늘 날짜를 YYYY-MM-DD 포맷으로 가져옴
-let row3Label = "현재";
-let row3Color = "#198754"; // 초록색
+                    const todayStr = new Date().toLocaleDateString('en-CA');
+                    let row3Label = "현재";
+                    let row3Color = "#198754";
 
-if (dateStr < todayStr) {
-    row3Label = "결과";
-    row3Color = "#6c757d"; // 과거는 회색으로 차분하게
-} else if (dateStr > todayStr) {
-    row3Label = "대기";
-    row3Color = "#adb5bd"; // 미래는 연한 회색
-}
+                    if (dateStr < todayStr) {
+                        row3Label = "결과";
+                        row3Color = "#6c757d";
+                    } else if (dateStr > todayStr) {
+                        row3Label = "대기";
+                        row3Color = "#adb5bd";
+                    }
 
+                    let c0 = 0, c1 = 0, c2 = 0, c3 = 0; 
+                    let err0 = 0, err1 = 0, err2 = 0, err3 = 0;
 
+                    applicationData.forEach(app => {
+                        if (app[dayKey]) {
+                            const studentLog = dayLogs.find(log => String(log.stu_id) === String(app.stu_id));
+                            if (studentLog && studentLog.status !== "미입실") {
+                                const isError = (studentLog.status === "귀가(누락)");
+                                if (app[dayKey].includes('0')) { c0++; if(isError) err0++; }
+                                if (app[dayKey].includes('1')) { c1++; if(isError) err1++; }
+                                if (app[dayKey].includes('2')) { c2++; if(isError) err2++; }
+                                if (app[dayKey].includes('3')) { c3++; if(isError) err3++; }
+                            }
+                        }
+                    });
 
-////////
-// 👇 새로 들어갈 실제 데이터 계산 로직 👇
-let c0 = 0, c1 = 0, c2 = 0, c3 = 0; 
-let err0 = 0, err1 = 0, err2 = 0, err3 = 0; // 태그 누락자 에러 카운트용
+                    let c0Class = err0 > 0 ? "status-error" : "status-val";
+                    let c1Class = err1 > 0 ? "status-error" : "status-val"; 
+                    let c2Class = err2 > 0 ? "status-error" : "status-val";
+                    let c3Class = err3 > 0 ? "status-error" : "status-val";
 
-// 오늘 요일(dayKey)에 야자를 신청한 학생들을 한 명씩 확인합니다.
-applicationData.forEach(app => {
-    if (app[dayKey]) {
-        // 이 학생의 오늘 출결 기록(dayLogs)이 있는지 학번으로 찾습니다.
-        const studentLog = dayLogs.find(log => String(log.stu_id) === String(app.stu_id));
-        
-        // 출결 기록이 있고, "미입실"이 아니라면 참석한 것으로 인정합니다!
-        if (studentLog && studentLog.status !== "미입실") {
-            const isError = (studentLog.status === "귀가(누락)"); // 태그 누락자인지 확인
+                    html += `
+                        <div class="stat-box">
+                            <div class="apply-grid">
+                                <div class="grid-title">구분</div>
+                                <div class="grid-item header">0T</div>
+                                <div class="grid-item header">1T</div>
+                                <div class="grid-item header">2T</div>
+                                <div class="grid-item header">3T</div>
+                                
+                                <div class="grid-title" style="color:#0d6efd;">신청</div>
+                                <div class="grid-item val">${t0}</div>
+                                <div class="grid-item val">${t1}</div>
+                                <div class="grid-item val">${t2}</div>
+                                <div class="grid-item val">${t3}</div>
 
-            // 학생이 신청한 타임에 +1씩 더해줍니다. 누락자면 에러 카운트도 +1 합니다.
-            if (app[dayKey].includes('0')) { c0++; if(isError) err0++; }
-            if (app[dayKey].includes('1')) { c1++; if(isError) err1++; }
-            if (app[dayKey].includes('2')) { c2++; if(isError) err2++; }
-            if (app[dayKey].includes('3')) { c3++; if(isError) err3++; }
-        }
-    }
-});
-
-// 0T, 1T, 2T, 3T 칸의 색상을 결정합니다. (해당 타임에 누락자가 1명이라도 있으면 빨간색 경고!)
-let c0Class = err0 > 0 ? "status-error" : "status-val";
-let c1Class = err1 > 0 ? "status-error" : "status-val"; 
-let c2Class = err2 > 0 ? "status-error" : "status-val";
-let c3Class = err3 > 0 ? "status-error" : "status-val";
-// 👆 계산 로직 끝 👆
-// --- 변경할 JavaScript 통계 박스 출력 부분 ---
-html += `
-    <div class="stat-box">
-        <div class="apply-grid">
-            <div class="grid-title">구분</div>
-            <div class="grid-item header">0T</div>
-            <div class="grid-item header">1T</div>
-            <div class="grid-item header">2T</div>
-            <div class="grid-item header">3T</div>
-            
-            <div class="grid-title" style="color:#0d6efd;">신청</div>
-            <div class="grid-item val">${t0}</div>
-            <div class="grid-item val">${t1}</div>
-            <div class="grid-item val">${t2}</div>
-            <div class="grid-item val">${t3}</div>
-
-            <div class="grid-title" style="color:${row3Color};">${row3Label}</div>
-            <div class="grid-item ${c0Class}">${c0}</div> 
-            <div class="grid-item ${c1Class}">${c1}</div>
-            <div class="grid-item ${c2Class}">${c2}</div>
-            <div class="grid-item ${c3Class}">${c3}</div>
-        </div>
-        
-        <div style="display:flex; justify-content:space-between; margin-top:2px;">
-            <div class="box-current" style="flex:1; margin-right:2px; font-size:10px;">
-                🏃 진행: ${currentPresent}명
-            </div>
-            <div class="box-result" style="flex:1; margin-left:2px; font-size:10px;">
-                ✅ 귀가: ${finalResult}명
-            </div>
-        </div>
-    </div>
-`;
+                                <div class="grid-title" style="color:${row3Color};">${row3Label}</div>
+                                <div class="grid-item ${c0Class}">${c0}</div> 
+                                <div class="grid-item ${c1Class}">${c1}</div>
+                                <div class="grid-item ${c2Class}">${c2}</div>
+                                <div class="grid-item ${c3Class}">${c3}</div>
+                            </div>
+                            
+                            <div style="display:flex; justify-content:space-between; margin-top:2px;">
+                                <div class="box-current" style="flex:1; margin-right:2px; font-size:10px;">
+                                    🏃 진행: ${currentPresent}명
+                                </div>
+                                <div class="box-result" style="flex:1; margin-left:2px; font-size:10px;">
+                                    ✅ 귀가: ${finalResult}명
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 }
             }
-
             html += `</td>`;
             if ((firstDayIdx + d) % 7 === 0) html += `</tr><tr>`;
         }
 
-        // 마지막 줄 빈칸 채우기
         const lastDayIdx = new Date(year, month - 1, lastDate).getDay();
         if (lastDayIdx < 6) {
             for (let i = lastDayIdx + 1; i <= 6; i++) {
@@ -428,9 +397,6 @@ html += `
         document.getElementById('calendar-container').innerHTML = html;
     }
 
-
-
-    // --- 탭 전환 함수 ---
     function switchTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -438,7 +404,6 @@ html += `
         btn.classList.add('active');
     }
 
-    // --- 반별 통계 계산 함수 ---
     function renderClassStats(year, month, lastDate) {
         const tbody = document.getElementById('class-stat-body');
         tbody.innerHTML = '';
@@ -451,12 +416,10 @@ html += `
         let classStats = {};
         const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
-        // 1. 학생별 학급 파악 및 인원 카운트
         applicationData.forEach(app => {
             const stuIdStr = String(app.stu_id);
-            if (stuIdStr.length < 4) return; // 비정상 학번 건너뛰기
+            if (stuIdStr.length < 4) return;
 
-            // 학번에서 반 추출 (예: 3101 -> 끝 두자리 제외한 '31' -> 3학년 1반)
             const classCode = stuIdStr.slice(0, -2);
             const grade = classCode.substring(0, 1);
             const classNum = classCode.substring(1);
@@ -468,7 +431,6 @@ html += `
             classStats[className].students.add(stuIdStr);
         });
 
-        // 2. 달력의 실제 운영일을 순회하며 누적 신청 횟수(타임 수) 정확하게 계산
         for (let d = 1; d <= lastDate; d++) {
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const dayIdx = new Date(year, month - 1, d).getDay();
@@ -476,10 +438,9 @@ html += `
 
             let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
             if (calendarSchedule.data[dateStr] !== undefined) {
-                isOperating = calendarSchedule.data[dateStr].active; // 개별 휴무일 반영
+                isOperating = calendarSchedule.data[dateStr].active;
             }
 
-            // 운영하는 날이면 해당 요일 신청자들의 타임 수를 더함
             if (isOperating) {
                 applicationData.forEach(app => {
                     if (app[dayKey]) {
@@ -489,7 +450,6 @@ html += `
                         const classCode = stuIdStr.slice(0, -2);
                         const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
                         
-                        // 1,2,3 등 콤마로 구분된 타임의 개수 파악
                         const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
                         if (classStats[className]) {
                             classStats[className].totalTimes += timesCount;
@@ -499,7 +459,6 @@ html += `
             }
         }
 
-        // 3. 반 순서대로 정렬 (1학년 1반 -> 2반 -> 2학년 1반 순)
         const sortedClasses = Object.keys(classStats).sort((a, b) => classStats[a].orderCode - classStats[b].orderCode);
 
         let html = "";
@@ -519,7 +478,6 @@ html += `
             </tr>`;
         });
 
-        // 총합계 줄 추가
         if (sortedClasses.length > 0) {
             html += `<tr style="background:#eef6ff; font-weight:bold; color:#052c65;">
                 <td>합계</td>
@@ -529,6 +487,117 @@ html += `
         }
 
         tbody.innerHTML = html;
+    }
+
+    // 🌟 새로 추가된 개인별 통계 계산 함수 🌟
+    function renderPersonalStats(year, month, lastDate) {
+        const tbody = document.getElementById('personal-stat-body');
+        tbody.innerHTML = ''; // 기존 내용 지우기
+
+        // 데이터가 없으면 안내 문구 표시
+        if (!applicationData || applicationData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="color:#6c757d; padding:20px;">해당 월의 신청 데이터가 없습니다.</td></tr>`;
+            return;
+        }
+
+        let personalStats = {}; // 학생별 통계를 담을 객체 생성
+        const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+        // 1. 학생별 기본 정보 초기화 (신청 데이터 기준)
+        applicationData.forEach(app => {
+            const stuIdStr = String(app.stu_id);
+            if (stuIdStr.length < 4) return; // 학번이 비정상적이면 건너뛰기
+            
+            if (!personalStats[stuIdStr]) {
+                personalStats[stuIdStr] = {
+                    stu_id: stuIdStr,
+                    stu_name: app.stu_name || '-', // 이름이 DB에 있다면 가져오고 없으면 '-'
+                    appliedDays: 0,   // 며칠을 신청했는지
+                    appliedTimes: 0,  // 몇 타임을 신청했는지 (0T, 1T 등 합산)
+                    attendedDays: 0,  // 며칠을 출석했는지
+                    attendedTimes: 0  // 몇 타임을 출석했는지
+                };
+            }
+        });
+
+        // 2. 달력의 1일부터 말일까지 하루씩 검사하면서 출석 횟수 계산
+        for (let d = 1; d <= lastDate; d++) {
+            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dayIdx = new Date(year, month - 1, d).getDay();
+            const dayKey = daysEng[dayIdx]; // 'mon', 'tue' 등 요일 키값
+
+            // 오늘이 휴무일인지 운영일인지 판단
+            let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
+            if (calendarSchedule.data[dateStr] !== undefined) {
+                isOperating = calendarSchedule.data[dateStr].active;
+            }
+
+            // 야자 운영일인 경우에만 계산
+            if (isOperating) {
+                // 해당 날짜의 전체 출석 기록을 가져옴
+                const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
+                
+                applicationData.forEach(app => {
+                    // 이 학생이 오늘(해당 요일) 야자를 신청했다면
+                    if (app[dayKey]) {
+                        const stuIdStr = String(app.stu_id);
+                        if (stuIdStr.length < 4) return;
+                        
+                        const stat = personalStats[stuIdStr];
+                        
+                        // 오늘 신청한 타임 개수 파악 (예: "1,2" 이면 2타임)
+                        const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
+                        
+                        // 신청 일수와 타임수 증가
+                        stat.appliedDays += 1;
+                        stat.appliedTimes += timesCount;
+
+                        // 출결 데이터에서 이 학생의 오늘 기록 찾기
+                        const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
+                        
+                        // 기록이 있고 "미입실"이 아니라면 정상 출석으로 인정!
+                        if (studentLog && studentLog.status !== "미입실") {
+                            stat.attendedDays += 1;
+                            stat.attendedTimes += timesCount;
+                        }
+                    }
+                });
+            }
+        }
+
+        // 3. 학번 순서대로 정렬하여 표에 출력하기
+        // 객체(personalStats)를 배열로 변환 후 정렬
+        const sortedStudents = Object.values(personalStats).sort((a, b) => parseInt(a.stu_id) - parseInt(b.stu_id));
+
+        let html = "";
+        sortedStudents.forEach(stat => {
+            // 학번에서 학급 추출 (예: 2101 -> 2학년 1반)
+            const classCode = stat.stu_id.slice(0, -2);
+            const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
+            
+            // 출석률 계산 (%)
+            let rate = 0;
+            if (stat.appliedTimes > 0) {
+                rate = Math.round((stat.attendedTimes / stat.appliedTimes) * 100);
+            }
+            
+            // 출석률에 따른 색상 변경 (80% 이상 초록색, 50% 미만 빨간색)
+            let rateColor = "color: #333;";
+            if (rate >= 80) rateColor = "color: #198754;";
+            else if (rate < 50) rateColor = "color: #dc3545;";
+
+            // 표의 한 줄(tr)을 생성
+            html += `<tr>
+                <td>${className}</td>
+                <td style="font-weight:bold;">${stat.stu_id}</td>
+                <td>${stat.stu_name}</td>
+                <td style="color:#6c757d;">${stat.appliedDays}일 <span style="font-size:12px;">(${stat.appliedTimes}타임)</span></td>
+                <td style="font-weight:bold; color:#0d6efd;">${stat.attendedDays}일 <span style="font-size:12px;">(${stat.attendedTimes}타임)</span></td>
+                <td style="font-weight:bold; ${rateColor}">${rate}%</td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html; // 완성된 HTML을 표 안에 삽입
     }
 </script>
 
