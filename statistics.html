@@ -95,6 +95,24 @@
     font-size: 11px;
     border: 1px dashed #adb5bd; /* 점선 테두리 */
 }
+
+/* --- 세 번째 줄 (현재/결과 데이터) 디자인 --- */
+.grid-item.status-val {
+    background: #ffffff;
+    color: #198754; /* 현재 진행상황은 눈에 띄는 초록색 톤으로 */
+    font-weight: bold;
+    font-size: 11px;
+    border: 1px dashed #adb5bd; /* 신청과 동일한 점선 */
+}
+/* 귀가 누락자가 발생했을 때 경고용 디자인 */
+.grid-item.status-error {
+    background: #f8d7da; /* 연한 빨간 배경 */
+    color: #dc3545; /* 빨간 글씨 */
+    border: 1px dashed #dc3545; /* 테두리도 빨갛게 */
+    font-weight: bold;
+    font-size: 11px;
+}
+
 </style>
 </head>
 <body>
@@ -261,6 +279,27 @@
                     // 통계 박스 출력
 // --- 변경할 JavaScript 통계 박스 출력 부분 ---
 // --- 변경할 JavaScript 통계 박스 출력 부분 ---
+// --- 날짜를 비교하여 세 번째 줄 라벨 결정 (과거/오늘/미래) ---
+const todayStr = new Date().toLocaleDateString('en-CA'); // 오늘 날짜를 YYYY-MM-DD 포맷으로 가져옴
+let row3Label = "현재";
+let row3Color = "#198754"; // 초록색
+
+if (dateStr < todayStr) {
+    row3Label = "결과";
+    row3Color = "#6c757d"; // 과거는 회색으로 차분하게
+} else if (dateStr > todayStr) {
+    row3Label = "대기";
+    row3Color = "#adb5bd"; // 미래는 연한 회색
+}
+
+// 🚨 주의: 선생님의 DB 출결 로그(attendanceLogsData)를 분석하여 0T~3T별 참여 인원을 구하는 로직이 필요합니다.
+// 지금은 UI 확인을 위해 임시 변수(c0~c3)를 만들어 두었습니다. 나중에 실제 출결 데이터 숫자로 연결해 주세요!
+let c0 = 0, c1 = 0, c2 = 0, c3 = 0; 
+// 예시: 만약 1타임에 귀가 누락자가 있어서 에러 표시를 하고 싶다면 아래처럼 클래스를 다르게 주면 됩니다.
+let c1Class = "status-val"; // 정상일 때
+// let c1Class = "status-error"; // 누락자 발생 시 이 클래스로 변경되도록 나중에 로직 구성
+
+// --- 변경할 JavaScript 통계 박스 출력 부분 ---
 html += `
     <div class="stat-box">
         <div class="apply-grid">
@@ -275,13 +314,20 @@ html += `
             <div class="grid-item val">${t1}</div>
             <div class="grid-item val">${t2}</div>
             <div class="grid-item val">${t3}</div>
+
+            <div class="grid-title" style="color:${row3Color};">${row3Label}</div>
+            <div class="grid-item ${c1Class}">${c0}</div> <div class="grid-item ${c1Class}">${c1}</div>
+            <div class="grid-item ${c1Class}">${c2}</div>
+            <div class="grid-item ${c1Class}">${c3}</div>
         </div>
         
-        <div class="box-current">
-            🏃 현재 진행: <span style="font-size:12px;">${currentPresent}명</span>
-        </div>
-        <div class="box-result">
-            ✅ 완료(귀가): <span style="font-size:12px;">${finalResult}명</span>
+        <div style="display:flex; justify-content:space-between; margin-top:2px;">
+            <div class="box-current" style="flex:1; margin-right:2px; font-size:10px;">
+                🏃 진행: ${currentPresent}명
+            </div>
+            <div class="box-result" style="flex:1; margin-left:2px; font-size:10px;">
+                ✅ 귀가: ${finalResult}명
+            </div>
         </div>
     </div>
 `;
