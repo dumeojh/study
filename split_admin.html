@@ -21,7 +21,7 @@
         /* 🌟 버튼 눌림 애니메이션 (시각적 피드백) 🌟 */
         .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: all 0.15s ease; }
         .btn:not(:disabled):active { transform: scale(0.94); box-shadow: inset 0 3px 6px rgba(0,0,0,0.25); filter: brightness(0.9); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; background-color: #adb5bd !important; } /* 비활성화 시 확 연해지도록 수정 */
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; background-color: #adb5bd !important; } 
         
         .btn-primary { background: var(--primary); }
         .btn-gray { background: var(--gray); }
@@ -50,7 +50,7 @@
         .status-missing-tag { background: #fff3cd !important; border: 3px solid #fd7e14 !important; color: #fd7e14 !important; text-decoration: underline; }
         .status-present-extra { background: #ffe8d6 !important; border: 2px solid #fd7e14 !important; color: #e65100 !important; }
 
-        /* 🌟 교사 수동 제어 전용 (충돌 방지: 안쪽으로 두 줄 외곽선 그리기) 🌟 */
+        /* 🌟 교사 수동 제어 전용 🌟 */
         .status-admin-absent { 
             background: #ffe5ec !important; 
             border: 2px dashed #d63384 !important; 
@@ -259,10 +259,10 @@
 
                 <h4 style="margin: 0 0 10px 0; color: #333; font-size: 14px; text-align: center;">👨‍🏫 교사 직접 출결 승인</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <button class="btn" style="background:#0d6efd; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('입실(교사인정)', this)">🟢 입실 처리</button>
-                    <button class="btn" style="background:#198754; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('복귀(교사인정)', this)">🔵 복귀 처리</button>
-                    <button class="btn" style="background:#fd7e14; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('외출(교사인정)', this)">🟡 외출 처리</button>
-                    <button class="btn" style="background:#d63384; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('미입실(빈자리)', this)">🔴 빈자리 처리</button>
+                    <button id="btn-manual-in" class="btn" style="background:#0d6efd; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('입실(교사인정)', this)">🟢 입실 처리</button>
+                    <button id="btn-manual-return" class="btn" style="background:#198754; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('복귀(교사인정)', this)">🔵 복귀 처리</button>
+                    <button id="btn-manual-out" class="btn" style="background:#fd7e14; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('외출(교사인정)', this)">🟡 외출 처리</button>
+                    <button id="btn-manual-absent" class="btn" style="background:#d63384; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('미입실(빈자리)', this)">🔴 빈자리 처리</button>
                     <button id="btn-manual-finish" class="btn" style="background:#6c757d; color:white; padding:15px; font-size:14px; grid-column: span 2;" onclick="manualAttendanceUpdate('귀가(교사인정)', this)">⚪ 최종 귀가 처리</button>
                 </div>
                 
@@ -819,14 +819,41 @@
             recentLogDiv.innerHTML = `최근 기록 참고: <b style="color:#999;">없음 (미입실)</b>`;
         }
 
-        // 🌟 [추가됨] 학생이 이미 '귀가' 상태이면 귀가 버튼 비활성화 🌟
-        const finishBtn = document.getElementById('btn-manual-finish');
-        if (log && (log.status === "귀가" || log.status === "귀가(누락)")) {
-            finishBtn.disabled = true;
-            finishBtn.innerText = "⚪ 이미 귀가 완료됨";
-        } else {
-            finishBtn.disabled = false;
-            finishBtn.innerText = "⚪ 최종 귀가 처리";
+        // 🌟 [추가됨] 현재 상태에 따라 불필요한 버튼 비활성화 🌟
+        const btnIn = document.getElementById('btn-manual-in');
+        const btnReturn = document.getElementById('btn-manual-return');
+        const btnOut = document.getElementById('btn-manual-out');
+        const btnAbsent = document.getElementById('btn-manual-absent');
+        const btnFinish = document.getElementById('btn-manual-finish');
+
+        // 매번 열릴 때마다 기본 텍스트 및 활성화 상태로 리셋
+        btnIn.disabled = false; btnIn.innerText = "🟢 입실 처리";
+        btnReturn.disabled = false; btnReturn.innerText = "🔵 복귀 처리";
+        btnOut.disabled = false; btnOut.innerText = "🟡 외출 처리";
+        btnAbsent.disabled = false; btnAbsent.innerText = "🔴 빈자리 처리";
+        btnFinish.disabled = false; btnFinish.innerText = "⚪ 최종 귀가 처리";
+
+        const currentStatus = log ? log.status : "미입실";
+
+        if (currentStatus === "귀가" || currentStatus === "귀가(누락)") {
+            btnFinish.disabled = true;
+            btnFinish.innerText = "⚪ 이미 귀가 완료됨";
+        } else if (currentStatus === "입실") {
+            btnIn.disabled = true;
+            btnIn.innerText = "🟢 이미 입실됨";
+            btnReturn.disabled = true; // 입실 상태에선 복귀 불필요
+        } else if (currentStatus === "복귀") {
+            btnReturn.disabled = true;
+            btnReturn.innerText = "🔵 이미 복귀됨";
+            btnIn.disabled = true; // 복귀 상태면 입실 불필요
+        } else if (currentStatus === "외출") {
+            btnOut.disabled = true;
+            btnOut.innerText = "🟡 이미 외출 중";
+        } else if (currentStatus === "미입실") {
+            btnAbsent.disabled = true;
+            btnAbsent.innerText = "🔴 이미 빈자리";
+            btnOut.disabled = true; // 미입실인데 외출 불가
+            btnReturn.disabled = true; // 미입실인데 복귀 불가
         }
     }
 
