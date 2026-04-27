@@ -168,6 +168,8 @@
         <button class="btn btn-save" onclick="saveSeatLayout()">🌐 도면 서버 배포</button>
     </div>
 
+
+
 <div id="tab-time" class="card">
         <h3>⏱️ 야간 자율학습 운영 시간 및 발권 설정</h3>
         <div style="display:grid; gap:15px; padding:20px; background:#f8f9fa; border-radius:12px;">
@@ -189,6 +191,16 @@
                     <input type="text" id="ticket-notice" placeholder="첫 화면에 표시될 안내 문구" style="width:100%; margin-top:5px; padding:8px; border:1px solid #ccc; border-radius:4px;">
                 </div>
             </div>
+
+<div style="margin-bottom:15px; background:#fff3cd; padding:15px; border-radius:8px; border:1px solid #ffeeba;">
+    <b style="color:#856404;">🚨 일일 출결 자동 마감(과거 데이터 정리)</b><br>
+    <p style="font-size:13px; margin:5px 0;">키오스크나 관리자 페이지가 실행될 때, 과거 날짜의 미귀가자를 자동으로 찾아 '귀가(누락)' 처리합니다.</p>
+    <label style="display:block; margin-top:8px;">
+        <input type="checkbox" id="auto-close-enable" checked> <b>자동 마감 기능 켜기</b>
+    </label>
+</div>
+
+
 <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #eee; padding-bottom:10px;">
                 <b style="font-size:16px;">1T:</b> 
                 <input type="time" id="t1-start" onchange="calculateMinutes(1)"> ~ <input type="time" id="t1-end" onchange="calculateMinutes(1)"> 
@@ -382,7 +394,8 @@ async function saveTimeSettings() {
             t3: document.getElementById('t3-start').value, t3_end: document.getElementById('t3-end').value,
             t1_req: document.getElementById('t1-req-min').value,
             t2_req: document.getElementById('t2-req-min').value,
-            t3_req: document.getElementById('t3-req-min').value
+            t3_req: document.getElementById('t3-req-min').value,
+            autoClose: document.getElementById('auto-close-enable').checked
         }
     });
     if(error) alert("오류: " + error.message);
@@ -456,6 +469,13 @@ async function loadAllSettings() {
             document.getElementById('t1-req-min').value = d.t1_req || "60";
             document.getElementById('t2-req-min').value = d.t2_req || "60";
             document.getElementById('t3-req-min').value = d.t3_req || "60";
+// 👇 새로 추가할 부분: 저장된 자동 마감 상태 불러오기
+            if (d.autoClose !== undefined) {
+                document.getElementById('auto-close-enable').checked = d.autoClose;
+            } else {
+                document.getElementById('auto-close-enable').checked = true; // 기본값
+            }
+
         } else { 
             // 데이터가 아예 없을 때의 기본값
             document.getElementById('ticket-lead-time').value = "30";
@@ -469,6 +489,9 @@ async function loadAllSettings() {
             document.getElementById('t1-req-min').value = "60";
             document.getElementById('t2-req-min').value = "60";
             document.getElementById('t3-req-min').value = "60";
+
+            // 👇 새로 추가할 부분
+            document.getElementById('auto-close-enable').checked = true;
         }
 
         for(let i=1; i<=3; i++) calculateMinutes(i);

@@ -418,6 +418,53 @@ async function executeLogic(id, studentName) {
             focusScanner();
         }, 2500); 
     }
+
+// 과거 미마감 데이터 자동 청소 함수
+async function autoSweepPastAttendance() {
+    try {
+        const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+        // 환경설정에서 자동 마감 기능을 꺼두었다면 실행하지 않음
+        if (schedDoc && schedDoc.value && schedDoc.value.autoClose === false) return;
+
+        // 오늘 날짜 문자열 (예: 2026-04-27)
+        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); 
+
+        // 1. Supabase에서 날짜가 '오늘'보다 작고(과거), 상태가 귀가가 아닌 데이터 모두 검색
+        const { data: pastLogs, error: fetchError } = await supabaseClient
+            .from('attendance_logs')
+            .select('*')
+            .lt('date', todayStr)
+            .not('status', 'in', '("귀가", "귀가(누락)")');
+
+        if (fetchError) throw fetchError;
+
+        // 2. 누락된 데이터가 있다면 모두 '귀가(누락)'으로 일괄 업데이트
+        if (pastLogs && pastLogs.length > 0) {
+            console.log(`🚨 과거 미마감 데이터 ${pastLogs.length}건 발견. 자동 마감을 진행합니다.`);
+            
+            for (let log of pastLogs) {
+                let newHistory = log.history || [];
+                newHistory.push(`시스템 자동 마감 (태그 누락)`);
+                
+                await supabaseClient.from("attendance_logs").update({
+                    status: "귀가(누락)",
+                    last_update_time: new Date().toISOString(),
+                    history: newHistory
+                }).eq("id", log.id);
+            }
+            console.log("✅ 과거 데이터 자동 마감 완료");
+        }
+    } catch (e) {
+        console.error("과거 데이터 자동 마감 중 오류:", e);
+    }
+}
+
+// 스크립트가 로드될 때 (또는 자정이 지났을 때) 한 번 실행되도록 호출
+autoSweepPastAttendance();
+
+// 매일 자정이 넘어가는 시점을 대비해 1시간마다 한 번씩 체크하게 만들 수도 있습니다.
+setInterval(autoSweepPastAttendance, 60 * 60 * 1000);
+
 </script>
 </body>
 </html>

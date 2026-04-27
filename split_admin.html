@@ -1431,41 +1431,51 @@ if (tmMatch) {
         } catch(e) { alert("오류: " + e.message); }
     }
 
-    async function closeMissingTags() {
-        const targetDate = document.getElementById('daily-date').value; 
-        if (!confirm(`${targetDate} 일자의 출결을 마감하시겠습니까?\n아직 귀가하지 않은 학생은 '태그 누락'으로 처리됩니다.`)) return;
 
-        try {
-            const { data: logs } = await supabaseClient.from("attendance_logs").select("*").eq("date", targetDate);
-            let missingCount = 0;
-            const now = new Date().toISOString();
 
-            if (logs) {
-                for (let log of logs) {
-                    if (log.status !== "귀가" && log.status !== "귀가(누락)") {
-                        missingCount++;
-                        let newHistory = log.history || [];
-                        newHistory.push(`🚨 태그 누락 강제 마감`);
-                        await supabaseClient.from("attendance_logs").update({
-                            status: "귀가(누락)",
-                            last_update_time: now,
-                            history: newHistory
-                        }).eq("id", log.id);
-                    }
-                }
-            }
 
-            if (missingCount > 0) {
-                alert(`총 ${missingCount}명의 태그 누락자를 강제 마감 처리했습니다.`);
-                loadDailyDataAndRender(); 
-            } else {
-                alert("태그 누락자가 없습니다. 완벽한 하루네요!");
-            }
-        } catch (e) {
-            console.error("마감 처리 중 오류:", e);
-            alert("오류가 발생했습니다: " + e.message);
+async function closeMissingTags() {
+    const targetDate = document.getElementById('daily-date').value; 
+    
+    // 안내창을 조금 더 명확하게 수정
+    if (!confirm(`[경고] 정말 ${targetDate} 일자의 출결을 마감하시겠습니까?\n현재 시각 기준으로 '입실'이나 '외출' 상태인 학생은 모두 '태그 누락(귀가)'으로 강제 전환됩니다.`)) return;
+
+    try {
+        const { data: logs } = await supabaseClient.from("attendance_logs")
+            .select("*")
+            .eq("date", targetDate)
+            .not('status', 'in', '("귀가", "귀가(누락)")'); // 미귀가자만 가져오기
+
+        if (!logs || logs.length === 0) {
+            alert(`${targetDate} 일자에는 강제 마감할 태그 누락자가 없습니다!`);
+            return;
         }
+
+        let missingCount = 0;
+        const now = new Date().toISOString();
+
+        for (let log of logs) {
+            missingCount++;
+            let newHistory = log.history || [];
+            newHistory.push(`🚨 관리자 강제 마감`);
+            
+            await supabaseClient.from("attendance_logs").update({
+                status: "귀가(누락)",
+                last_update_time: now,
+                history: newHistory
+            }).eq("id", log.id);
+        }
+
+        alert(`총 ${missingCount}명의 태그 누락자를 강제 마감 처리했습니다.`);
+        loadDailyDataAndRender(); 
+        
+    } catch (e) {
+        console.error("마감 처리 중 오류:", e);
+        alert("오류가 발생했습니다: " + e.message);
     }
+}
+
+
 
     async function calculateAndRenderStats() {
         const selectedMonth = document.getElementById('stats-month-filter').value;
@@ -1557,6 +1567,40 @@ if (tmMatch) {
             document.getElementById('stats-loading').style.display = 'none';
         }
     }
+
+    // 🌟 관리자 페이지 실행 시 과거 미마감 데이터 자동 청소
+async function autoSweepPastAttendance() {
+    try {
+        const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+        if (schedDoc && schedDoc.value && schedDoc.value.autoClose === false) return;
+
+        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); 
+        const { data: pastLogs, error: fetchError } = await supabaseClient
+            .from('attendance_logs')
+            .select('*')
+            .lt('date', todayStr)
+            .not('status', 'in', '("귀가", "귀가(누락)")');
+
+        if (fetchError) throw fetchError;
+
+        if (pastLogs && pastLogs.length > 0) {
+            for (let log of pastLogs) {
+                let newHistory = log.history || [];
+                newHistory.push(`시스템 자동 마감 (태그 누락)`);
+                await supabaseClient.from("attendance_logs").update({
+                    status: "귀가(누락)",
+                    last_update_time: new Date().toISOString(),
+                    history: newHistory
+                }).eq("id", log.id);
+            }
+            console.log("✅ 관리자 화면 - 과거 데이터 자동 마감 완료");
+            loadDailyDataAndRender(); // 화면 새로고침 효과
+        }
+    } catch (e) { console.error("자동 마감 중 오류:", e); }
+}
+
+// 관리자 페이지 로드 시 1회 실행
+autoSweepPastAttendance();
 </script>
 </body>
 
