@@ -81,6 +81,10 @@
 
     // ★ 스캐너 속도 측정을 위한 변수
     let firstCharTime = 0;
+    
+    // 🌟 추가: 환경설정에서 가져올 인증 모드와 야자 최종 종료 시간
+    let authMode = "1"; 
+    let finalEndTime = "21:30"; 
 
     function updateClock() {
         const now = new Date();
@@ -119,24 +123,28 @@
         if(!isProcessing && document.activeElement !== scannerInput && document.activeElement !== nameInput) focusScanner(); 
     }, 2000);
 
-    let authMode = "1"; 
-
     async function fetchSettings() {
         const { data, error } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
-        if (data && data.value && data.value.authMode) {
-            authMode = data.value.authMode;
-            if (authMode === "3") nameInput.style.display = 'block'; 
+        if (data && data.value) {
+            if (data.value.authMode) {
+                authMode = data.value.authMode;
+                if (authMode === "3") nameInput.style.display = 'block'; 
+            }
+            // 🌟 추가: 환경설정에서 3T 종료 시간 가져오기
+            if (data.value.t3_end) {
+                finalEndTime = data.value.t3_end;
+            }
         }
     }
     fetchSettings();
-    // 🌟 추가: 키오스크가 켜져 있는 동안 1시간마다 명단과 설정을 자동으로 새로 고칩니다.
-setInterval(() => {
-    console.log("실시간 데이터(명단/설정) 동기화 중...");
-    fetchRoster();
-    fetchSettings();
-}, 60 * 60 * 1000); // 60분마다 실행
 
-    // ★ 타자 속도 측정을 위해 첫 글자를 입력한 시간 기록
+    // 키오스크가 켜져 있는 동안 1시간마다 명단과 설정을 자동으로 새로 고침
+    setInterval(() => {
+        console.log("실시간 데이터(명단/설정) 동기화 중...");
+        fetchRoster();
+        fetchSettings();
+    }, 60 * 60 * 1000); 
+
     scannerInput.addEventListener('input', function (e) {
         if (scannerInput.value.length === 1) {
             firstCharTime = Date.now();
@@ -148,7 +156,6 @@ setInterval(() => {
             e.preventDefault(); 
             if(isProcessing) return; 
 
-            // ★ 바코드 스캐너 판별: 입력 속도가 200ms 이하면 스캐너로 간주
             let typeSpeed = Date.now() - firstCharTime;
             let isScanner = (typeSpeed < 200);
 
@@ -240,14 +247,13 @@ setInterval(() => {
         focusScanner(); 
     }
 
-async function executeLogic(id, studentName) {
+    async function executeLogic(id, studentName) {
         scannerInput.value = ""; nameInput.value = ""; 
         const now = new Date();
         const currentMonthStr = (now.getMonth() + 1) + "월";
         const todayDayEng = ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
 
         try {
-            // 1. 이번 달 야자 신청자인지 확인
             const { data: appDataList, error: appError } = await supabaseClient
                 .from('applications')
                 .select('*')
@@ -260,15 +266,11 @@ async function executeLogic(id, studentName) {
             }
             
             const appData = appDataList[0];
-            // 2. 오늘 요일 신청자인지 확인
             if (!appData[todayDayEng]) {
                  showReceipt(studentName, "입실 불가", "오늘 신청 아님", "오늘은 야자를 신청한 요일이 아닙니다.", "#dc3545");
                  return; 
             }
 
-            // =========================================================================
-            // 🌟 [추가할 부분] 자율석 학생일 경우, 오늘 발권 내역이 있는지 확인!
-            // =========================================================================
             if (appData.type === "자율석") {
                 const { data: ticketData, error: ticketError } = await supabaseClient
                     .from('daily_reservations')
@@ -277,15 +279,11 @@ async function executeLogic(id, studentName) {
                     .eq('stu_id', id)
                     .maybeSingle();
 
-                // 티켓 발권 내역이 없다면 강제 종료 및 에러 메시지 출력
                 if (!ticketData || !ticketData.seat_num) {
                     showReceipt(studentName, "입실 불가", "자리 미발권", "자율석 발권기에서 먼저 자리를 선택해주세요! 🎟️", "#dc3545");
                     return; 
                 }
             }
-            // =========================================================================
-
-
 
             const logId = `${todayStr}_${id}`;
             const { data: logData, error: logError } = await supabaseClient
@@ -307,10 +305,23 @@ async function executeLogic(id, studentName) {
 
             currentStudentLogData = logData;
 
+            // 🌟 3T 종료 시간(최종 마감 시간) 이후에는 무조건 귀가 처리하는 로직 추가
+            const currentMin = now.getHours() * 60 + now.getMinutes();
+            const [endH, endM] = finalEndTime.split(':').map(Number);
+            const finalEndMin = endH * 60 + endM;
+
             if (lastStatus === "미입실") saveAttendance(id, studentName, "입실", now);
-            else if (lastStatus === "입실" || lastStatus === "복귀") showSmartSelection(id, studentName); 
+            else if (lastStatus === "입실" || lastStatus === "복귀") {
+                if (currentMin >= finalEndMin) {
+                    // 야자 종료 시간 이후라면 바로 귀가 처리
+                    saveAttendance(id, studentName, "귀가", now);
+                } else {
+                    // 그 전이라면 기존처럼 외출/귀가 선택 팝업 띄우기
+                    showSmartSelection(id, studentName); 
+                }
+            } 
             else if (lastStatus === "외출") saveAttendance(id, studentName, "복귀", now);
-            else if (lastStatus === "귀가") showReceipt(studentName, "이미 귀가함", "최종 귀가 처리된 학생입니다.", "관리자에게 문의하세요.", "#6c757d");
+            else if (lastStatus === "귀가" || lastStatus === "귀가(누락)") showReceipt(studentName, "이미 귀가함", "최종 귀가 처리된 학생입니다.", "관리자에게 문의하세요.", "#6c757d");
 
         } catch (e) { showReceipt("오류", "통신 실패", "연결 상태 확인 요망", e.message, "#dc3545"); }
     }
@@ -348,15 +359,11 @@ async function executeLogic(id, studentName) {
         saveAttendance(id, name, status, new Date());
     }
 
-
-
-// ★ 자물쇠가 풀린 DB를 위한 완벽한 덮어쓰기 저장 함수
     async function saveAttendance(id, name, status, timeObj) {
         const logId = `${todayStr}_${id}`;
         const timeStr = timeObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
         
         try {
-            // 1. 기존 로그 가져오기 (이제 자물쇠가 풀려서 완벽하게 가져옵니다!)
             const { data: currentData } = await supabaseClient
                 .from('attendance_logs')
                 .select('history')
@@ -366,7 +373,6 @@ async function executeLogic(id, studentName) {
             let newHistory = (currentData && currentData.history) ? currentData.history : [];
             newHistory.push(`${status} (${timeStr})`);
 
-            // 2. 덮어쓰기 (Upsert: 있으면 수정, 없으면 새로 추가를 DB가 알아서 처리)
             const { error } = await supabaseClient
                 .from('attendance_logs')
                 .upsert({
@@ -382,7 +388,14 @@ async function executeLogic(id, studentName) {
             if (error) throw error;
 
             let color = status === "입실" ? "#0d6efd" : (status === "복귀" ? "#198754" : (status === "외출" ? "#b38200" : "#dc3545"));
-            showReceipt(name, status + " 완료", `처리시간: ${timeStr}`, "정상 처리되었습니다.", color);
+            
+            // 🌟 3T 종료 후 자동 귀가 처리된 경우 메시지 추가
+            let successMsg = "정상 처리되었습니다.";
+            if (status === "귀가" && new Date().getHours() * 60 + new Date().getMinutes() >= parseInt(finalEndTime.split(':')[0]) * 60 + parseInt(finalEndTime.split(':')[1])) {
+                successMsg = "야자 종료 시간 경과로 <b>자동 귀가 처리</b> 되었습니다.";
+            }
+
+            showReceipt(name, status + " 완료", `처리시간: ${timeStr}`, successMsg, color);
             
         } catch(e) {
             showReceipt("오류", "저장 실패", "연결 오류", e.message || "알 수 없는 오류가 발생했습니다.", "#dc3545");
@@ -403,7 +416,7 @@ async function executeLogic(id, studentName) {
         document.getElementById('r-status').innerText = status;
         document.getElementById('r-status').style.color = color;
         document.getElementById('r-time').innerText = timeInfo;
-        document.getElementById('r-msg').innerText = msg;
+        document.getElementById('r-msg').innerHTML = msg; 
         
         const overlay = document.getElementById('result-overlay');
         overlay.style.display = 'flex';
@@ -419,51 +432,43 @@ async function executeLogic(id, studentName) {
         }, 2500); 
     }
 
-// 과거 미마감 데이터 자동 청소 함수
-async function autoSweepPastAttendance() {
-    try {
-        const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
-        // 환경설정에서 자동 마감 기능을 꺼두었다면 실행하지 않음
-        if (schedDoc && schedDoc.value && schedDoc.value.autoClose === false) return;
+    async function autoSweepPastAttendance() {
+        try {
+            const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+            if (schedDoc && schedDoc.value && schedDoc.value.autoClose === false) return;
 
-        // 오늘 날짜 문자열 (예: 2026-04-27)
-        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); 
+            const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); 
 
-        // 1. Supabase에서 날짜가 '오늘'보다 작고(과거), 상태가 귀가가 아닌 데이터 모두 검색
-        const { data: pastLogs, error: fetchError } = await supabaseClient
-            .from('attendance_logs')
-            .select('*')
-            .lt('date', todayStr)
-            .not('status', 'in', '("귀가", "귀가(누락)")');
+            const { data: pastLogs, error: fetchError } = await supabaseClient
+                .from('attendance_logs')
+                .select('*')
+                .lt('date', todayStr)
+                .not('status', 'in', '("귀가", "귀가(누락)")');
 
-        if (fetchError) throw fetchError;
+            if (fetchError) throw fetchError;
 
-        // 2. 누락된 데이터가 있다면 모두 '귀가(누락)'으로 일괄 업데이트
-        if (pastLogs && pastLogs.length > 0) {
-            console.log(`🚨 과거 미마감 데이터 ${pastLogs.length}건 발견. 자동 마감을 진행합니다.`);
-            
-            for (let log of pastLogs) {
-                let newHistory = log.history || [];
-                newHistory.push(`시스템 자동 마감 (태그 누락)`);
+            if (pastLogs && pastLogs.length > 0) {
+                console.log(`🚨 과거 미마감 데이터 ${pastLogs.length}건 발견. 자동 마감을 진행합니다.`);
                 
-                await supabaseClient.from("attendance_logs").update({
-                    status: "귀가(누락)",
-                    last_update_time: new Date().toISOString(),
-                    history: newHistory
-                }).eq("id", log.id);
+                for (let log of pastLogs) {
+                    let newHistory = log.history || [];
+                    newHistory.push(`시스템 자동 마감 (태그 누락)`);
+                    
+                    await supabaseClient.from("attendance_logs").update({
+                        status: "귀가(누락)",
+                        last_update_time: new Date().toISOString(),
+                        history: newHistory
+                    }).eq("id", log.id);
+                }
+                console.log("✅ 과거 데이터 자동 마감 완료");
             }
-            console.log("✅ 과거 데이터 자동 마감 완료");
+        } catch (e) {
+            console.error("과거 데이터 자동 마감 중 오류:", e);
         }
-    } catch (e) {
-        console.error("과거 데이터 자동 마감 중 오류:", e);
     }
-}
 
-// 스크립트가 로드될 때 (또는 자정이 지났을 때) 한 번 실행되도록 호출
-autoSweepPastAttendance();
-
-// 매일 자정이 넘어가는 시점을 대비해 1시간마다 한 번씩 체크하게 만들 수도 있습니다.
-setInterval(autoSweepPastAttendance, 60 * 60 * 1000);
+    autoSweepPastAttendance();
+    setInterval(autoSweepPastAttendance, 60 * 60 * 1000);
 
 </script>
 </body>
