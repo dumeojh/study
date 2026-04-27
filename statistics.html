@@ -58,12 +58,11 @@
 
 
 
-
-/* --- 신청 현황 그리드 디자인 (위아래 정렬 완벽 일치) --- */
+/* --- 신청 현황 그리드 디자인 --- */
 .apply-grid {
     display: grid;
-    grid-template-columns: 26px 1fr 1fr 1fr 1fr; /* 라벨 칸(26px) + 나머지 4칸을 동일한 비율(1fr)로 분배 */
-    gap: 3px; /* 박스 상하좌우 간격 */
+    grid-template-columns: 26px 1fr 1fr 1fr 1fr;
+    gap: 3px;
     margin-bottom: 5px;
     align-items: center;
 }
@@ -74,20 +73,27 @@
     text-align: left;
     letter-spacing: -0.5px;
 }
+/* 공통 박스 설정 */
 .grid-item {
     text-align: center;
-    border: 1px dashed #adb5bd; /* 점선 테두리 */
-    border-radius: 3px;
+    border-radius: 4px;
     padding: 2px 0;
     font-size: 10px;
-    background: #f8f9fa; /* 윗줄(구분)은 연한 회색 배경으로 시각적 분리 */
-    color: #6c757d;
 }
+/* 윗줄 (0T, 1T, 2T, 3T) - 스크린샷 1T처럼 진하게 */
+.grid-item.header {
+    background: #6c757d; /* 진한 회색 */
+    color: #ffffff; /* 흰색 글씨 */
+    border: 1px solid #6c757d; /* 단단한 실선 테두리 */
+    font-weight: bold;
+}
+/* 아랫줄 (신청 인원 수) - 기존 점선 유지 */
 .grid-item.val {
-    background: #ffffff; /* 아랫줄(신청 인원)은 흰색 배경 */
-    color: #111; /* 글씨 진하게 */
+    background: #ffffff;
+    color: #111;
     font-weight: bold;
     font-size: 11px;
+    border: 1px dashed #adb5bd; /* 점선 테두리 */
 }
 </style>
 </head>
@@ -259,10 +265,10 @@ html += `
     <div class="stat-box">
         <div class="apply-grid">
             <div class="grid-title">구분</div>
-            <div class="grid-item">0T</div>
-            <div class="grid-item">1T</div>
-            <div class="grid-item">2T</div>
-            <div class="grid-item">3T</div>
+            <div class="grid-item header">0T</div>
+            <div class="grid-item header">1T</div>
+            <div class="grid-item header">2T</div>
+            <div class="grid-item header">3T</div>
             
             <div class="grid-title" style="color:#0d6efd;">신청</div>
             <div class="grid-item val">${t0}</div>
