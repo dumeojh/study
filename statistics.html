@@ -218,7 +218,7 @@
 
             // 2. 해당 월의 출결 로그 모두 가져오기 (해당 월 1일 ~ 말일)
             const { data: logs } = await supabaseClient.from('attendance_logs')
-                .select('date, status')
+                .select('date, status, stu_id') // 👈 학번(stu_id) 추가 완료!
                 .gte('date', startDate)
                 .lte('date', endDate);
             attendanceLogsData = logs || [];
@@ -346,15 +346,36 @@ if (dateStr < todayStr) {
 
 
 
-
+////////
+// 👇 새로 들어갈 실제 데이터 계산 로직 👇
 let c0 = 0, c1 = 0, c2 = 0, c3 = 0; 
+let err0 = 0, err1 = 0, err2 = 0, err3 = 0; // 태그 누락자 에러 카운트용
 
-// 0T, 1T, 2T, 3T 각각의 색상을 따로따로 제어하기 위해 4개의 변수를 만듭니다.
-let c0Class = "status-val";
-let c1Class = "status-val"; 
-let c2Class = "status-val";
-let c3Class = "status-val";
+// 오늘 요일(dayKey)에 야자를 신청한 학생들을 한 명씩 확인합니다.
+applicationData.forEach(app => {
+    if (app[dayKey]) {
+        // 이 학생의 오늘 출결 기록(dayLogs)이 있는지 학번으로 찾습니다.
+        const studentLog = dayLogs.find(log => String(log.stu_id) === String(app.stu_id));
+        
+        // 출결 기록이 있고, "미입실"이 아니라면 참석한 것으로 인정합니다!
+        if (studentLog && studentLog.status !== "미입실") {
+            const isError = (studentLog.status === "귀가(누락)"); // 태그 누락자인지 확인
 
+            // 학생이 신청한 타임에 +1씩 더해줍니다. 누락자면 에러 카운트도 +1 합니다.
+            if (app[dayKey].includes('0')) { c0++; if(isError) err0++; }
+            if (app[dayKey].includes('1')) { c1++; if(isError) err1++; }
+            if (app[dayKey].includes('2')) { c2++; if(isError) err2++; }
+            if (app[dayKey].includes('3')) { c3++; if(isError) err3++; }
+        }
+    }
+});
+
+// 0T, 1T, 2T, 3T 칸의 색상을 결정합니다. (해당 타임에 누락자가 1명이라도 있으면 빨간색 경고!)
+let c0Class = err0 > 0 ? "status-error" : "status-val";
+let c1Class = err1 > 0 ? "status-error" : "status-val"; 
+let c2Class = err2 > 0 ? "status-error" : "status-val";
+let c3Class = err3 > 0 ? "status-error" : "status-val";
+// 👆 계산 로직 끝 👆
 // --- 변경할 JavaScript 통계 박스 출력 부분 ---
 html += `
     <div class="stat-box">
@@ -408,9 +429,6 @@ html += `
     }
 
 
-    // ==========================================
-    // 👇 여기서부터 복사해서 맨 아래 (</script> 바로 위)에 붙여넣으세요
-    // ==========================================
 
     // --- 탭 전환 함수 ---
     function switchTab(tabId, btn) {
