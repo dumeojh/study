@@ -1,263 +1,95 @@
 <!DOCTYPE html>
-
 <html lang="ko">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>안성여고 - 자율학습 통합 관리자</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-
         :root { --primary: #007bff; --success: #28a745; --warning: #ffc107; --danger: #dc3545; --gray: #6c757d; }
-
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
-
         .container { max-width: 1250px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-
         h2 { text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin: 0; }
-
         .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-
         .tab-menu { display: flex; gap: 5px; margin-bottom: 25px; background: #eee; padding: 5px; border-radius: 10px; flex-wrap: wrap; }
-
         .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; background: transparent; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; min-width: 120px; }
-
         .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-
         .tab-content { display: none; animation: fadeIn 0.3s ease; }
-
         .tab-content.active { display: block; }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
         .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
-
         .btn-primary { background: var(--primary); }
-
         .btn-gray { background: var(--gray); }
-
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; background: white; }
-
         th, td { border: 1px solid #dee2e6; padding: 12px 8px; text-align: center; }
-
         th { background: #f8f9fa; }
-
         tbody tr:hover { background-color: #f1f8ff; }
 
-
-
         /* 좌석 격자 */
-
         .seat-grid { display: grid; gap: 4px; justify-content: start; overflow-x: auto; padding: 10px; background: #eee; border-radius: 10px; }
-
         .seat-cell { width: 55px; height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border-radius: 5px; border: 1px solid #ccc; transition: 0.2s; text-align: center; line-height: 1.2; background: white; }
+        
+        .seat-0 { background: transparent; border: none; }
+        .seat-1 { background: white; } 
+        .seat-2 { background: white; } 
+        .seat-3 { background: #e2e3e5; color: #41464b; }
+        .seat-4 { background: #cff4fc; color: #055160; }
+        .seat-5 { background: #f8d7da; color: #842029; }
 
-/* 좌석 격자 기본 설정 */
+        .status-absent { background: #fff0f0 !important; border: 2px dashed #dc3545 !important; color: #dc3545 !important; }
+        .status-finish { background: #f8f9fa !important; border: 2px solid #6c757d !important; color: #6c757d !important; }
+        .status-present-fixed { background: #fff3cd !important; border: 2px solid #ffc107 !important; color: #856404 !important; }
+        .status-present-auto { background: #d1e7dd !important; border: 2px solid #2e7d32 !important; color: #0f5132 !important; }
 
-.seat-0 { background: transparent; border: none; }
-
-.seat-1 { background: white; } /* 변경: 고정석 기본 바탕 흰색 */
-
-.seat-2 { background: white; } /* 변경: 자율석 기본 바탕 흰색 */
-
-.seat-3 { background: #e2e3e5; color: #41464b; }
-
-.seat-4 { background: #cff4fc; color: #055160; }
-
-.seat-5 { background: #f8d7da; color: #842029; }
-
-
-
-/* 🌟 상태별 디자인 클래스 명확화 */
-
-/* 미입실(결석): 연한 빨간색 바탕 + 빨간색 점선 테두리 */
-
-.status-absent { background: #fff0f0 !important; border: 2px dashed #dc3545 !important; color: #dc3545 !important; }
-
-/* 🌟 귀가 완료(추가): 연한 회색 바탕 + 진한 회색 실선 테두리 (일과 끝) */
-
-.status-finish { background: #f8f9fa !important; border: 2px solid #6c757d !important; color: #6c757d !important; }
-
-
-
-/* 입실 완료(고정석): 연한 노란색 바탕 + 노란 실선 테두리 */
-
-
-
-/* 입실 완료(고정석): 연한 노란색 바탕 + 노란 실선 테두리 */
-
-.status-present-fixed { background: #fff3cd !important; border: 2px solid #ffc107 !important; color: #856404 !important; }
-
-
-
-/* 입실 완료(자율석): 연한 초록색 바탕 + 초록 실선 테두리 */
-
-.status-present-auto { background: #d1e7dd !important; border: 2px solid #2e7d32 !important; color: #0f5132 !important; }
-
-
-
-        /* 상담 리포트 */
-
+        /* 상담 리포트 모달 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
-
         .modal-content { background: white; padding: 25px; border-radius: 15px; width: 95%; max-width: 650px; overflow-y: auto; max-height: 90vh; }
-
         .counsel-calendar { width: 100%; border-collapse: collapse; margin-top: 15px; table-layout: fixed; }
-
         .counsel-calendar th, .counsel-calendar td { border: 1px solid #eee; padding: 5px; text-align: center; }
-
         .counsel-calendar td { height: 80px; vertical-align: top; font-size: 12px; }
-
         .day-box { font-weight: bold; margin-bottom: 5px; }
-
         .time-slot-container { display: flex; flex-direction: column; gap: 2px; }
-
         .time-slot { font-size: 9px; padding: 1px 0; border-radius: 3px; border: 1px solid #f0f0f0; color: #ccc; text-align: center; }
-
         .slot-applied { border: 1px solid var(--primary); color: var(--primary); }
-
         .slot-present { background: var(--primary); color: white !important; }
-
         .slot-absent { background: #fff0f0; color: var(--danger) !important; border-color: var(--danger); }
 
-
-
-        /* 입력 폼 (한 줄 배치 최적화) */
-
+        /* 입력 폼 */
         .form-card { background:#f8f9fa; padding:25px; border-radius:10px; border:1px solid #ddd; }
-
         .input-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
-
         .input-group-item { flex: 1; min-width: 130px; }
-
         .input-group-item label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px; color: #555; }
-
         .input-group-item input, .input-group-item select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; height: 42px; }
+        .time-input-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .time-item { flex: 0 1 65px; text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
+        .time-item label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        .time-item input { width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ddd; border-radius: 4px; text-align: center; font-size: 16px; font-weight: bold; }
 
- /* 🌟 수정된 폼 레이아웃 (입력칸 크기 축소 및 가운데 정렬) */
-.time-input-row { 
-    display: flex; 
-    gap: 10px; 
-    flex-wrap: wrap; 
-    justify-content: center; /* 가운데로 예쁘게 모아줍니다 */
-}
-
-.time-item { 
-    flex: 0 1 65px; /* 넓이가 무한정 늘어나지 않도록 고정 크기 부여 */
-    text-align: center; 
-    background: white; 
-    padding: 10px; 
-    border-radius: 8px; 
-    border: 1px solid #ddd; 
-}
-
-        /* 월화수목금토일 font-size: 16px; 로 수정 */
-.time-item label { 
-    display: block; 
-    font-weight: bold; 
-    margin-bottom: 5px; 
-    font-size: 14px; /* 글자 크기 살짝 조정 */
-}
-
-.time-item input { 
-    width: 100%; 
-    box-sizing: border-box; 
-    padding: 6px; /* 내부 여백 축소 */
-    border: 1px solid #ddd; 
-    border-radius: 4px; 
-    text-align: center; 
-    font-size: 16px; 
-    font-weight: bold; 
-}
-/* 태그 누락자 표시: 눈에 띄는 주황색 계열 */
-
-.status-missing-tag { 
-
-    background: #fff3cd !important; 
-
-    border: 3px solid #fd7e14 !important; 
-
-    color: #fd7e14 !important; 
-
-    text-decoration: underline;
-
-}
-
-/* 외출 중: 연한 보라색 바탕 + 보라 실선 테두리 */
-
-/*      .status-out { background: #e0d4f7 !important; border: 2px solid #6f42c1 !important; color: #4a2785 !important; }  solid 실선, dashed 점선*/
-
+        .status-missing-tag { background: #fff3cd !important; border: 3px solid #fd7e14 !important; color: #fd7e14 !important; text-decoration: underline; }
         .status-out { background: #e0d4f7 !important; border: 2px dashed #6f42c1 !important; color: #4a2785 !important; }
-
-        /* 🌟 미니 타임라인 태그 디자인 */
-
-        .mini-tag { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; letter-spacing: -0.5px; white-space: nowrap; }
-
-        .tag-in { background: #e7f1ff; color: #0d6efd; border: 1px solid #b6d4fe; }
-
-        .tag-out { background: #fff3cd; color: #b38200; border: 1px solid #ffe69c; }
-
-        .tag-home { background: #fff0f0; color: #dc3545; border: 1px solid #f5c2c7; }
-
         
-/* 신청하지 않았으나 현재 자리에 있는 학생용 */
-.seat-unscheduled-present { 
-    background-color: #fd7e14 !important; /* 주황색 */
-    color: white !important; 
-    border: 2px solid #e8590c !important;
-}
-
-/* 🌟 연장/조기 입실 (신청X + 입실O): 주황색 바탕 + 주황 실선 테두리 */
-.status-present-extra { 
-    background: #ffe8d6 !important; 
-    border: 2px solid #fd7e14 !important; 
-    color: #e65100 !important; 
-}
+        /* 미니 타임라인 태그 디자인 */
+        .mini-tag { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; letter-spacing: -0.5px; white-space: nowrap; }
+        .tag-in { background: #e7f1ff; color: #0d6efd; border: 1px solid #b6d4fe; }
+        .tag-out { background: #fff3cd; color: #b38200; border: 1px solid #ffe69c; }
+        .tag-home { background: #fff0f0; color: #dc3545; border: 1px solid #f5c2c7; }
+        /* 🌟 교사 수정 전용 보라색 태그 */
+        .tag-admin { background: #e0cffc; color: #4a2785; border: 1px solid #b19cd9; box-shadow: 0 2px 4px rgba(74, 39, 133, 0.2); }
+        
+        .seat-unscheduled-present { background-color: #fd7e14 !important; color: white !important; border: 2px solid #e8590c !important; }
+        .status-present-extra { background: #ffe8d6 !important; border: 2px solid #fd7e14 !important; color: #e65100 !important; }
     </style>
-
 </head>
-
 <body>
 
-
-
 <div class="container">
-
     <div class="header-area">
-
         <h2 style="flex-grow: 1;">안성여고 야간 자율학습 통합 관리</h2>
-
-        <button class="btn btn-primary" style="background:#dc3545;" onclick="closeMissingTags()">
-
-    🚨 일일 출결 강제 마감 (태그 누락자 색출)
-
-</button>
-
+        <button class="btn btn-primary" style="background:#dc3545;" onclick="closeMissingTags()">🚨 일일 출결 강제 마감 (태그 누락자 색출)</button>
         <button class="btn btn-gray" onclick="location.href='settings.html'">⚙️ 환경설정</button>
-
     </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="tab-menu">
-
+    <div class="tab-menu">
         <button class="tab-btn active" onclick="switchTab('tab-daily', this)">🧑‍🏫 오늘 감독용 좌석표</button>
         <button class="tab-btn" onclick="switchTab('tab-daily-list', this)">📋 오늘 일일 현황</button>
         <button class="tab-btn" onclick="switchTab('tab-status', this)">📊 월별 신청 현황</button>
@@ -265,329 +97,183 @@
         <button class="tab-btn" onclick="location.href='statistics.html'">📈 통계 분석</button>
     </div>
 
-
-
     <div id="tab-daily" class="tab-content active">
-
         <div style="text-align:center; background:#e3f2fd; padding:15px; border-radius:10px; margin-bottom:15px;">
-
             날짜: <input type="date" id="daily-date" onchange="loadDailyDataAndRender()">
-
-교시: <select id="daily-time" onchange="renderDailySupervisorMap(); renderDailyList();">
-
-    
-
+            교시: <select id="daily-time" onchange="renderDailySupervisorMap(); renderDailyList();">
                 <option value="0">0타임 (정규 전)</option>
-
                 <option value="1" selected>1타임</option>
-
                 <option value="2">2타임</option>
-
                 <option value="3">3타임</option>
-
             </select>
-
         </div>
 
-<div id="holiday-banner" style="display:none; background:#f8d7da; color:#842029; padding:20px; border-radius:10px; text-align:center; margin-bottom:15px; font-weight:bold; font-size:18px; border:2px dashed #dc3545;">
-
+        <div id="holiday-banner" style="display:none; background:#f8d7da; color:#842029; padding:20px; border-radius:10px; text-align:center; margin-bottom:15px; font-weight:bold; font-size:18px; border:2px dashed #dc3545;">
             🚨 오늘은 야간 자율학습을 운영하지 않습니다. <br>
-
             <span style="font-size:14px; color:#666; font-weight:normal;">사유: <b id="holiday-reason" style="color:#dc3545;"></b></span>
-
         </div>
-
         
-
         <div style="display:flex; justify-content:center; gap:15px; margin-bottom:15px; font-size:12px; flex-wrap:wrap;">
-
             <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#fff3cd; border:2px solid #ffc107;"></div> 고정석(입실)</span>
-
             <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#d1e7dd; border:2px solid #2e7d32;"></div> 자율석(입실)</span>
-
             <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#e0d4f7; border:2px dashed #6f42c1;"></div> 외출 중</span>
-
-   <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#fff0f0; border:2px dashed #dc3545;"></div> 미입실</span>
-
-<span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#f8f9fa; border:2px solid #6c757d;"></div> 귀가완료</span>
-
+            <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#fff0f0; border:2px dashed #dc3545;"></div> 미입실</span>
+            <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#f8f9fa; border:2px solid #6c757d;"></div> 귀가완료</span>
             <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#fff3cd; border:3px solid #fd7e14;"></div> 태그 누락</span>
-
         </div>
-
-
 
         <div id="supervisor-grid" class="seat-grid"></div>
-
     </div>
 
-
-
- <div id="tab-daily-list" class="tab-content">
-
+    <div id="tab-daily-list" class="tab-content">
         <div class="form-card" style="margin-bottom: 15px; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-
             <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
-
                 <div>
-
                     <b style="color: #555;">조회 정렬:</b>
-
                     <select id="sort-daily-list" onchange="renderDailyList()" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-left: 5px;">
-
                         <option value="id">학번순 보기</option>
-
                         <option value="seat">좌석순 보기</option>
-
                     </select>
-
                 </div>
-
                 <div>
-
                     <b style="color: #555;">상태 필터:</b>
-
                     <select id="filter-daily-status" onchange="renderDailyList()" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-left: 5px;">
-
                         <option value="all">전체 보기</option>
-
                         <option value="미입실">🔴 미입실 (결석/누락)</option>
-
                         <option value="입실">🟢 입실 완료 (정상/복귀)</option>
-
                         <option value="외출">🟡 외출 중</option>
-
                         <option value="귀가">⚪ 귀가 완료</option>
-
                     </select>
-
                 </div>
-
             </div>
-
             <div id="daily-list-summary" style="font-size: 15px; font-weight: bold; background: white; padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd;">
-
             </div>
-
         </div>
 
-
-
-        
-
         <div style="overflow-x:auto;">
-
             <table>
-
                 <thead>
                     <tr>
                         <th>학번</th>
                         <th>이름</th>
                         <th>좌석 정보</th>
-                        <th>진행 상황</th> <th>신청 및 실제 흐름</th>
+                        <th>진행 상황</th> 
+                        <th>신청 및 실제 흐름</th>
                         <th>현재 상태</th>
                         <th>최근 스캔 시간</th>
                     </tr>
                 </thead>
                 <tbody id="daily-list-body"></tbody>
-
             </table>
-
         </div>
-
     </div>
 
-
-
-
-
-
-
-    
-
-
-
-<div id="tab-status" class="tab-content">
+    <div id="tab-status" class="tab-content">
         <select id="filter-month" onchange="renderStatusTable()" style="padding:8px; margin-bottom:10px; border-radius:5px; border:1px solid #ddd;">
             <option value="all">전체보기</option>
-            <option value="1월">1월</option>
-            <option value="2월">2월</option>
-            <option value="3월">3월</option>
-            <option value="4월" selected>4월</option>
-            <option value="5월">5월</option>
-            <option value="6월">6월</option>
-            <option value="7월">7월</option>
-            <option value="8월">8월</option>
-            <option value="9월">9월</option>
-            <option value="10월">10월</option>
-            <option value="11월">11월</option>
-            <option value="12월">12월</option>
+            <option value="1월">1월</option><option value="2월">2월</option><option value="3월">3월</option>
+            <option value="4월" selected>4월</option><option value="5월">5월</option><option value="6월">6월</option>
+            <option value="7월">7월</option><option value="8월">8월</option><option value="9월">9월</option>
+            <option value="10월">10월</option><option value="11월">11월</option><option value="12월">12월</option>
         </select>
-
         <div style="overflow-x:auto;">
-
             <table>
-
                 <thead><tr><th>월</th><th>학번</th><th>이름</th><th>종류</th><th>좌석</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th><th>일</th></tr></thead>
-
                 <tbody id="status-body"></tbody>
-
             </table>
-
         </div>
-
     </div>
-
-
 
     <div id="tab-manual" class="tab-content">
-
         <div class="form-card">
-
             <h3>✍️ 학생 데이터 개별 수정 / 추가</h3>
-
             <input type="hidden" id="edit-doc-id">
-
             <div class="input-row">
-
                 <div class="input-group-item">
-
                     <label>적용 월</label>
-
                     <select id="m-month">
-
                         <option value="1월">1월</option><option value="2월">2월</option><option value="3월">3월</option>
-
                         <option value="4월">4월</option><option value="5월">5월</option><option value="6월">6월</option>
-
                         <option value="7월">7월</option><option value="8월">8월</option><option value="9월">9월</option>
-
                         <option value="10월">10월</option><option value="11월">11월</option><option value="12월">12월</option>
-
                     </select>
-
                 </div>
-
                 <div class="input-group-item"><label>학번</label><input type="number" id="m-id" placeholder="학번"></div>
-
                 <div class="input-group-item"><label>이름</label><input type="text" id="m-name" placeholder="이름"></div>
-
                 <div class="input-group-item">
-
                     <label>좌석 종류</label>
-
                     <select id="m-type"><option value="고정석">고정석</option><option value="자율석">자율석</option></select>
-
                 </div>
-
                 <div class="input-group-item"><label>좌석 번호</label><input type="text" id="m-seatNum" placeholder="예: A-1"></div>
-
             </div>
-
             <div class="time-input-row">
-
                 <div class="time-item"><label>월</label><input type="text" id="m-mon"></div>
-
                 <div class="time-item"><label>화</label><input type="text" id="m-tue"></div>
-
                 <div class="time-item"><label>수</label><input type="text" id="m-wed"></div>
-
                 <div class="time-item"><label>목</label><input type="text" id="m-thu"></div>
-
                 <div class="time-item"><label>금</label><input type="text" id="m-fri"></div>
-
                 <div class="time-item" style="background:#e7f1ff;"><label style="color:blue;">토</label><input type="text" id="m-sat"></div>
-
                 <div class="time-item" style="background:#fff5f5;"><label style="color:red;">일</label><input type="text" id="m-sun"></div>
+            </div>
+            <button class="btn btn-primary" style="width:100%; margin-top:20px; height:50px; font-size:16px;" onclick="saveManualEntry()">💾 데이터 저장하기</button>
+        </div>
+    </div>
 
+    <div id="daily-status-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px;">
+                <h3 style="margin:0; font-size:18px;">🕒 교사 현장 출결 제어</h3>
+                <button class="btn btn-gray" style="padding: 5px 10px;" onclick="document.getElementById('daily-status-modal').style.display='none'">닫기</button>
+            </div>
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <h2 id="ds-name" style="margin: 0; color: var(--primary);">이름</h2>
+                <p id="ds-info" style="color: #555; margin: 8px 0; font-weight: bold;">학번: - | 좌석: -</p>
+                <p id="ds-phone" style="background: #eef6ff; padding: 8px; border-radius: 5px; font-size: 13px; margin: 5px 0;">📞 연락처 정보 없음</p>
             </div>
 
-            <button class="btn btn-primary" style="width:100%; margin-top:20px; height:50px; font-size:16px;" onclick="saveManualEntry()">💾 데이터 저장하기</button>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 15px; border: 1px solid #eee;">
+                
+                <div id="ds-recent-log" style="font-size: 13px; color: #555; text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #ccc;">
+                    </div>
 
+                <h4 style="margin: 0 0 10px 0; color: #333; font-size: 14px; text-align: center;">👨‍🏫 교사 직접 출결 승인</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button class="btn" style="background:#0d6efd; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('입실(교사인정)')">🟢 입실 처리</button>
+                    <button class="btn" style="background:#198754; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('복귀(교사인정)')">🔵 복귀 처리</button>
+                    <button class="btn" style="background:#fd7e14; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('외출(교사인정)')">🟡 외출 처리</button>
+                    <button class="btn" style="background:#dc3545; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('미입실(빈자리)')">🔴 빈자리 처리</button>
+                    <button class="btn" style="background:#6c757d; color:white; padding:15px; font-size:14px; grid-column: span 2;" onclick="manualAttendanceUpdate('귀가(교사인정)')">⚪ 최종 귀가 처리</button>
+                </div>
+                
+                <input type="hidden" id="ds-current-stu-id">
+                <input type="hidden" id="ds-current-stu-name">
+            </div>
         </div>
-
     </div>
-
-
-
-<div id="daily-status-modal" class="modal-overlay">
-
-    <div class="modal-content" style="max-width: 350px;">
-
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px;">
-
-            <h3 style="margin:0; font-size:18px;">🕒 오늘의 출결 현황</h3>
-
-            <button class="btn btn-gray" style="padding: 5px 10px;" onclick="document.getElementById('daily-status-modal').style.display='none'">닫기</button>
-
-        </div>
-
-        <div style="text-align: center; margin-top: 15px;">
-
-            <h2 id="ds-name" style="margin: 0; color: var(--primary);">이름</h2>
-
-            <p id="ds-info" style="color: #555; margin: 8px 0; font-weight: bold;">학번: - | 좌석: -</p>
-
-            <p id="ds-phone" style="background: #eef6ff; padding: 8px; border-radius: 5px; font-size: 13px; margin: 5px 0;">📞 연락처 정보 없음</p>
-
-        </div>
-
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 15px; border: 1px solid #eee;">
-
-            <h4 style="margin: 0 0 10px 0; color: #333; font-size: 14px;">타임라인</h4>
-
-            <ul id="ds-timeline" style="list-style: none; padding: 0; margin: 0; font-size: 14px; line-height: 2;">
-
-                </ul>
-
-        </div>
-
-    </div>
-
-</div>
-
     
-
-</div>
-
-
-
-<div id="counsel-modal" class="modal-overlay">
-
-    <div class="modal-content">
-
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px;">
-
-            <h3 id="counsel-title" style="margin:0;">🧑‍🎓 상담 리포트</h3>
-
-            <button class="btn btn-gray" onclick="document.getElementById('counsel-modal').style.display='none'">닫기</button>
-
+    <div id="counsel-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px;">
+                <h3 id="counsel-title" style="margin:0;">🧑‍🎓 상담 리포트</h3>
+                <button class="btn btn-gray" onclick="document.getElementById('counsel-modal').style.display='none'">닫기</button>
+            </div>
+            <div id="counsel-calendar-area"></div>
+            <div style="background:#f8f9fa; padding:15px; border-radius:10px; margin-top:15px; display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; font-size:13px; text-align:center;">
+                <div>신청 타임<br><b id="c-total-apply" style="color:var(--primary); font-size:16px;">0</b>회</div>
+                <div>출석 타임<br><b id="c-total-present" style="color:var(--success); font-size:16px;">0</b>회</div>
+                <div>참여율<br><b id="c-rate" style="color:var(--danger); font-size:16px;">0</b>%</div>
+                <div>학습 시간<br><b id="c-total-min" style="color:#333; font-size:16px;">0</b>분</div>
+            </div>
+            <div id="c-comment" style="margin-top:15px; padding:10px; background:#eef6ff; border-radius:8px; font-size:13px;"></div>
         </div>
-
-        <div id="counsel-calendar-area"></div>
-
-        <div style="background:#f8f9fa; padding:15px; border-radius:10px; margin-top:15px; display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; font-size:13px; text-align:center;">
-
-            <div>신청 타임<br><b id="c-total-apply" style="color:var(--primary); font-size:16px;">0</b>회</div>
-
-            <div>출석 타임<br><b id="c-total-present" style="color:var(--success); font-size:16px;">0</b>회</div>
-
-            <div>참여율<br><b id="c-rate" style="color:var(--danger); font-size:16px;">0</b>%</div>
-
-            <div>학습 시간<br><b id="c-total-min" style="color:#333; font-size:16px;">0</b>분</div>
-
-        </div>
-
-        <div id="c-comment" style="margin-top:15px; padding:10px; background:#eef6ff; border-radius:8px; font-size:13px;"></div>
-
     </div>
 
 </div>
-
 
 <script>
     // =========================================================
-    // 1. Supabase 초기화 및 전역 변수 (에러 방지를 위해 최상단 선언)
+    // 1. Supabase 초기화 및 전역 변수
     // =========================================================
     const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
@@ -600,38 +286,30 @@
     let rows = 20, cols = 30;
     let globalCalendarSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
     let rosterPhones = {};
-    // 🌟 추가: 설정된 운영 시간을 저장할 변수 (기본값 설정)
     let currentSchedule = { t1: "16:00", t2: "18:50", t3: "20:10" };
 
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
     document.getElementById('daily-date').value = todayStr;
 
-
-
-  // =========================================================
-    // 2. 기초 데이터 불러오기 (도면, 연락처, 달력, 운영시간, 신청내역)
+    // =========================================================
+    // 2. 기초 데이터 불러오기
     // =========================================================
     async function fetchBaseData() {
-        // 1. 도면 데이터
         const { data: layout } = await supabaseClient.from('settings').select('value').eq('key', 'seatLayout').maybeSingle();
         if (layout && layout.value) {
             rows = layout.value.rows; cols = layout.value.cols;
             seatMapData = JSON.parse(layout.value.grid);
         }
-        // 2. 연락처 데이터
+        
         const { data: roster } = await supabaseClient.from('settings').select('value').eq('key', 'roster').maybeSingle();
         if (roster && roster.value && roster.value.phoneList) rosterPhones = JSON.parse(roster.value.phoneList);
         
-        // 3. 달력 데이터
         const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
         if (cal && cal.value) {
             if (cal.value.data) globalCalendarSchedule.data = JSON.parse(cal.value.data);
             if (cal.value.defaultDays) globalCalendarSchedule.defaultDays = cal.value.defaultDays;
         }
 
-
-
-// 🌟 4. 운영 시간 데이터를 불러와서 타임 선택창에 시간 표시 + 현재 시간 자동 선택
         const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
         if (schedDoc && schedDoc.value) {
             const sched = schedDoc.value;
@@ -639,31 +317,19 @@
             currentSchedule.t2 = sched.t2 || "18:50";
             currentSchedule.t3 = sched.t3 || "20:10";
             
-            // 💡 추가: 드롭다운 메뉴 표시에 사용할 종료 시간 변수
             const t1_end = sched.t1_end || "18:10";
             const t2_end = sched.t2_end || "20:10";
             const t3_end = sched.t3_end || "21:30";
             
-            // 현재 시간을 분(minute) 단위로 계산합니다.
             const now = new Date();
             const currentMin = now.getHours() * 60 + now.getMinutes();
-            
-            // "HH:MM" 문자열을 분 단위 숫자로 바꾸는 함수
             const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
             
-            // 기본값을 0타임으로 설정
             let defaultSlot = 0; 
-            
-            // 💡 수정: 선언되지 않은 t3 대신 currentSchedule.t3 사용
-            if (currentMin >= timeToMin(currentSchedule.t3)) {
-                defaultSlot = 3; 
-            } else if (currentMin >= timeToMin(currentSchedule.t2)) {
-                defaultSlot = 2; 
-            } else if (currentMin >= timeToMin(currentSchedule.t1)) {
-                defaultSlot = 1; 
-            }
+            if (currentMin >= timeToMin(currentSchedule.t3)) defaultSlot = 3; 
+            else if (currentMin >= timeToMin(currentSchedule.t2)) defaultSlot = 2; 
+            else if (currentMin >= timeToMin(currentSchedule.t1)) defaultSlot = 1; 
 
-            // 💡 수정: 변수를 정확하게 매칭하여 HTML 생성
             document.getElementById('daily-time').innerHTML = `
                 <option value="0" ${defaultSlot === 0 ? 'selected' : ''}>0타임 (정규 일과)</option>
                 <option value="1" ${defaultSlot === 1 ? 'selected' : ''}>1타임 (${currentSchedule.t1} ~ ${t1_end})</option>
@@ -672,9 +338,6 @@
             `;
         }
 
-
-
-        // 5. 신청 내역 데이터
         const { data: apps } = await supabaseClient.from('applications').select('*');
         applicationData = {};
         if (apps) {
@@ -690,12 +353,11 @@
     }
 
     // =========================================================
-    // 3. 당일 데이터 (출결, 일일발권) 불러오기 (5초마다 반복 실행됨)
+    // 3. 당일 데이터 불러오기 (자동 갱신)
     // =========================================================
     async function loadDailyDataAndRender() {
         const dateStr = document.getElementById('daily-date').value;
 
-        // 1. 출결 로그
         const { data: logs } = await supabaseClient.from('attendance_logs').select('*').eq('date', dateStr);
         attendanceLogsData = {};
         if (logs) {
@@ -707,7 +369,6 @@
             });
         }
 
-        // 2. 당일 발권 내역
         const { data: res } = await supabaseClient.from('daily_reservations').select('*').eq('date', dateStr);
         dailyReservationsData = [];
         if (res) {
@@ -723,20 +384,14 @@
         renderDailyList();
     }
 
-    // 초기 실행 및 5초 타이머 설정
     fetchBaseData().then(() => {
         loadDailyDataAndRender();
         setInterval(loadDailyDataAndRender, 5000); 
     });
 
-
-
-// 🌟 탭을 전환할 때마다 현재 시간을 계산하여 드롭다운 메뉴를 자동으로 맞춰주는 함수
     async function autoSetCurrentTime() {
-        // 환경설정에서 지정한 타임별 시작 시간을 불러옵니다.
         const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
         let t1 = "16:00", t2 = "18:50", t3 = "20:10";
-        
         if (schedDoc && schedDoc.value) {
             t1 = schedDoc.value.t1 || t1;
             t2 = schedDoc.value.t2 || t2;
@@ -752,18 +407,15 @@
         else if (currentMin >= timeToMin(t2)) defaultSlot = 2;
         else if (currentMin >= timeToMin(t1)) defaultSlot = 1;
 
-        // 타임 선택창의 값을 언제나 '현재 시간에 맞는 타임'으로 강제 고정합니다.
         document.getElementById('daily-time').value = defaultSlot;
     }
 
-    // 🌟 탭 이동 시 작동하는 메인 함수 (자동 시간 적용 로직 추가)
     function switchTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tabId).classList.add('active'); 
         if(btn) btn.classList.add('active');
 
-        // 감독용 화면이나 일일 현황 탭을 누르면 -> 시간 먼저 맞추고 -> 화면을 그립니다!
         if(tabId === 'tab-daily') {
             autoSetCurrentTime().then(() => renderDailySupervisorMap());
         } 
@@ -773,14 +425,9 @@
         else if(tabId === 'tab-status') {
             renderStatusTable();
         }
-  
     }
 
-
-
-
-
-function renderDailySupervisorMap() {
+    function renderDailySupervisorMap() {
         if(seatMapData.length === 0) return;
         const container = document.getElementById('supervisor-grid');
         container.innerHTML = ''; 
@@ -789,8 +436,6 @@ function renderDailySupervisorMap() {
         const dateStr = document.getElementById('daily-date').value;
         const targetDateObj = new Date(dateStr);
         const dayIdx = targetDateObj.getDay();
-
-        // 🌟 [버그 수정 1] 달력에서 선택한 날짜의 '월'을 추출합니다 (예: "4월")
         const targetMonthStr = (targetDateObj.getMonth() + 1) + "월";
 
         let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
@@ -828,24 +473,19 @@ function renderDailySupervisorMap() {
             });
         });
 
-Object.entries(applicationData).forEach(([docId, d]) => {
-            // 1. 이번 달 고정석이고 도면에 좌석이 있는지 1차 확인 (신청 시간 필터링 제외)
+        Object.entries(applicationData).forEach(([docId, d]) => {
             if(d.targetMonth === targetMonthStr && d.type === "고정석" && cellEls[d.seatNum]) {
                 const target = cellEls[d.seatNum]; 
                 const log = attendanceLogsData[String(d.stuId)];
                 
-                // 2. 현재 타임 신청 여부 및 실제 입실(복귀) 상태 확인
                 const isApplied = d[targetDay] && d[targetDay].includes(timeStr);
                 const isPresent = log && (log.status === "입실" || log.status === "복귀");
 
-                // 3. 렌더링 조건: 해당 타임 신청자이거나, 신청은 안 했지만 자리에 있는 경우
                 if (isApplied || isPresent) {
                     if (!isApplied && isPresent) {
-                        // 🌟 신청 X + 입실 O (연장/조기)
                         target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#fd7e14; font-weight:bold;">${d.stuName}</span><br><span style="font-size:9px; color:#fd7e14; letter-spacing:-1px;">(연장)</span>`;
                         target.classList.add('status-present-extra');
                     } else {
-                        // 기존 로직 (신청 O)
                         target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#1565c0;">${d.stuName}</span>`;
                         if (log) {
                             if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
@@ -862,24 +502,19 @@ Object.entries(applicationData).forEach(([docId, d]) => {
             }
         });
 
-dailyReservationsData.forEach(d => {
-            // 1. 도면에 유효한 좌석이 있는지만 먼저 확인
+        dailyReservationsData.forEach(d => {
             if(cellEls[d.seatNum]) {
                 const target = cellEls[d.seatNum];
                 const log = attendanceLogsData[String(d.stuId)];
                 
-                // 2. 신청 여부 및 입실 상태 확인
                 const isApplied = d.times && d.times.includes(timeStr);
                 const isPresent = log && (log.status === "입실" || log.status === "복귀");
 
-                // 3. 렌더링 조건 체크
                 if (isApplied || isPresent) {
                     if (!isApplied && isPresent) {
-                        // 🌟 신청 X + 입실 O (연장/조기)
                         target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#fd7e14; font-weight:bold;">${d.stuName}</span><br><span style="font-size:9px; color:#fd7e14; letter-spacing:-1px;">(연장)</span>`;
                         target.classList.add('status-present-extra');
                     } else {
-                        // 기존 로직 (신청 O)
                         target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#2e7d32;">${d.stuName}</span>`;
                         if (log) {
                             if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
@@ -899,12 +534,9 @@ dailyReservationsData.forEach(d => {
                 }
             }
         });
-
-
     }
 
-
-function renderDailyList() {
+    function renderDailyList() {
         const tbody = document.getElementById('daily-list-body');
         if (!tbody) return;
         tbody.innerHTML = '';
@@ -912,7 +544,6 @@ function renderDailyList() {
         const targetDateStr = document.getElementById('daily-date').value;
         const targetDateObj = new Date(targetDateStr);
         const targetDay = ['sun','mon','tue','wed','thu','fri','sat'][targetDateObj.getDay()];
-        
         const targetMonthStr = (targetDateObj.getMonth() + 1) + "월";
 
         const sortBy = document.getElementById('sort-daily-list').value;
@@ -923,13 +554,11 @@ function renderDailyList() {
         
         let targetStudentsMap = new Map();
 
-        // 🌟 [수정 부분 1] 고정석/자율석 상관없이 해당 요일에 야자를 신청한 '모든' 학생을 맵에 추가합니다.
         Object.values(applicationData).forEach(app => {
             if (app.targetMonth === targetMonthStr && app[targetDay]) {
                 targetStudentsMap.set(String(app.stuId), {
                     stuId: app.stuId, 
                     stuName: app.stuName, 
-                    // 자율석인데 아직 발권을 안 했으면 '미발권'으로 기본값 설정
                     seatNum: app.type === "고정석" ? app.seatNum : "미발권", 
                     appliedTimes: app[targetDay] + "타임", 
                     type: app.type, 
@@ -939,18 +568,15 @@ function renderDailyList() {
             }
         });
 
-        // 🌟 [수정 부분 2] 오늘 자율석을 발권한 학생 데이터(dailyReservationsData)로 실제 좌석을 업데이트합니다.
         dailyReservationsData.forEach(res => {
             const stuIdStr = String(res.stuId);
             if (targetStudentsMap.has(stuIdStr)) {
-                // 신청자가 발권을 완료했다면 '미발권' -> '실제 좌석 번호'로 업데이트
                 let existing = targetStudentsMap.get(stuIdStr);
                 existing.seatNum = res.seatNum;
                 existing.appliedTimes = (res.times || "-") + "타임";
                 existing.rawTimes = res.times || existing.rawTimes;
                 targetStudentsMap.set(stuIdStr, existing);
             } else {
-                // 혹시 모를 예외: 신청은 안 했는데 강제로 발권된 학생 추가
                 targetStudentsMap.set(stuIdStr, {
                     stuId: res.stuId, 
                     stuName: res.stuName, 
@@ -972,10 +598,8 @@ function renderDailyList() {
         targetStudents.forEach(st => {
             const log = attendanceLogsData[String(st.stuId)];
             let status = "미입실"; let tagTime = "-"; let statusColor = "var(--danger)"; 
-
-
-let historyHtml = `<span style="color:#aaa; font-size:11px;">스캔 기록 없음</span>`;
-            let groupedHistory = { 0: [], 1: [], 2: [], 3: [] }; // 🌟 여기로 꺼냅니다!
+            let historyHtml = `<span style="color:#aaa; font-size:11px;">기록 없음</span>`;
+            let groupedHistory = { 0: [], 1: [], 2: [], 3: [] };
 
             if (log) {
                 status = log.status;
@@ -985,20 +609,15 @@ let historyHtml = `<span style="color:#aaa; font-size:11px;">스캔 기록 없�
                 }
                 
                 if (log.history && log.history.length > 0) {
-                    // (let groupedHistory = ... 선언부는 지웠으므로 바로 forEach 시작)
-
-
                     log.history.forEach(h => {
                         const tmMatch = h.match(/(\d{2}:\d{2})/);
                         let slot = 0; 
-if (tmMatch) {
-    const timeStr = tmMatch[1];
-    // 🌟 수정: 하드코딩된 숫자 대신 전역 변수(currentSchedule)를 사용합니다.
-    if (timeStr < currentSchedule.t1) slot = 0;       
-    else if (timeStr < currentSchedule.t2) slot = 1;  
-    else if (timeStr < currentSchedule.t3) slot = 2;  
-    else slot = 3;                         
-                      
+                        if (tmMatch) {
+                            const timeStr = tmMatch[1];
+                            if (timeStr < currentSchedule.t1) slot = 0;       
+                            else if (timeStr < currentSchedule.t2) slot = 1;  
+                            else if (timeStr < currentSchedule.t3) slot = 2;  
+                            else slot = 3;                         
                         } else {
                             if (h.includes("1타임")) slot = 1;
                             else if (h.includes("2타임")) slot = 2;
@@ -1021,7 +640,9 @@ if (tmMatch) {
                             if (hasLogs) {
                                 groupedHistory[t].forEach(h => {
                                     let tagClass = "tag-in"; 
-                                    if (h.includes("외출")) tagClass = "tag-out"; 
+                                    // 🌟 교사 확인용 태그 디자인 적용
+                                    if (h.includes("교사") || h.includes("빈자리")) tagClass = "tag-admin"; 
+                                    else if (h.includes("외출")) tagClass = "tag-out"; 
                                     else if (h.includes("귀가") || h.includes("누락")) tagClass = "tag-home";
                                     allTagsInline.push(`<span class="mini-tag ${tagClass}" style="display:inline-block; vertical-align:middle;">${h}</span>`);
                                 });
@@ -1047,10 +668,6 @@ if (tmMatch) {
 
             if (statusFilter !== "all" && mappedGroup !== statusFilter) return; 
 
-
-// =====================================================================
-            // 🌟 [핵심 수정 부분] 신청 라벨과 현재 상태 라벨 동시 생성
-            // =====================================================================
             let appliedBadges = "";
             let currentBadges = "";
 
@@ -1059,18 +676,15 @@ if (tmMatch) {
                 const isCurrentSlot = (t === currentSlot);
                 const hasLogs = groupedHistory[t] && groupedHistory[t].length > 0;
 
-                // --- 1. [신청] 라벨 ---
                 if (isApplied) {
                     appliedBadges += `<span style="background:#6c757d; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:bold;">${t}T</span>`;
                 } else {
                     appliedBadges += `<span style="border:1px dashed #adb5bd; color:#adb5bd; background:transparent; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px;">${t}T</span>`;
                 }
 
-                // --- 2. [현재] 라벨 (감독 도면 CSS 완벽 일치) ---
                 let bg = "transparent", border = "1px dashed #adb5bd", fontCol = "#adb5bd", fontWeight = "normal";
 
                 if (isCurrentSlot) {
-                    // 🚨 현재 진행 중인 타임 (도면과 동일한 색상/테두리 적용)
                     fontWeight = "bold";
                     if (status === "미입실") {
                         if (isApplied) { bg = "#fff0f0"; border = "2px dashed #dc3545"; fontCol = "#dc3545"; }
@@ -1083,37 +697,32 @@ if (tmMatch) {
                         }
                     } else if (status === "입실" || status === "복귀") {
                         if (isApplied) {
-                            if (st.type === "고정석") { bg = "#fff3cd"; border = "2px solid #ffc107"; fontCol = "#856404"; } // 노란 실선
-                            else { bg = "#d1e7dd"; border = "2px solid #2e7d32"; fontCol = "#0f5132"; } // 초록 실선
+                            if (st.type === "고정석") { bg = "#fff3cd"; border = "2px solid #ffc107"; fontCol = "#856404"; } 
+                            else { bg = "#d1e7dd"; border = "2px solid #2e7d32"; fontCol = "#0f5132"; } 
                         } else {
-                            bg = "#ffe8d6"; border = "2px solid #fd7e14"; fontCol = "#e65100"; // 연장(주황 실선)
+                            bg = "#ffe8d6"; border = "2px solid #fd7e14"; fontCol = "#e65100"; 
                         }
                     }
                 } else if (t < currentSlot) {
-                    // ⏱️ 지나간 타임
                     if (isApplied) {
-                        if (status !== "미입실") { bg = "#e9ecef"; border = "1px solid #6c757d"; fontCol = "#495057"; fontWeight = "bold"; } // 출석 인정
-                        else { bg = "#fff0f0"; border = "1px dashed #dc3545"; fontCol = "#dc3545"; } // 결석 (빨간 점선)
+                        if (status !== "미입실") { bg = "#e9ecef"; border = "1px solid #6c757d"; fontCol = "#495057"; fontWeight = "bold"; } 
+                        else { bg = "#fff0f0"; border = "1px dashed #dc3545"; fontCol = "#dc3545"; } 
                     } else if (hasLogs) {
-                        bg = "#ffe8d6"; border = "1px solid #fd7e14"; fontCol = "#e65100"; fontWeight = "bold"; // 연장 출석
+                        bg = "#ffe8d6"; border = "1px solid #fd7e14"; fontCol = "#e65100"; fontWeight = "bold"; 
                     }
                 } else {
-                    // ⏳ 다가올 타임
                     if (isApplied) { bg = "transparent"; border = "1px solid #adb5bd"; fontCol = "#6c757d"; }
                 }
 
                 currentBadges += `<span style="background:${bg}; color:${fontCol}; border:${border}; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:${fontWeight};">${t}T</span>`;
             });
 
-
-// 💡 여기서부터 수정! (선언되지 않은 변수들을 기존 변수로 교체했습니다)
             let timeBoxHtml = `
                 <div style="text-align: left; margin-top: 8px; font-size: 11px; background: #f8f9fa; padding: 6px; border-radius: 6px; border: 1px solid #e9ecef; width: max-content; margin-left: auto; margin-right: auto;">
                     <div style="margin-bottom: 5px;"><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">신청:</span>${appliedBadges}</div>
                     <div style="margin-bottom: 5px;"><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">현재:</span>${currentBadges}</div>
                     <div><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">결과:</span><span style="color: ${statusColor}; font-weight: bold;">${status}</span></div>
                 </div>`;
-            // =====================================================================
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -1131,27 +740,28 @@ if (tmMatch) {
                 <td style="color:#555; vertical-align: middle;">${tagTime}</td>
             `;
             tbody.appendChild(tr);
-
         });
         
         document.getElementById('daily-list-summary').innerHTML = `전체 대상: ${stat.total}명 | <span style="color:var(--primary);">입실: ${stat.present}명</span> | <span style="color:#fd7e14;">외출: ${stat.out}명</span> | <span style="color:var(--gray);">귀가: ${stat.finish}명</span> | <span style="color:var(--danger);">미입실: ${stat.absent}명</span>`;
     }
 
-
-
-
+    // 🌟 수정됨: 타임라인 대신 교사 직접 출결 처리를 위한 모달 열기 함수 🌟
     function openDailyStatus(stuId, stuName, seatNum, phone) {
         document.getElementById('daily-status-modal').style.display = 'flex';
         document.getElementById('ds-name').innerText = stuName;
         document.getElementById('ds-info').innerText = `학번: ${stuId} | 좌석: ${seatNum}`;
         
+        // 수동 출결 처리를 위해 학번/이름 저장
+        document.getElementById('ds-current-stu-id').value = stuId;
+        document.getElementById('ds-current-stu-name').value = stuName;
+
         const phoneBox = document.getElementById('ds-phone');
         if (phone) {
             const defaultMessage = encodeURIComponent(`[안성여고 자율학습실]\n${stuName} 학생, 지정된 입실 시간이 지났습니다. 신속히 입실해주세요.\n\n(※ 본 문자는 야간자율학습 관리를 위한 공용 기기에서 발송되었습니다.)`);
             phoneBox.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span>📞 <b>${phone}</b></span>
-                    <a href="sms:${phone}?body=${defaultMessage}" style="background: #198754; color: white; padding: 5px 12px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">💬 미입실 알림 문자</a>
+                    <a href="sms:${phone}?body=${defaultMessage}" style="background: #198754; color: white; padding: 5px 12px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">💬 알림 문자 발송</a>
                 </div>`;
             phoneBox.style.background = "#d1e7dd"; 
         } else {
@@ -1159,27 +769,72 @@ if (tmMatch) {
             phoneBox.style.background = "#eef6ff";
         }
 
+        // 최근 기록 한 줄만 표시하여 상태 참고용으로 제공
         const log = attendanceLogsData[String(stuId)];
-        const timelineUl = document.getElementById('ds-timeline');
-        timelineUl.innerHTML = '';
-
+        const recentLogDiv = document.getElementById('ds-recent-log');
         if (log && log.history && log.history.length > 0) {
-            log.history.forEach(record => {
-                let color = "#6c757d"; 
-                if (record.includes("입실") || record.includes("복귀")) color = "var(--primary)";
-                else if (record.includes("외출")) color = "var(--warning)";
-                else if (record.includes("귀가") || record.includes("누락")) color = "var(--danger)";
-                
-                timelineUl.innerHTML += `
-                    <li style="position: relative; padding-left: 15px; margin-bottom: 5px;">
-                        <span style="position: absolute; left: 0; top: 8px; width: 6px; height: 6px; border-radius: 50%; background: ${color};"></span>
-                        ${record}
-                    </li>`;
-            });
+            const lastLog = log.history[log.history.length - 1];
+            recentLogDiv.innerHTML = `최근 기록 참고: <b style="color:var(--primary);">${lastLog}</b>`;
         } else {
-            timelineUl.innerHTML = `<li style="text-align: center; color: #999; font-size: 13px;">오늘 스캔된 기록이 없습니다.</li>`;
+            recentLogDiv.innerHTML = `최근 기록 참고: <b style="color:#999;">없음 (미입실)</b>`;
         }
     }
+
+    // 🌟 추가됨: 교사 권한으로 즉시 출결 기록을 덮어쓰고 갱신하는 함수 🌟
+    async function manualAttendanceUpdate(actionLabel) {
+        const stuId = document.getElementById('ds-current-stu-id').value;
+        const stuName = document.getElementById('ds-current-stu-name').value;
+        const targetDate = document.getElementById('daily-date').value;
+        const logId = `${targetDate}_${stuId}`;
+
+        if (!confirm(`[${stuName}] 학생을\n'${actionLabel}' 처리하시겠습니까?\n이 작업은 즉시 키오스크 기록에 반영됩니다.`)) return;
+
+        // 시스템 내부적으로 처리할 실제 상태값 (표나 색상 표시에 사용)
+        let sysStatus = "미입실";
+        if (actionLabel.includes('입실')) sysStatus = "입실";
+        if (actionLabel.includes('복귀')) sysStatus = "복귀";
+        if (actionLabel.includes('외출')) sysStatus = "외출";
+        if (actionLabel.includes('미입실') || actionLabel.includes('빈자리')) sysStatus = "미입실";
+        if (actionLabel.includes('귀가')) sysStatus = "귀가";
+
+        const nowObj = new Date();
+        const timeStr = nowObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+        const historyText = `${actionLabel} (${timeStr})`; // 예: "입실(교사인정) (19:30)"
+
+        try {
+            // 기존 로그의 history 배열을 먼저 가져옵니다
+            const { data: currentData } = await supabaseClient
+                .from('attendance_logs')
+                .select('history')
+                .eq('id', logId)
+                .maybeSingle();
+
+            let newHistory = (currentData && currentData.history) ? currentData.history : [];
+            newHistory.push(historyText); // 교사 수동 처리 내역 추가
+
+            // Supabase 덮어쓰기 (Upsert)
+            const { error } = await supabaseClient.from('attendance_logs').upsert({
+                id: logId,
+                date: targetDate,
+                stu_id: stuId,
+                stu_name: stuName,
+                status: sysStatus,
+                last_update_time: nowObj.toISOString(),
+                history: newHistory
+            });
+
+            if (error) throw error;
+
+            // 저장 완료 후 모달창 닫고 화면 새로고침
+            document.getElementById('daily-status-modal').style.display = 'none';
+            alert(`${stuName} 학생의 출결이 정상적으로 수정되었습니다.`);
+            loadDailyDataAndRender(); 
+
+        } catch (error) {
+            alert("처리 중 오류가 발생했습니다: " + error.message);
+        }
+    }
+
 
     async function openCounsel(docId) {
         const student = applicationData[docId]; if(!student) return;
@@ -1190,7 +845,6 @@ if (tmMatch) {
         const mIdx = monthMap[student.targetMonth];
         const year = new Date().getFullYear();
 
-        // 수파베이스에서 학생의 모든 출결 로그 가져오기
         const { data: logsData } = await supabaseClient.from("attendance_logs").select("*").eq("stu_id", String(student.stuId));
         let logs = {}; 
         if (logsData) {
@@ -1276,9 +930,6 @@ if (tmMatch) {
         document.querySelectorAll('#tab-manual input').forEach(i => i.value = ""); 
     }
 
-    // =========================================================
-    // 5. DB 데이터 조작 함수들 (개별수정, 강제마감, 통계 - 수파베이스 적용)
-    // =========================================================
     async function saveManualEntry() {
         const id = document.getElementById('edit-doc-id').value;
         const data = { 
@@ -1306,86 +957,76 @@ if (tmMatch) {
         } catch(e) { alert("오류: " + e.message); }
     }
 
+    async function closeMissingTags() {
+        const targetDate = document.getElementById('daily-date').value; 
+        if (!confirm(`[경고] 정말 ${targetDate} 일자의 출결을 마감하시겠습니까?\n현재 시각 기준으로 '입실'이나 '외출' 상태인 학생은 모두 '태그 누락(귀가)'으로 강제 전환됩니다.`)) return;
 
+        try {
+            const { data: logs } = await supabaseClient.from("attendance_logs")
+                .select("*")
+                .eq("date", targetDate)
+                .not('status', 'in', '("귀가", "귀가(누락)")');
 
+            if (!logs || logs.length === 0) {
+                alert(`${targetDate} 일자에는 강제 마감할 태그 누락자가 없습니다!`);
+                return;
+            }
 
-async function closeMissingTags() {
-    const targetDate = document.getElementById('daily-date').value; 
-    
-    // 안내창을 조금 더 명확하게 수정
-    if (!confirm(`[경고] 정말 ${targetDate} 일자의 출결을 마감하시겠습니까?\n현재 시각 기준으로 '입실'이나 '외출' 상태인 학생은 모두 '태그 누락(귀가)'으로 강제 전환됩니다.`)) return;
+            let missingCount = 0;
+            const now = new Date().toISOString();
 
-    try {
-        const { data: logs } = await supabaseClient.from("attendance_logs")
-            .select("*")
-            .eq("date", targetDate)
-            .not('status', 'in', '("귀가", "귀가(누락)")'); // 미귀가자만 가져오기
-
-        if (!logs || logs.length === 0) {
-            alert(`${targetDate} 일자에는 강제 마감할 태그 누락자가 없습니다!`);
-            return;
-        }
-
-        let missingCount = 0;
-        const now = new Date().toISOString();
-
-        for (let log of logs) {
-            missingCount++;
-            let newHistory = log.history || [];
-            newHistory.push(`🚨 관리자 강제 마감`);
-            
-            await supabaseClient.from("attendance_logs").update({
-                status: "귀가(누락)",
-                last_update_time: now,
-                history: newHistory
-            }).eq("id", log.id);
-        }
-
-        alert(`총 ${missingCount}명의 태그 누락자를 강제 마감 처리했습니다.`);
-        loadDailyDataAndRender(); 
-        
-    } catch (e) {
-        console.error("마감 처리 중 오류:", e);
-        alert("오류가 발생했습니다: " + e.message);
-    }
-}
-
-
-
-    // 🌟 관리자 페이지 실행 시 과거 미마감 데이터 자동 청소
-async function autoSweepPastAttendance() {
-    try {
-        const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
-        if (schedDoc && schedDoc.value && schedDoc.value.autoClose === false) return;
-
-        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); 
-        const { data: pastLogs, error: fetchError } = await supabaseClient
-            .from('attendance_logs')
-            .select('*')
-            .lt('date', todayStr)
-            .not('status', 'in', '("귀가", "귀가(누락)")');
-
-        if (fetchError) throw fetchError;
-
-        if (pastLogs && pastLogs.length > 0) {
-            for (let log of pastLogs) {
+            for (let log of logs) {
+                missingCount++;
                 let newHistory = log.history || [];
-                newHistory.push(`시스템 자동 마감 (태그 누락)`);
+                newHistory.push(`🚨 관리자 강제 마감`);
+                
                 await supabaseClient.from("attendance_logs").update({
                     status: "귀가(누락)",
-                    last_update_time: new Date().toISOString(),
+                    last_update_time: now,
                     history: newHistory
                 }).eq("id", log.id);
             }
-            console.log("✅ 관리자 화면 - 과거 데이터 자동 마감 완료");
-            loadDailyDataAndRender(); // 화면 새로고침 효과
-        }
-    } catch (e) { console.error("자동 마감 중 오류:", e); }
-}
 
-// 관리자 페이지 로드 시 1회 실행
-autoSweepPastAttendance();
+            alert(`총 ${missingCount}명의 태그 누락자를 강제 마감 처리했습니다.`);
+            loadDailyDataAndRender(); 
+            
+        } catch (e) {
+            console.error("마감 처리 중 오류:", e);
+            alert("오류가 발생했습니다: " + e.message);
+        }
+    }
+
+    async function autoSweepPastAttendance() {
+        try {
+            const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+            if (schedDoc && schedDoc.value && schedDoc.value.autoClose === false) return;
+
+            const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); 
+            const { data: pastLogs, error: fetchError } = await supabaseClient
+                .from('attendance_logs')
+                .select('*')
+                .lt('date', todayStr)
+                .not('status', 'in', '("귀가", "귀가(누락)")');
+
+            if (fetchError) throw fetchError;
+
+            if (pastLogs && pastLogs.length > 0) {
+                for (let log of pastLogs) {
+                    let newHistory = log.history || [];
+                    newHistory.push(`시스템 자동 마감 (태그 누락)`);
+                    await supabaseClient.from("attendance_logs").update({
+                        status: "귀가(누락)",
+                        last_update_time: new Date().toISOString(),
+                        history: newHistory
+                    }).eq("id", log.id);
+                }
+                console.log("✅ 관리자 화면 - 과거 데이터 자동 마감 완료");
+                loadDailyDataAndRender(); 
+            }
+        } catch (e) { console.error("자동 마감 중 오류:", e); }
+    }
+
+    autoSweepPastAttendance();
 </script>
 </body>
-
 </html>
