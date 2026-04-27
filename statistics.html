@@ -38,7 +38,26 @@
         
         /* 로딩 스피너 */
         #loading { display: none; text-align: center; padding: 50px; font-size: 18px; font-weight: bold; color: var(--primary); }
-    </style>
+
+        /* 기존 .box-apply 코드를 아래 코드로 교체하세요 */
+.box-apply { 
+    background: #ffffff; 
+    border: 1.5px dashed #adb5bd; /* 깔끔한 회색 점선 */
+    border-radius: 5px; 
+    padding: 6px; 
+    color: #495057; 
+}
+.apply-times {
+    display: flex;
+    justify-content: space-between; /* 간격을 균일하게 배치 */
+    font-size: 11px;
+    margin-top: 4px;
+    font-weight: bold;
+    color: #0d6efd; /* 파란색으로 강조 */
+    padding: 0 2px;
+}
+
+</style>
 </head>
 <body>
 
@@ -205,8 +224,14 @@
                     html += `
                         <div class="stat-box">
                             <div class="box-apply">
-                                <b>📋 신청:</b> 0T:${t0} | 1T:${t1} | 2T:${t2} | 3T:${t3}
+                               <div style="text-align:center; font-size:11px; color:#495057;"><b>📋 신청 현황</b></div>
+                               <div class="apply-times">
+                               <span>0T:${t0}</span>
+                               <span>1T:${t1}</span>
+                               <span>2T:${t2}</span>
+                               <span>3T:${t3}</span>
                             </div>
+                         </div>
                             <div class="box-current">
                                 🏃 현재 진행: <span style="font-size:12px;">${currentPresent}명</span>
                             </div>
