@@ -21,7 +21,7 @@
         /* 🌟 버튼 눌림 애니메이션 (시각적 피드백) 🌟 */
         .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: all 0.15s ease; }
         .btn:not(:disabled):active { transform: scale(0.94); box-shadow: inset 0 3px 6px rgba(0,0,0,0.25); filter: brightness(0.9); }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; background-color: #adb5bd !important; } /* 비활성화 시 확 연해지도록 수정 */
         
         .btn-primary { background: var(--primary); }
         .btn-gray { background: var(--gray); }
@@ -50,7 +50,7 @@
         .status-missing-tag { background: #fff3cd !important; border: 3px solid #fd7e14 !important; color: #fd7e14 !important; text-decoration: underline; }
         .status-present-extra { background: #ffe8d6 !important; border: 2px solid #fd7e14 !important; color: #e65100 !important; }
 
-        /* 🌟 교사 수동 제어 전용 🌟 */
+        /* 🌟 교사 수동 제어 전용 (충돌 방지: 안쪽으로 두 줄 외곽선 그리기) 🌟 */
         .status-admin-absent { 
             background: #ffe5ec !important; 
             border: 2px dashed #d63384 !important; 
@@ -263,7 +263,7 @@
                     <button class="btn" style="background:#198754; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('복귀(교사인정)', this)">🔵 복귀 처리</button>
                     <button class="btn" style="background:#fd7e14; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('외출(교사인정)', this)">🟡 외출 처리</button>
                     <button class="btn" style="background:#d63384; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('미입실(빈자리)', this)">🔴 빈자리 처리</button>
-                    <button class="btn" style="background:#6c757d; color:white; padding:15px; font-size:14px; grid-column: span 2;" onclick="manualAttendanceUpdate('귀가(교사인정)', this)">⚪ 최종 귀가 처리</button>
+                    <button id="btn-manual-finish" class="btn" style="background:#6c757d; color:white; padding:15px; font-size:14px; grid-column: span 2;" onclick="manualAttendanceUpdate('귀가(교사인정)', this)">⚪ 최종 귀가 처리</button>
                 </div>
                 
                 <input type="hidden" id="ds-current-stu-id">
@@ -818,16 +818,24 @@
         } else {
             recentLogDiv.innerHTML = `최근 기록 참고: <b style="color:#999;">없음 (미입실)</b>`;
         }
+
+        // 🌟 [추가됨] 학생이 이미 '귀가' 상태이면 귀가 버튼 비활성화 🌟
+        const finishBtn = document.getElementById('btn-manual-finish');
+        if (log && (log.status === "귀가" || log.status === "귀가(누락)")) {
+            finishBtn.disabled = true;
+            finishBtn.innerText = "⚪ 이미 귀가 완료됨";
+        } else {
+            finishBtn.disabled = false;
+            finishBtn.innerText = "⚪ 최종 귀가 처리";
+        }
     }
 
-    // 🌟 핵심: alert 창 지우고 처리 중 시각적 피드백 적용
     async function manualAttendanceUpdate(actionLabel, btnElement) {
         const stuId = document.getElementById('ds-current-stu-id').value;
         const stuName = document.getElementById('ds-current-stu-name').value;
         const targetDate = document.getElementById('daily-date').value;
         const logId = `${targetDate}_${stuId}`;
 
-        // 버튼이 눌린 느낌을 주고, 중복 클릭을 방지하기 위해 임시로 버튼 텍스트와 색상 변경
         const originalText = btnElement.innerText;
         const originalBg = btnElement.style.background;
         const allBtns = btnElement.parentElement.querySelectorAll('.btn');
@@ -869,14 +877,12 @@
 
             if (error) throw error;
 
-            // 처리가 완료되면 모달창 닫기 (별도의 alert 없음!)
             document.getElementById('daily-status-modal').style.display = 'none';
             loadDailyDataAndRender(); 
 
         } catch (error) {
             alert("처리 중 오류가 발생했습니다: " + error.message);
         } finally {
-            // 다음에 모달창이 열릴 때를 대비해 버튼 상태 원상복구
             btnElement.innerText = originalText;
             btnElement.style.background = originalBg;
             allBtns.forEach(b => b.disabled = false);
