@@ -1,1 +1,239 @@
-ee
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>안성여고 - 야간 자율학습 월간 통계</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #007bff; --success: #28a745; --warning: #ffc107; --danger: #dc3545; --gray: #6c757d; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        
+        .header-area { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; }
+        h2 { margin: 0; color: #1a1a1a; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; text-decoration: none; display: inline-block; }
+        .btn-gray { background: var(--gray); }
+        .btn-primary { background: var(--primary); }
+        
+        .controls { display: flex; gap: 15px; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ddd; }
+        .controls input[type="month"] { padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px; font-weight: bold; }
+        
+        /* 달력 CSS */
+        .stat-calendar { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .stat-calendar th { background: #e9ecef; padding: 12px; border: 1px solid #dee2e6; font-size: 14px; color: #495057; }
+        .stat-calendar td { border: 1px solid #dee2e6; height: 130px; vertical-align: top; padding: 8px; transition: 0.2s; background: white; }
+        .stat-calendar td:hover { background: #f8f9fa; }
+        
+        .date-num { font-weight: bold; font-size: 16px; margin-bottom: 8px; display: inline-block; }
+        .sunday { color: #dc3545; }
+        .saturday { color: #0d6efd; }
+        
+        /* 일일 현황 요약 박스 디자인 */
+        .stat-box { font-size: 11px; line-height: 1.4; display: flex; flex-direction: column; gap: 4px; }
+        .box-apply { background: #eef6ff; border: 1px solid #b6d4fe; border-radius: 5px; padding: 4px; color: #052c65; }
+        .box-current { background: #fff3cd; border: 1px solid #ffe69c; border-radius: 5px; padding: 4px; color: #664d03; font-weight: bold; }
+        .box-result { background: #d1e7dd; border: 1px solid #a3cfbb; border-radius: 5px; padding: 4px; color: #0a3622; font-weight: bold; }
+        .box-holiday { background: #f8d7da; border: 1px dashed #f5c2c7; border-radius: 5px; padding: 10px; text-align: center; color: #842029; font-weight: bold; margin-top: 10px; }
+        
+        /* 로딩 스피너 */
+        #loading { display: none; text-align: center; padding: 50px; font-size: 18px; font-weight: bold; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-area">
+        <h2>📊 자율학습 월간 통계 현황</h2>
+        <div>
+            <a href="split_admin.html" class="btn btn-gray">⬅️ 관리자 메인으로</a>
+        </div>
+    </div>
+
+    <div class="controls">
+        <b style="font-size: 16px;">조회할 연도 및 월:</b>
+        <input type="month" id="month-picker" onchange="fetchDataAndRender()">
+        <button class="btn btn-primary" onclick="fetchDataAndRender()">🔄 데이터 새로고침</button>
+        <span style="margin-left:auto; font-size:13px; color:#666;">※ 과거 데이터나 미래의 신청 내역을 조회할 수 있습니다.</span>
+    </div>
+
+    <div id="loading">데이터를 분석 중입니다... ⏳</div>
+    
+    <div id="calendar-container"></div>
+</div>
+
+<script>
+    // 🚨 수파베이스 정보 (기존과 동일)
+    const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let applicationData = [];
+    let attendanceLogsData = [];
+    let calendarSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
+
+    // 페이지 로드 시 현재 월로 기본 설정
+    document.addEventListener("DOMContentLoaded", () => {
+        const now = new Date();
+        const monthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        document.getElementById('month-picker').value = monthVal;
+        fetchDataAndRender();
+    });
+
+    async function fetchDataAndRender() {
+        const picker = document.getElementById('month-picker').value;
+        if (!picker) return;
+
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('calendar-container').style.display = 'none';
+
+        const [year, month] = picker.split('-').map(Number);
+        const targetMonthStr = month + "월";
+        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+        // 이번 달의 마지막 날 계산
+        const lastDateObj = new Date(year, month, 0);
+        const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDateObj.getDate()).padStart(2, '0')}`;
+
+        try {
+            // 1. 해당 월의 신청 내역 모두 가져오기
+            const { data: apps } = await supabaseClient.from('applications').select('*').eq('target_month', targetMonthStr);
+            applicationData = apps || [];
+
+            // 2. 해당 월의 출결 로그 모두 가져오기 (해당 월 1일 ~ 말일)
+            const { data: logs } = await supabaseClient.from('attendance_logs')
+                .select('date, status')
+                .gte('date', startDate)
+                .lte('date', endDate);
+            attendanceLogsData = logs || [];
+
+            // 3. 환경설정의 달력 휴무일 정보 가져오기
+            const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
+            if (cal && cal.value) {
+                if (cal.value.data) calendarSchedule.data = JSON.parse(cal.value.data);
+                if (cal.value.defaultDays) calendarSchedule.defaultDays = cal.value.defaultDays;
+            }
+
+            // 달력 그리기
+            renderCalendar(year, month, lastDateObj.getDate());
+
+        } catch (error) {
+            console.error("데이터 로딩 오류:", error);
+            alert("통계 데이터를 불러오는 중 오류가 발생했습니다.");
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('calendar-container').style.display = 'block';
+        }
+    }
+
+    function renderCalendar(year, month, lastDate) {
+        const firstDayIdx = new Date(year, month - 1, 1).getDay(); // 1일의 요일 (0:일 ~ 6:토)
+        const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        
+        let html = `
+            <table class="stat-calendar">
+                <thead>
+                    <tr>
+                        <th style="color:#dc3545;">일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th style="color:#0d6efd;">토</th>
+                    </tr>
+                </thead>
+                <tbody><tr>`;
+
+        // 시작 요일 앞 빈칸 채우기
+        for (let i = 0; i < firstDayIdx; i++) {
+            html += `<td></td>`;
+        }
+
+        // 날짜 채우기
+        for (let d = 1; d <= lastDate; d++) {
+            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dayIdx = new Date(year, month - 1, d).getDay();
+            const dayKey = daysEng[dayIdx];
+
+            // 휴무일 체크
+            let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
+            let reason = "";
+            if (calendarSchedule.data[dateStr] !== undefined) {
+                isOperating = calendarSchedule.data[dateStr].active;
+                reason = calendarSchedule.data[dateStr].reason;
+            }
+
+            // 숫자 색상 (일/토)
+            let dateClass = "date-num";
+            if (dayIdx === 0) dateClass += " sunday";
+            if (dayIdx === 6) dateClass += " saturday";
+
+            html += `<td><span class="${dateClass}">${d}</span>`;
+
+            if (!isOperating) {
+                // 운영 안 하는 날
+                html += `<div class="box-holiday">${reason || "야자 미운영"}</div>`;
+            } else {
+                // 1. 해당 요일 신청자 집계 (0T, 1T, 2T, 3T)
+                let t0 = 0, t1 = 0, t2 = 0, t3 = 0;
+                applicationData.forEach(app => {
+                    if (app[dayKey]) {
+                        if (app[dayKey].includes('0')) t0++;
+                        if (app[dayKey].includes('1')) t1++;
+                        if (app[dayKey].includes('2')) t2++;
+                        if (app[dayKey].includes('3')) t3++;
+                    }
+                });
+
+                // 2. 현재 참여 및 결과 집계
+                let currentPresent = 0; // 진행 중 (입실, 복귀, 외출)
+                let finalResult = 0;    // 결과 완료 (귀가)
+                let absent = 0;         // 미입실 (결석/누락)
+
+                const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
+                
+                dayLogs.forEach(log => {
+                    if (log.status === "입실" || log.status === "복귀" || log.status === "외출") {
+                        currentPresent++;
+                    } else if (log.status === "귀가") {
+                        finalResult++;
+                    } else {
+                        // 미입실, 귀가(누락)
+                        absent++;
+                    }
+                });
+
+                // 신청자가 아예 없고 출석 기록도 없으면 빈칸 유지
+                if ((t0+t1+t2+t3) === 0 && dayLogs.length === 0) {
+                    html += `<div style="text-align:center; color:#adb5bd; font-size:11px; margin-top:20px;">신청 데이터 없음</div>`;
+                } else {
+                    // 통계 박스 출력
+                    html += `
+                        <div class="stat-box">
+                            <div class="box-apply">
+                                <b>📋 신청:</b> 0T:${t0} | 1T:${t1} | 2T:${t2} | 3T:${t3}
+                            </div>
+                            <div class="box-current">
+                                🏃 현재 진행: <span style="font-size:12px;">${currentPresent}명</span>
+                            </div>
+                            <div class="box-result">
+                                ✅ 완료(귀가): <span style="font-size:12px;">${finalResult}명</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            html += `</td>`;
+            if ((firstDayIdx + d) % 7 === 0) html += `</tr><tr>`;
+        }
+
+        // 마지막 줄 빈칸 채우기
+        const lastDayIdx = new Date(year, month - 1, lastDate).getDay();
+        if (lastDayIdx < 6) {
+            for (let i = lastDayIdx + 1; i <= 6; i++) {
+                html += `<td></td>`;
+            }
+        }
+
+        html += `</tr></tbody></table>`;
+        document.getElementById('calendar-container').innerHTML = html;
+    }
+</script>
+
+</body>
+</html>
