@@ -36,12 +36,27 @@
         .seat-4 { background: #cff4fc; color: #055160; }
         .seat-5 { background: #f8d7da; color: #842029; }
 
+        /* 상태별 색상 */
         .status-absent { background: #fff0f0 !important; border: 2px dashed #dc3545 !important; color: #dc3545 !important; }
         .status-finish { background: #f8f9fa !important; border: 2px solid #6c757d !important; color: #6c757d !important; }
         .status-present-fixed { background: #fff3cd !important; border: 2px solid #ffc107 !important; color: #856404 !important; }
         .status-present-auto { background: #d1e7dd !important; border: 2px solid #2e7d32 !important; color: #0f5132 !important; }
+        .status-out { background: #e0d4f7 !important; border: 2px dashed #6f42c1 !important; color: #4a2785 !important; }
+        .status-missing-tag { background: #fff3cd !important; border: 3px solid #fd7e14 !important; color: #fd7e14 !important; text-decoration: underline; }
+        .status-present-extra { background: #ffe8d6 !important; border: 2px solid #fd7e14 !important; color: #e65100 !important; }
 
-        /* 상담 리포트 모달 */
+        /* 🌟 교사 수동 제어 전용 (자극적인 색상) 🌟 */
+        .status-admin-absent { background: #ffe5ec !important; border: 3px dashed #d63384 !important; color: #d63384 !important; font-weight: 900 !important; }
+        .status-admin-present { background: #f3e8ff !important; border: 3px solid #8b5cf6 !important; color: #5b21b6 !important; font-weight: 900 !important; }
+
+        /* 미니 타임라인 태그 디자인 */
+        .mini-tag { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; letter-spacing: -0.5px; white-space: nowrap; }
+        .tag-in { background: #e7f1ff; color: #0d6efd; border: 1px solid #b6d4fe; }
+        .tag-out { background: #fff3cd; color: #b38200; border: 1px solid #ffe69c; }
+        .tag-home { background: #fff0f0; color: #dc3545; border: 1px solid #f5c2c7; }
+        .tag-admin { background: #f3e8ff; color: #5b21b6; border: 1px solid #8b5cf6; box-shadow: 0 2px 4px rgba(91, 33, 182, 0.2); }
+
+        /* 모달 및 폼 기타 디자인 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 25px; border-radius: 15px; width: 95%; max-width: 650px; overflow-y: auto; max-height: 90vh; }
         .counsel-calendar { width: 100%; border-collapse: collapse; margin-top: 15px; table-layout: fixed; }
@@ -54,7 +69,6 @@
         .slot-present { background: var(--primary); color: white !important; }
         .slot-absent { background: #fff0f0; color: var(--danger) !important; border-color: var(--danger); }
 
-        /* 입력 폼 */
         .form-card { background:#f8f9fa; padding:25px; border-radius:10px; border:1px solid #ddd; }
         .input-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
         .input-group-item { flex: 1; min-width: 130px; }
@@ -64,20 +78,6 @@
         .time-item { flex: 0 1 65px; text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
         .time-item label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
         .time-item input { width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ddd; border-radius: 4px; text-align: center; font-size: 16px; font-weight: bold; }
-
-        .status-missing-tag { background: #fff3cd !important; border: 3px solid #fd7e14 !important; color: #fd7e14 !important; text-decoration: underline; }
-        .status-out { background: #e0d4f7 !important; border: 2px dashed #6f42c1 !important; color: #4a2785 !important; }
-        
-        /* 미니 타임라인 태그 디자인 */
-        .mini-tag { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; letter-spacing: -0.5px; white-space: nowrap; }
-        .tag-in { background: #e7f1ff; color: #0d6efd; border: 1px solid #b6d4fe; }
-        .tag-out { background: #fff3cd; color: #b38200; border: 1px solid #ffe69c; }
-        .tag-home { background: #fff0f0; color: #dc3545; border: 1px solid #f5c2c7; }
-        /* 🌟 교사 수정 전용 보라색 태그 */
-        .tag-admin { background: #e0cffc; color: #4a2785; border: 1px solid #b19cd9; box-shadow: 0 2px 4px rgba(74, 39, 133, 0.2); }
-        
-        .seat-unscheduled-present { background-color: #fd7e14 !important; color: white !important; border: 2px solid #e8590c !important; }
-        .status-present-extra { background: #ffe8d6 !important; border: 2px solid #fd7e14 !important; color: #e65100 !important; }
     </style>
 </head>
 <body>
@@ -85,7 +85,7 @@
 <div class="container">
     <div class="header-area">
         <h2 style="flex-grow: 1;">안성여고 야간 자율학습 통합 관리</h2>
-        <button class="btn btn-primary" style="background:#dc3545;" onclick="closeMissingTags()">🚨 일일 출결 강제 마감 (태그 누락자 색출)</button>
+        <button class="btn btn-primary" style="background:#dc3545;" onclick="closeMissingTags()">🚨 일일 출결 강제 마감</button>
         <button class="btn btn-gray" onclick="location.href='settings.html'">⚙️ 환경설정</button>
     </div>
 
@@ -116,10 +116,11 @@
         <div style="display:flex; justify-content:center; gap:15px; margin-bottom:15px; font-size:12px; flex-wrap:wrap;">
             <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#fff3cd; border:2px solid #ffc107;"></div> 고정석(입실)</span>
             <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#d1e7dd; border:2px solid #2e7d32;"></div> 자율석(입실)</span>
+            <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#f3e8ff; border:3px solid #8b5cf6;"></div> 교사확인(입실)</span>
             <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#e0d4f7; border:2px dashed #6f42c1;"></div> 외출 중</span>
             <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#fff0f0; border:2px dashed #dc3545;"></div> 미입실</span>
+            <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#ffe5ec; border:3px dashed #d63384;"></div> 교사확인(빈자리)</span>
             <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#f8f9fa; border:2px solid #6c757d;"></div> 귀가완료</span>
-            <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#fff3cd; border:3px solid #fd7e14;"></div> 태그 누락</span>
         </div>
 
         <div id="supervisor-grid" class="seat-grid"></div>
@@ -235,14 +236,14 @@
             <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 15px; border: 1px solid #eee;">
                 
                 <div id="ds-recent-log" style="font-size: 13px; color: #555; text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #ccc;">
-                    </div>
+                </div>
 
                 <h4 style="margin: 0 0 10px 0; color: #333; font-size: 14px; text-align: center;">👨‍🏫 교사 직접 출결 승인</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <button class="btn" style="background:#0d6efd; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('입실(교사인정)')">🟢 입실 처리</button>
                     <button class="btn" style="background:#198754; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('복귀(교사인정)')">🔵 복귀 처리</button>
                     <button class="btn" style="background:#fd7e14; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('외출(교사인정)')">🟡 외출 처리</button>
-                    <button class="btn" style="background:#dc3545; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('미입실(빈자리)')">🔴 빈자리 처리</button>
+                    <button class="btn" style="background:#d63384; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('미입실(빈자리)')">🔴 빈자리 처리</button>
                     <button class="btn" style="background:#6c757d; color:white; padding:15px; font-size:14px; grid-column: span 2;" onclick="manualAttendanceUpdate('귀가(교사인정)')">⚪ 최종 귀가 처리</button>
                 </div>
                 
@@ -427,6 +428,7 @@
         }
     }
 
+    // 🌟 핵심: 지도 렌더링 시 버그 수정 및 교사 색상 분기 로직 적용
     function renderDailySupervisorMap() {
         if(seatMapData.length === 0) return;
         const container = document.getElementById('supervisor-grid');
@@ -473,6 +475,7 @@
             });
         });
 
+        // 1. 고정석 처리
         Object.entries(applicationData).forEach(([docId, d]) => {
             if(d.targetMonth === targetMonthStr && d.type === "고정석" && cellEls[d.seatNum]) {
                 const target = cellEls[d.seatNum]; 
@@ -487,11 +490,22 @@
                         target.classList.add('status-present-extra');
                     } else {
                         target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#1565c0;">${d.stuName}</span>`;
+                        
                         if (log) {
-                            if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
+                            const isTeacherAbsent = log.history && log.history.join('').includes('빈자리');
+                            const isTeacherPresent = log.history && log.history.join('').includes('교사인정');
+
+                            if (log.status === "미입실") {
+                                if (isTeacherAbsent) target.classList.add('status-admin-absent');
+                                else target.classList.add('status-absent');
+                            }
+                            else if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
                             else if (log.status === "외출") target.classList.add('status-out'); 
                             else if (log.status === "귀가") target.classList.add('status-finish'); 
-                            else target.classList.add('status-present-fixed'); 
+                            else {
+                                if (isTeacherPresent) target.classList.add('status-admin-present');
+                                else target.classList.add('status-present-fixed');
+                            }
                         } else {
                             target.classList.add('status-absent'); 
                         }
@@ -502,6 +516,7 @@
             }
         });
 
+        // 2. 자율석 처리
         dailyReservationsData.forEach(d => {
             if(cellEls[d.seatNum]) {
                 const target = cellEls[d.seatNum];
@@ -516,11 +531,22 @@
                         target.classList.add('status-present-extra');
                     } else {
                         target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#2e7d32;">${d.stuName}</span>`;
+                        
                         if (log) {
-                            if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
+                            const isTeacherAbsent = log.history && log.history.join('').includes('빈자리');
+                            const isTeacherPresent = log.history && log.history.join('').includes('교사인정');
+
+                            if (log.status === "미입실") {
+                                if (isTeacherAbsent) target.classList.add('status-admin-absent');
+                                else target.classList.add('status-absent');
+                            }
+                            else if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
                             else if (log.status === "외출") target.classList.add('status-out'); 
                             else if (log.status === "귀가") target.classList.add('status-finish'); 
-                            else target.classList.add('status-present-auto'); 
+                            else {
+                                if (isTeacherPresent) target.classList.add('status-admin-present');
+                                else target.classList.add('status-present-auto');
+                            }
                         } else {
                             target.classList.add('status-absent'); 
                         }
@@ -640,7 +666,6 @@
                             if (hasLogs) {
                                 groupedHistory[t].forEach(h => {
                                     let tagClass = "tag-in"; 
-                                    // 🌟 교사 확인용 태그 디자인 적용
                                     if (h.includes("교사") || h.includes("빈자리")) tagClass = "tag-admin"; 
                                     else if (h.includes("외출")) tagClass = "tag-out"; 
                                     else if (h.includes("귀가") || h.includes("누락")) tagClass = "tag-home";
@@ -745,13 +770,11 @@
         document.getElementById('daily-list-summary').innerHTML = `전체 대상: ${stat.total}명 | <span style="color:var(--primary);">입실: ${stat.present}명</span> | <span style="color:#fd7e14;">외출: ${stat.out}명</span> | <span style="color:var(--gray);">귀가: ${stat.finish}명</span> | <span style="color:var(--danger);">미입실: ${stat.absent}명</span>`;
     }
 
-    // 🌟 수정됨: 타임라인 대신 교사 직접 출결 처리를 위한 모달 열기 함수 🌟
     function openDailyStatus(stuId, stuName, seatNum, phone) {
         document.getElementById('daily-status-modal').style.display = 'flex';
         document.getElementById('ds-name').innerText = stuName;
         document.getElementById('ds-info').innerText = `학번: ${stuId} | 좌석: ${seatNum}`;
         
-        // 수동 출결 처리를 위해 학번/이름 저장
         document.getElementById('ds-current-stu-id').value = stuId;
         document.getElementById('ds-current-stu-name').value = stuName;
 
@@ -769,7 +792,6 @@
             phoneBox.style.background = "#eef6ff";
         }
 
-        // 최근 기록 한 줄만 표시하여 상태 참고용으로 제공
         const log = attendanceLogsData[String(stuId)];
         const recentLogDiv = document.getElementById('ds-recent-log');
         if (log && log.history && log.history.length > 0) {
@@ -780,7 +802,6 @@
         }
     }
 
-    // 🌟 추가됨: 교사 권한으로 즉시 출결 기록을 덮어쓰고 갱신하는 함수 🌟
     async function manualAttendanceUpdate(actionLabel) {
         const stuId = document.getElementById('ds-current-stu-id').value;
         const stuName = document.getElementById('ds-current-stu-name').value;
@@ -789,7 +810,6 @@
 
         if (!confirm(`[${stuName}] 학생을\n'${actionLabel}' 처리하시겠습니까?\n이 작업은 즉시 키오스크 기록에 반영됩니다.`)) return;
 
-        // 시스템 내부적으로 처리할 실제 상태값 (표나 색상 표시에 사용)
         let sysStatus = "미입실";
         if (actionLabel.includes('입실')) sysStatus = "입실";
         if (actionLabel.includes('복귀')) sysStatus = "복귀";
@@ -799,10 +819,9 @@
 
         const nowObj = new Date();
         const timeStr = nowObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
-        const historyText = `${actionLabel} (${timeStr})`; // 예: "입실(교사인정) (19:30)"
+        const historyText = `${actionLabel} (${timeStr})`;
 
         try {
-            // 기존 로그의 history 배열을 먼저 가져옵니다
             const { data: currentData } = await supabaseClient
                 .from('attendance_logs')
                 .select('history')
@@ -810,9 +829,8 @@
                 .maybeSingle();
 
             let newHistory = (currentData && currentData.history) ? currentData.history : [];
-            newHistory.push(historyText); // 교사 수동 처리 내역 추가
+            newHistory.push(historyText);
 
-            // Supabase 덮어쓰기 (Upsert)
             const { error } = await supabaseClient.from('attendance_logs').upsert({
                 id: logId,
                 date: targetDate,
@@ -825,7 +843,6 @@
 
             if (error) throw error;
 
-            // 저장 완료 후 모달창 닫고 화면 새로고침
             document.getElementById('daily-status-modal').style.display = 'none';
             alert(`${stuName} 학생의 출결이 정상적으로 수정되었습니다.`);
             loadDailyDataAndRender(); 
