@@ -406,6 +406,112 @@ html += `
         html += `</tr></tbody></table>`;
         document.getElementById('calendar-container').innerHTML = html;
     }
+
+
+    // ==========================================
+    // 👇 여기서부터 복사해서 맨 아래 (</script> 바로 위)에 붙여넣으세요
+    // ==========================================
+
+    // --- 탭 전환 함수 ---
+    function switchTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    // --- 반별 통계 계산 함수 ---
+    function renderClassStats(year, month, lastDate) {
+        const tbody = document.getElementById('class-stat-body');
+        tbody.innerHTML = '';
+
+        if (!applicationData || applicationData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="color:#6c757d; padding:20px;">해당 월의 신청 데이터가 없습니다.</td></tr>`;
+            return;
+        }
+
+        let classStats = {};
+        const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+        // 1. 학생별 학급 파악 및 인원 카운트
+        applicationData.forEach(app => {
+            const stuIdStr = String(app.stu_id);
+            if (stuIdStr.length < 4) return; // 비정상 학번 건너뛰기
+
+            // 학번에서 반 추출 (예: 3101 -> 끝 두자리 제외한 '31' -> 3학년 1반)
+            const classCode = stuIdStr.slice(0, -2);
+            const grade = classCode.substring(0, 1);
+            const classNum = classCode.substring(1);
+            const className = `${grade}학년 ${classNum}반`;
+
+            if (!classStats[className]) {
+                classStats[className] = { students: new Set(), totalTimes: 0, orderCode: parseInt(classCode) };
+            }
+            classStats[className].students.add(stuIdStr);
+        });
+
+        // 2. 달력의 실제 운영일을 순회하며 누적 신청 횟수(타임 수) 정확하게 계산
+        for (let d = 1; d <= lastDate; d++) {
+            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dayIdx = new Date(year, month - 1, d).getDay();
+            const dayKey = daysEng[dayIdx];
+
+            let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
+            if (calendarSchedule.data[dateStr] !== undefined) {
+                isOperating = calendarSchedule.data[dateStr].active; // 개별 휴무일 반영
+            }
+
+            // 운영하는 날이면 해당 요일 신청자들의 타임 수를 더함
+            if (isOperating) {
+                applicationData.forEach(app => {
+                    if (app[dayKey]) {
+                        const stuIdStr = String(app.stu_id);
+                        if (stuIdStr.length < 4) return;
+                        
+                        const classCode = stuIdStr.slice(0, -2);
+                        const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
+                        
+                        // 1,2,3 등 콤마로 구분된 타임의 개수 파악
+                        const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
+                        if (classStats[className]) {
+                            classStats[className].totalTimes += timesCount;
+                        }
+                    }
+                });
+            }
+        }
+
+        // 3. 반 순서대로 정렬 (1학년 1반 -> 2반 -> 2학년 1반 순)
+        const sortedClasses = Object.keys(classStats).sort((a, b) => classStats[a].orderCode - classStats[b].orderCode);
+
+        let html = "";
+        let totalStudents = 0;
+        let totalAllTimes = 0;
+
+        sortedClasses.forEach(cls => {
+            const stuCount = classStats[cls].students.size;
+            const times = classStats[cls].totalTimes;
+            totalStudents += stuCount;
+            totalAllTimes += times;
+
+            html += `<tr>
+                <td style="font-weight:bold; color:var(--primary);">${cls}</td>
+                <td>${stuCount}명</td>
+                <td>${times}회</td>
+            </tr>`;
+        });
+
+        // 총합계 줄 추가
+        if (sortedClasses.length > 0) {
+            html += `<tr style="background:#eef6ff; font-weight:bold; color:#052c65;">
+                <td>합계</td>
+                <td>${totalStudents}명</td>
+                <td>${totalAllTimes}회</td>
+            </tr>`;
+        }
+
+        tbody.innerHTML = html;
+    }
 </script>
 
 </body>
