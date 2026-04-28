@@ -341,28 +341,19 @@
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
     document.getElementById('daily-date').value = todayStr;
 
-    // =========================================================
-    // 2. 기초 데이터 불러오기
+// =========================================================
+    // 2. 기초 데이터 불러오기 (도면 모드 선택 기능 적용)
     // =========================================================
     async function fetchBaseData() {
-        const { data: layout } = await supabaseClient.from('settings').select('value').eq('key', 'seatLayout').maybeSingle();
-        if (layout && layout.value) {
-            rows = layout.value.rows; cols = layout.value.cols;
-            seatMapData = JSON.parse(layout.value.grid);
-        }
-        
-        const { data: roster } = await supabaseClient.from('settings').select('value').eq('key', 'roster').maybeSingle();
-        if (roster && roster.value && roster.value.phoneList) rosterPhones = JSON.parse(roster.value.phoneList);
-        
-        const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
-        if (cal && cal.value) {
-            if (cal.value.data) globalCalendarSchedule.data = JSON.parse(cal.value.data);
-            if (cal.value.defaultDays) globalCalendarSchedule.defaultDays = cal.value.defaultDays;
-        }
-
+        // 🌟 1. 환경설정의 '운영 모드(layoutMode)' 및 '시간 설정'을 가장 먼저 가져옵니다.
         const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+        let layoutMode = "1"; // 기본값은 '1개 통합 도면'
+        
         if (schedDoc && schedDoc.value) {
             const sched = schedDoc.value;
+            if (sched.layoutMode) layoutMode = sched.layoutMode; // 👈 설정된 모드가 있으면 덮어쓰기
+            
+            // 기존 스케줄(시간) 설정 처리
             currentSchedule.t1 = sched.t1 || "16:00";
             currentSchedule.t2 = sched.t2 || "18:50";
             currentSchedule.t3 = sched.t3 || "20:10";
@@ -388,6 +379,37 @@
             `;
         }
 
+        // 🌟 2. 확인된 운영 모드에 따라 도면 데이터를 다르게 불러옵니다.
+        const { data: layout } = await supabaseClient.from('settings').select('value').eq('key', 'seatLayout').maybeSingle();
+        
+        if (layout && layout.value) {
+            // [신규] 다중 구역 모드(2)가 선택되었고, 저장된 도면도 버전 2일 때
+            if (layoutMode === "2" && layout.value.version === 2) {
+                const firstRoom = layout.value.rooms[0]; // 👈 일단 첫 번째 방(A실)만 불러옵니다.
+                rows = firstRoom.rows; 
+                cols = firstRoom.cols;
+                seatMapData = JSON.parse(firstRoom.grid);
+            } 
+            // [기존] 1개 통합 도면 모드일 때
+            else {
+                rows = layout.value.rows || 20; 
+                cols = layout.value.cols || 30;
+                seatMapData = JSON.parse(layout.value.grid || "[]");
+            }
+        }
+        
+        // 3. 기초 명단 불러오기
+        const { data: roster } = await supabaseClient.from('settings').select('value').eq('key', 'roster').maybeSingle();
+        if (roster && roster.value && roster.value.phoneList) rosterPhones = JSON.parse(roster.value.phoneList);
+        
+        // 4. 달력 일정(운영일/감독교사 등) 불러오기
+        const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
+        if (cal && cal.value) {
+            if (cal.value.data) globalCalendarSchedule.data = JSON.parse(cal.value.data);
+            if (cal.value.defaultDays) globalCalendarSchedule.defaultDays = cal.value.defaultDays;
+        }
+
+        // 5. 학생 월별 신청 데이터 불러오기
         const { data: apps } = await supabaseClient.from('applications').select('*');
         applicationData = {};
         if (apps) {
