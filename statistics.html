@@ -103,7 +103,9 @@
         <div id="calendar-container"></div>
     </div>
 
-    <div id="tab-daily-matrix" class="tab-content">
+
+
+<div id="tab-daily-matrix" class="tab-content">
         <div class="filter-area">
             <div>
                 <label for="matrix-class-filter">🏫 반별 검색:</label>
@@ -111,10 +113,20 @@
                     <option value="all">전체 보기</option>
                 </select>
             </div>
+            <div>
+                <label for="matrix-sort-filter">↕️ 정렬 기준:</label>
+                <select id="matrix-sort-filter" onchange="applyDailyMatrixFilter()">
+                    <option value="id_asc">학번 순 (기본)</option>
+                    <option value="total_desc">총계 높은 순</option>
+                </select>
+            </div>
             <div style="margin-left:auto; font-size:13px; color:#666;">
                 ※ 숫자는 해당 일자에 출석한 <b>타임 횟수</b>를 의미합니다.
             </div>
         </div>
+
+
+
         <div style="overflow-x: auto; border: 1px solid #dee2e6; border-radius: 8px;">
             <table class="stat-class-table" style="min-width: 1200px; font-size: 12px; margin-top: 0;">
                 <thead id="matrix-thead"></thead>
@@ -424,18 +436,31 @@
         applyDailyMatrixFilter();
     }
 
-    // 필터 및 화면 렌더링 함수
+// 필터 및 화면 렌더링 함수
     function applyDailyMatrixFilter() {
         const tbody = document.getElementById('matrix-tbody');
         const classValue = document.getElementById('matrix-class-filter').value;
+        // 👇 새로 추가: 정렬 기준 값 가져오기
+        const sortValue = document.getElementById('matrix-sort-filter') ? document.getElementById('matrix-sort-filter').value : 'id_asc';
         
-        let filteredData = globalDailyMatrixData;
+        // 원본 데이터를 해치지 않기 위해 배열 복사
+        let filteredData = [...globalDailyMatrixData]; 
+        
         if (classValue !== "all") {
             filteredData = filteredData.filter(stat => stat.className === classValue);
         }
 
-        // 학번 순으로 정렬
-        filteredData.sort((a, b) => parseInt(a.stu_id) - parseInt(b.stu_id));
+        // 👇 새로 추가: 선택한 기준에 따른 정렬 로직
+        filteredData.sort((a, b) => {
+            if (sortValue === 'total_desc') {
+                // 총계가 다르면 총계 내림차순(높은 순)
+                if (b.totalCount !== a.totalCount) return b.totalCount - a.totalCount; 
+                // 총계가 같으면 학번 오름차순
+                return parseInt(a.stu_id) - parseInt(b.stu_id); 
+            }
+            // 기본값: 학번 오름차순
+            return parseInt(a.stu_id) - parseInt(b.stu_id);
+        });
 
         let html = "";
         if (filteredData.length === 0) {
@@ -460,6 +485,7 @@
         }
         tbody.innerHTML = html;
     }
+
 
 
     // 🌟 탭을 전환할 때 숨겨야 할 요소들 제어
