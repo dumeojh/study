@@ -40,7 +40,7 @@
             font-size: 1.1rem;
         }
 
-        /* 6개 박스 그리드 레이아웃 */
+        /* 박스 그리드 레이아웃 */
         .container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -106,7 +106,7 @@
 <body>
 
     <header>
-        <h1>안성여고 야간 자율학습 시스템5</h1>
+        <h1>안성여고 야간 자율학습 시스템</h1>
         <p>원하시는 서비스 메뉴를 선택해 주세요.</p>
     </header>
 
@@ -116,6 +116,12 @@
         <div class="icon">⚙️</div>
         <div class="card-title">환경설정</div>
         <div class="card-desc">운영 일정, 명단 및 도면 관리<br>(관리자 전용)</div>
+    </a>
+
+    <a href="seat_designer.html" class="card">
+        <div class="icon">🎨</div>
+        <div class="card-title">도면 설계 샌드박스</div>
+        <div class="card-desc">다중 구역(A실, B실 등) 도면을<br>안전하게 설계하고 배포하기</div>
     </a>
 
     <a href="sign_up.html" class="card">
@@ -141,11 +147,13 @@
         <div class="card-title">야자 통합 관리</div>
         <div class="card-desc">실시간 좌석 현황 모니터링 및<br>학생 출결 상담 리포트</div>
     </a>
-<a href="statistics.html" class="card"> 
+    
+    <a href="statistics.html" class="card"> 
         <div class="icon">📈</div>
         <div class="card-title">월간 통계 분석</div>
         <div class="card-desc">월별 달력 기반 신청 인원 및<br>일일 출결 결과 통합 통계</div>
     </a>
+
     <a href="help.html" class="card card-help">
         <div class="icon">❓</div>
         <div class="card-title">시스템 사용설명서</div>
