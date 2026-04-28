@@ -97,7 +97,12 @@
         .time-item { flex: 0 1 65px; text-align: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
         .time-item label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
         .time-item input { width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ddd; border-radius: 4px; text-align: center; font-size: 16px; font-weight: bold; }
-    </style>
+
+/* 🌟 좌석 필터 버튼 및 흐림 효과 스타일 */
+        .filter-tag { opacity: 0.4; filter: grayscale(100%); border-color: #ddd !important; background: #fafafa !important; font-weight: normal; user-select: none; }
+        .filter-tag.active { opacity: 1; filter: grayscale(0%); border-color: #0d6efd !important; background: #f0f7ff !important; font-weight: bold; color: #0d6efd; box-shadow: 0 2px 4px rgba(13,110,253,0.1); }
+        .seat-filtered-out { opacity: 0.15 !important; pointer-events: none; filter: grayscale(100%); }
+</style>
 </head>
 <body>
 
@@ -145,14 +150,23 @@
             <span style="font-size:14px; color:#666; font-weight:normal;">사유: <b id="holiday-reason" style="color:#dc3545;"></b></span>
         </div>
         
-        <div style="display:flex; justify-content:center; gap:15px; margin-bottom:15px; font-size:12px; flex-wrap:wrap;">
-            <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#fff3cd; border:2px solid #ffc107; box-sizing: border-box;"></div> 고정석(입실)</span>
-            <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#d1e7dd; border:2px solid #2e7d32; box-sizing: border-box;"></div> 자율석(입실)</span>
-            <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#f3e8ff; border:2px solid #8b5cf6; outline:1px solid #8b5cf6; outline-offset:-4px; box-sizing: border-box;"></div> 교사확인(입실)</span>
-            <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#e0d4f7; border:2px dashed #6f42c1; box-sizing: border-box;"></div> 외출 중</span>
-            <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#fff0f0; border:2px dashed #dc3545; box-sizing: border-box;"></div> 미입실</span>
-            <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#ffe5ec; border:2px dashed #d63384; outline:1px dashed #d63384; outline-offset:-4px; box-sizing: border-box;"></div> 교사확인(빈자리)</span>
-            <span style="display:flex; align-items:center; gap:5px;"><div style="width:15px; height:15px; background:#f8f9fa; border:2px solid #6c757d; box-sizing: border-box;"></div> 귀가완료</span>
+<div style="display:flex; justify-content:center; gap:10px; margin-bottom:15px; font-size:12px; flex-wrap:wrap; align-items: center;">
+            <button onclick="toggleAllFilters()" style="padding:5px 12px; border-radius:15px; border:none; background:#343a40; color:white; cursor:pointer; font-weight:bold; font-size:12px; transition:0.2s; box-shadow:0 2px 4px rgba(0,0,0,0.2);">전체 ON/OFF</button>
+            <span style="border-left: 2px solid #dee2e6; height: 18px; margin: 0 5px;"></span>
+            
+            <div class="filter-tag active" data-filter="fixed" onclick="toggleFilter('fixed')" style="cursor:pointer; display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:15px; border:1px solid #ccc; transition:0.2s;"><div style="width:12px; height:12px; background:#fff3cd; border:2px solid #ffc107; box-sizing:border-box; border-radius:3px;"></div> 고정석(입실)</div>
+            
+            <div class="filter-tag active" data-filter="auto" onclick="toggleFilter('auto')" style="cursor:pointer; display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:15px; border:1px solid #ccc; transition:0.2s;"><div style="width:12px; height:12px; background:#d1e7dd; border:2px solid #2e7d32; box-sizing:border-box; border-radius:3px;"></div> 자율석(입실)</div>
+            
+            <div class="filter-tag active" data-filter="admin-in" onclick="toggleFilter('admin-in')" style="cursor:pointer; display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:15px; border:1px solid #ccc; transition:0.2s;"><div style="width:12px; height:12px; background:#f3e8ff; border:2px solid #8b5cf6; box-sizing:border-box; border-radius:3px;"></div> 교사확인(입실)</div>
+            
+            <div class="filter-tag active" data-filter="out" onclick="toggleFilter('out')" style="cursor:pointer; display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:15px; border:1px solid #ccc; transition:0.2s;"><div style="width:12px; height:12px; background:#e0d4f7; border:2px dashed #6f42c1; box-sizing:border-box; border-radius:3px;"></div> 외출 중</div>
+            
+            <div class="filter-tag active" data-filter="absent" onclick="toggleFilter('absent')" style="cursor:pointer; display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:15px; border:1px solid #ccc; transition:0.2s;"><div style="width:12px; height:12px; background:#fff0f0; border:2px dashed #dc3545; box-sizing:border-box; border-radius:3px;"></div> 미입실</div>
+            
+            <div class="filter-tag active" data-filter="admin-out" onclick="toggleFilter('admin-out')" style="cursor:pointer; display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:15px; border:1px solid #ccc; transition:0.2s;"><div style="width:12px; height:12px; background:#ffe5ec; border:2px dashed #d63384; box-sizing:border-box; border-radius:3px;"></div> 교사확인(빈자리)</div>
+            
+            <div class="filter-tag active" data-filter="finish" onclick="toggleFilter('finish')" style="cursor:pointer; display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:15px; border:1px solid #ccc; transition:0.2s;"><div style="width:12px; height:12px; background:#f8f9fa; border:2px solid #6c757d; box-sizing:border-box; border-radius:3px;"></div> 귀가완료</div>
         </div>
 
         <div id="supervisor-grid" class="seat-grid"></div>
@@ -460,6 +474,49 @@
         }
     }
 
+
+// 🌟 추가된 필터 제어 전역 변수 및 함수 🌟
+    let activeSeatFilters = new Set(['fixed', 'auto', 'admin-in', 'out', 'absent', 'admin-out', 'finish']);
+
+    function toggleFilter(filterKey) {
+        if (activeSeatFilters.has(filterKey)) activeSeatFilters.delete(filterKey);
+        else activeSeatFilters.add(filterKey);
+        
+        updateFilterUI();
+        applySeatFilters();
+    }
+
+    function toggleAllFilters() {
+        if (activeSeatFilters.size > 0) activeSeatFilters.clear(); // 켜져있는게 하나라도 있으면 전부 OFF
+        else activeSeatFilters = new Set(['fixed', 'auto', 'admin-in', 'out', 'absent', 'admin-out', 'finish']); // 전부 ON
+        
+        updateFilterUI();
+        applySeatFilters();
+    }
+
+    function updateFilterUI() {
+        document.querySelectorAll('.filter-tag').forEach(tag => {
+            if (activeSeatFilters.has(tag.dataset.filter)) tag.classList.add('active');
+            else tag.classList.remove('active');
+        });
+    }
+
+    function applySeatFilters() {
+        const cells = document.querySelectorAll('#supervisor-grid .seat-cell');
+        cells.forEach(cell => {
+            // 학생이 없는 빈 책상이나 복도 처리 (전체 선택이 아닐 땐 빈자리도 흐리게 처리)
+            if(!cell.dataset.statusType) {
+                if (activeSeatFilters.size < 7) cell.classList.add('seat-filtered-out');
+                else cell.classList.remove('seat-filtered-out');
+                return; 
+            }
+            // 필터 켜짐 여부에 따라 투명도 조절
+            if (activeSeatFilters.has(cell.dataset.statusType)) cell.classList.remove('seat-filtered-out');
+            else cell.classList.add('seat-filtered-out');
+        });
+    }
+
+    // 🌟 필터 속성이 추가된 새 좌석 렌더링 함수 🌟
     function renderDailySupervisorMap() {
         if(seatMapData.length === 0) return;
         const container = document.getElementById('supervisor-grid');
@@ -516,9 +573,12 @@
                 const isPresent = log && (log.status === "입실" || log.status === "복귀");
 
                 if (isApplied || isPresent) {
+                    let statusType = "absent"; // 필터 식별자
+                    
                     if (!isApplied && isPresent) {
                         target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#fd7e14; font-weight:bold;">${d.stuName}</span><br><span style="font-size:9px; color:#fd7e14; letter-spacing:-1px;">(연장)</span>`;
                         target.classList.add('status-present-extra');
+                        statusType = "fixed";
                     } else {
                         target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#1565c0;">${d.stuName}</span>`;
                         
@@ -527,20 +587,22 @@
                             const isTeacherPresent = log.history && log.history.join('').includes('교사인정');
 
                             if (log.status === "미입실") {
-                                if (isTeacherAbsent) target.classList.add('status-admin-absent');
-                                else target.classList.add('status-absent');
+                                if (isTeacherAbsent) { target.classList.add('status-admin-absent'); statusType = "admin-out"; }
+                                else { target.classList.add('status-absent'); statusType = "absent"; }
                             }
-                            else if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
-                            else if (log.status === "외출") target.classList.add('status-out'); 
-                            else if (log.status === "귀가") target.classList.add('status-finish'); 
+                            else if (log.status === "귀가(누락)") { target.classList.add('status-missing-tag'); statusType = "absent"; }
+                            else if (log.status === "외출") { target.classList.add('status-out'); statusType = "out"; }
+                            else if (log.status === "귀가") { target.classList.add('status-finish'); statusType = "finish"; }
                             else {
-                                if (isTeacherPresent) target.classList.add('status-admin-present');
-                                else target.classList.add('status-present-fixed');
+                                if (isTeacherPresent) { target.classList.add('status-admin-present'); statusType = "admin-in"; }
+                                else { target.classList.add('status-present-fixed'); statusType = "fixed"; }
                             }
                         } else {
                             target.classList.add('status-absent'); 
+                            statusType = "absent";
                         }
                     }
+                    target.dataset.statusType = statusType; // 태그 부착
                     target.style.cursor = "pointer";
                     target.onclick = () => openDailyStatus(d.stuId, d.stuName, d.seatNum, rosterPhones[String(d.stuId)]);
                 }
@@ -557,9 +619,12 @@
                 const isPresent = log && (log.status === "입실" || log.status === "복귀");
 
                 if (isApplied || isPresent) {
+                    let statusType = "absent"; // 필터 식별자
+
                     if (!isApplied && isPresent) {
                         target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#fd7e14; font-weight:bold;">${d.stuName}</span><br><span style="font-size:9px; color:#fd7e14; letter-spacing:-1px;">(연장)</span>`;
                         target.classList.add('status-present-extra');
+                        statusType = "auto";
                     } else {
                         target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#2e7d32;">${d.stuName}</span>`;
                         
@@ -568,20 +633,22 @@
                             const isTeacherPresent = log.history && log.history.join('').includes('교사인정');
 
                             if (log.status === "미입실") {
-                                if (isTeacherAbsent) target.classList.add('status-admin-absent');
-                                else target.classList.add('status-absent');
+                                if (isTeacherAbsent) { target.classList.add('status-admin-absent'); statusType = "admin-out"; }
+                                else { target.classList.add('status-absent'); statusType = "absent"; }
                             }
-                            else if (log.status === "귀가(누락)") target.classList.add('status-missing-tag'); 
-                            else if (log.status === "외출") target.classList.add('status-out'); 
-                            else if (log.status === "귀가") target.classList.add('status-finish'); 
+                            else if (log.status === "귀가(누락)") { target.classList.add('status-missing-tag'); statusType = "absent"; }
+                            else if (log.status === "외출") { target.classList.add('status-out'); statusType = "out"; }
+                            else if (log.status === "귀가") { target.classList.add('status-finish'); statusType = "finish"; }
                             else {
-                                if (isTeacherPresent) target.classList.add('status-admin-present');
-                                else target.classList.add('status-present-auto');
+                                if (isTeacherPresent) { target.classList.add('status-admin-present'); statusType = "admin-in"; }
+                                else { target.classList.add('status-present-auto'); statusType = "auto"; }
                             }
                         } else {
                             target.classList.add('status-absent'); 
+                            statusType = "absent";
                         }
                     }
+                    target.dataset.statusType = statusType; // 태그 부착
 
                     const appEntry = Object.entries(applicationData).find(([id, app]) => String(app.stuId) === String(d.stuId));
                     if (appEntry) {
@@ -591,7 +658,13 @@
                 }
             }
         });
+
+        // 데이터 그리기 완료 후 현재 필터 상태 다시 적용
+        applySeatFilters();
     }
+
+
+
 
     function renderDailyList() {
         const tbody = document.getElementById('daily-list-body');
