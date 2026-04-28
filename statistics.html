@@ -898,7 +898,6 @@ html += `<tr>
 
 
 
-/////////////////////////////////
 // 운영 요일 및 공휴일 체크
             let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
             let reason = "";
@@ -917,21 +916,7 @@ html += `<tr>
             } else {
                 const appliedTimes = (studentApp && studentApp[dayKey]) ? studentApp[dayKey].split(',').filter(v => v) : [];
                 const isLogPresent = dailyLog && dailyLog.status !== "미입실"; // 미입실 빼고 모두 참석으로 간주
-//////////////////////////////////////
 
-// 🌟 (수정됨) dailyLog를 밖으로 꺼내서 오류 해결!
-            const dailyLog = studentLogs.find(l => l.date === dateStr);
-
-            let slotHtml = `<div style="display:flex; flex-direction:column; gap:2px; margin-top:2px;">`;
-
-            if (!isOperating) {
-                slotHtml += `<div style="font-size:9px; color:#dc3545; font-weight:bold; margin-top:10px; text-align:center;">${reason || "미운영"}</div>`;
-            } else {
-                const appliedTimes = (studentApp && studentApp[dayKey]) ? studentApp[dayKey].split(',').filter(v => v) : [];
-                const isLogPresent = dailyLog && dailyLog.status !== "미입실"; // 미입실 빼고 모두 참석으로 간주
-//////////////////////////////////////
-
-// 👇👇👇 새로 붙여넣을 코드 👇👇👇
                 [1, 2, 3].forEach(t => {
                     const isApplied = appliedTimes.includes(String(t));
                     
@@ -961,13 +946,6 @@ html += `<tr>
                         <div style="flex:1; background:${rightBg}; border-left:1px solid ${borderColor};"></div>
                     </div>`;
                 });
-// 👆👆👆 새로 붙여넣을 코드 끝 👆👆👆
-
-            }
-            slotHtml += `</div>`;
-
-
-
             }
             slotHtml += `</div>`;
 
