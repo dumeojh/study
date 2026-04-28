@@ -563,7 +563,7 @@ if (d.autoCloseTime) {
 
 
 //////////
-// 시간을 계산해주는 유틸리티 함수 (script 태그 내 적절한 곳에 추가)
+// 시간을 계산해주는 유틸리티 함수
 function addMinutesToTime(timeStr, minsToAdd) {
     if (!timeStr) return "22:00"; // 기본값
     
@@ -574,11 +574,10 @@ function addMinutesToTime(timeStr, minsToAdd) {
     date.setMinutes(mm + minsToAdd);
     
     // 다시 "HH:mm" 형태로 변환하여 반환
-    const resH = String(date.getHours()).paautoClose: document.getElementById('auto-close-enable').checked,dStart(2, '0');
+    const resH = String(date.getHours()).padStart(2, '0');
     const resM = String(date.getMinutes()).padStart(2, '0');
     return `${resH}:${resM}`;
 }
-
 
 //////////////////////////////
 // 6. 엑셀 업로드 처리
