@@ -552,6 +552,7 @@ if (d.autoCloseTime) {
 
             // 👇 새로 추가할 부분
             document.getElementById('auto-close-enable').checked = true;
+            document.getElementById('auto-close-time').value = "22:00"; // 🌟 이 줄을 추가해 주세요!          
         }
 
         for(let i=1; i<=3; i++) calculateMinutes(i);
