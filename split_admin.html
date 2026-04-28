@@ -946,7 +946,7 @@ let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
 
 
 
-            const tr = document.createElement('tr');
+const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="vertical-align: middle;">${st.stuId}</td>
                 <td style="font-weight:bold; cursor:pointer; color:var(--primary); text-decoration:underline; vertical-align: middle;" 
@@ -954,9 +954,17 @@ let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
                     ${st.stuName} 👆
                 </td>
                 <td style="text-align: center; vertical-align: middle;">
-                    <div><span style="font-size:12px; color:#666;">[${st.type}]</span> <strong style="font-size:14px; display:block; margin-top:4px;">${st.seatNum}</strong></div>
+                    <div>
+                        <span style="font-size:12px; color:#666;">[${st.type}]</span> 
+                        <strong style="font-size:14px; display:block; margin-top:4px; cursor:pointer; color:#0d6efd; text-decoration:underline;" 
+                                onclick="changeSeat('${st.stuId}', '${st.stuName}', '${st.seatNum}', '${st.type}')" title="좌석 변경하기">
+                            ${st.seatNum} ✏️
+                        </strong>
+                    </div>
                 </td>
                 <td style="text-align: center; vertical-align: middle;">${timeBoxHtml}</td>
+
+
                 <td style="text-align: left; padding-left: 15px; vertical-align: middle;">${historyHtml}</td>
                 <td style="font-weight:900; color:${statusColor}; vertical-align: middle;">${status}</td>
                 <td style="color:#555; vertical-align: middle;">${tagTime}</td>
@@ -1254,6 +1262,55 @@ let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
             alert("오류가 발생했습니다: " + e.message);
         }
     }
+
+// =========================================================
+    // 🌟 관리자 좌석 강제 변경 기능 
+    // =========================================================
+    async function changeSeat(stuId, stuName, currentSeat, type) {
+        const newSeat = prompt(`[${stuName} 학생 - ${type}]\n현재 좌석: ${currentSeat}\n\n변경할 새로운 좌석 번호를 입력하세요:`, currentSeat);
+        
+        if (newSeat === null || newSeat.trim() === "" || newSeat.trim() === currentSeat) {
+            return; // 취소하거나 변경 사항이 없으면 아무 작업도 하지 않음
+        }
+
+        const confirmMsg = `${stuName} 학생의 좌석을 [${newSeat.trim()}]으로 변경하시겠습니까?`;
+        if (!confirm(confirmMsg)) return;
+
+        const targetDate = document.getElementById('daily-date').value;
+        const targetMonthStr = (new Date(targetDate).getMonth() + 1) + "월";
+
+        try {
+            if (type === "자율석") {
+                // 자율석은 오늘 하루 발권 데이터(daily_reservations)를 수정
+                const { error } = await supabaseClient
+                    .from('daily_reservations')
+                    .update({ seat_num: newSeat.trim() })
+                    .eq('date', targetDate)
+                    .eq('stu_id', stuId);
+
+                if (error) throw error;
+            } else if (type === "고정석") {
+                // 고정석은 해당 월의 전체 예약 데이터(applications)를 수정
+                const { error } = await supabaseClient
+                    .from('applications')
+                    .update({ seat_num: newSeat.trim() })
+                    .eq('target_month', targetMonthStr)
+                    .eq('stu_id', stuId);
+
+                if (error) throw error;
+            }
+
+            alert(`✅ 좌석이 [${newSeat.trim()}]으로 성공적으로 변경되었습니다.`);
+            
+            // 데이터베이스가 변경되었으니 전체 데이터를 새로 불러와 화면을 갱신합니다.
+            fetchBaseData().then(() => loadDailyDataAndRender());
+            
+        } catch (error) {
+            console.error("좌석 변경 오류:", error);
+            alert("좌석 변경 중 오류가 발생했습니다: " + error.message);
+        }
+    }
+
 
     async function autoSweepPastAttendance() {
         try {
