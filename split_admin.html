@@ -721,6 +721,16 @@ let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
         const timeSelectVal = parseInt(document.getElementById('daily-time').value);
         const currentSlot = isNaN(timeSelectVal) ? 1 : timeSelectVal;
         
+      // 🌟 여기서부터 추가: 현재 시간이 3T 종료 시간을 넘었는지 확인
+        const now = new Date();
+        const currentMin = now.getHours() * 60 + now.getMinutes();
+        const [endH, endM] = (currentSchedule.t3_end || "21:30").split(':').map(Number);
+        if (currentMin >= endH * 60 + endM) {
+            currentSlot = 4; // 야자 최종 종료 시간이 지나면 가상의 4타임으로 취급하여 모두 마감 처리
+        }
+        // 🌟 여기까지 추가 완료  
+
+
         let targetStudentsMap = new Map();
 
         Object.values(applicationData).forEach(app => {
