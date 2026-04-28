@@ -289,7 +289,9 @@ async function checkPass() {
         renderCalendar();
     }
 
-    function renderCalendar() {
+
+    //////////////////////////////
+function renderCalendar() {
         const monthInput = document.getElementById('calendar-month-select');
         if(!monthInput.value) {
             const now = new Date();
@@ -306,14 +308,16 @@ async function checkPass() {
             
             if(currentSchedule[dStr] === undefined) {
                 const isOperating = defaultOperatingDays.includes(dayIdx);
-                currentSchedule[dStr] = { active: isOperating, reason: isOperating ? "" : "정규휴무" };
+                currentSchedule[dStr] = { active: isOperating, reason: isOperating ? "" : "정규휴무", supervisor: "" };
             }
             
             const data = currentSchedule[dStr];
+            // 🌟 달력 칸에 감독교사 이름 표시 추가
             html += `<td class="${data.active?'is-active':''}" onclick="toggleDate('${dStr}')">
                 <b>${date}</b>
                 <span class="status-badge ${data.active?'status-on':'status-off'}">${data.active?'야자운영':'야자없음'}</span>
                 ${!data.active && data.reason ? `<div class="reason-text">[${data.reason}]</div>` : ''}
+                ${data.active && data.supervisor ? `<div style="font-size:11px; color:var(--primary); margin-top:5px; font-weight:bold; text-align:center;">👨‍🏫 ${data.supervisor}</div>` : ''}
             </td>`;
             if((firstDay+date)%7 === 0) html += `</tr><tr>`;
         }
@@ -321,15 +325,26 @@ async function checkPass() {
     }
 
     function toggleDate(dStr) {
-        const isNowActive = currentSchedule[dStr] ? currentSchedule[dStr].active : false;
-        if (!isNowActive) {
-            currentSchedule[dStr] = { active: true, reason: "" };
+        const data = currentSchedule[dStr] || { active: false };
+        
+        if (data.active) {
+            // 🌟 활성화된 상태에서 클릭 시: 감독교사 수정 OR 휴무 처리 선택
+            const action = confirm(`[${dStr}] 현재 야자 운영일입니다.\n\n[확인]을 누르면 미운영(휴무)으로 변경합니다.\n[취소]를 누르면 감독 교사 이름을 수정합니다.`);
+            if (action) {
+                const reason = prompt("야자 미운영 사유 (예: 시험, 공휴일):", "공휴일");
+                if(reason !== null) currentSchedule[dStr] = { active: false, reason: reason, supervisor: "" };
+            } else {
+                const sup = prompt("감독 교사 이름을 입력하세요 (예: 오장한):", data.supervisor || "");
+                if (sup !== null) currentSchedule[dStr].supervisor = sup.trim();
+            }
         } else {
-            const reason = prompt("야자 미운영 사유 (예: 시험, 소풍, 모의고사):", "공휴일");
-            currentSchedule[dStr] = { active: false, reason: reason || "사유미기재" };
+            // 🌟 미운영 상태에서 클릭 시: 활성화 및 감독교사 입력
+            const sup = prompt(`[${dStr}] 야자를 운영합니다.\n감독 교사 이름을 입력하세요 (선택):`, "");
+            if(sup !== null) currentSchedule[dStr] = { active: true, reason: "", supervisor: sup.trim() };
         }
         renderCalendar();
     }
+//////////////////////////
 
     // 도면 및 시간 계산 기타 로직들
     function saveHistory() { if (historyStack.length >= 20) historyStack.shift(); historyStack.push(JSON.stringify({rows, cols, grid: seatMapData})); }
