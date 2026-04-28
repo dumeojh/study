@@ -185,6 +185,23 @@
 </div>
 /////////////////////////
 
+<div style="margin-bottom:15px; background:#fff3cd; padding:15px; border-radius:8px; border:1px solid #ffeeba;">
+    <b style="color:#856404;">🚨 일일 출결 자동 마감 설정</b><br>
+    <p style="font-size:13px; margin:5px 0;">지정된 시간에 미귀가자를 자동으로 '귀가(누락)' 처리하거나 마감 기준 시간으로 사용합니다.</p>
+    
+    <div style="margin-top:10px; display: flex; align-items: center; gap: 10px;">
+        <label style="cursor:pointer;">
+            <input type="checkbox" id="auto-close-enable" checked> <b>자동 마감 기능 켜기</b>
+        </label>
+        <span style="margin-left: 10px;">|</span>
+        <b>강제 마감 시간:</b> 
+        <input type="time" id="auto-close-time" style="padding:5px; border:1px solid #ccc; border-radius:4px;">
+    </div>
+</div>
+
+
+
+
         <h3>⏱️ 야간 자율학습 운영 시간 및 발권 설정</h3>
         <div style="display:grid; gap:15px; padding:20px; background:#f8f9fa; border-radius:12px;">
             
@@ -206,13 +223,6 @@
                 </div>
             </div>
 
-<div style="margin-bottom:15px; background:#fff3cd; padding:15px; border-radius:8px; border:1px solid #ffeeba;">
-    <b style="color:#856404;">🚨 일일 출결 자동 마감(과거 데이터 정리)</b><br>
-    <p style="font-size:13px; margin:5px 0;">키오스크나 관리자 페이지가 실행될 때, 과거 날짜의 미귀가자를 자동으로 찾아 '귀가(누락)' 처리합니다.</p>
-    <label style="display:block; margin-top:8px;">
-        <input type="checkbox" id="auto-close-enable" checked> <b>자동 마감 기능 켜기</b>
-    </label>
-</div>
 
 
 <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #eee; padding-bottom:10px;">
@@ -427,7 +437,8 @@ async function saveTimeSettings() {
             t1_req: document.getElementById('t1-req-min').value,
             t2_req: document.getElementById('t2-req-min').value,
             t3_req: document.getElementById('t3-req-min').value,
-            autoClose: document.getElementById('auto-close-enable').checked
+            autoClose: document.getElementById('auto-close-enable').checked,
+            autoCloseTime: document.getElementById('auto-close-time').value // 추가
         }
     });
     if(error) alert("오류: " + error.message);
@@ -509,12 +520,21 @@ async function loadAllSettings() {
             document.getElementById('t1-req-min').value = d.t1_req || "60";
             document.getElementById('t2-req-min').value = d.t2_req || "60";
             document.getElementById('t3-req-min').value = d.t3_req || "60";
-// 👇 새로 추가할 부분: 저장된 자동 마감 상태 불러오기
-            if (d.autoClose !== undefined) {
-                document.getElementById('auto-close-enable').checked = d.autoClose;
-            } else {
-                document.getElementById('auto-close-enable').checked = true; // 기본값
-            }
+// [기존 코드 유지] 체크박스 ON/OFF 설정
+if (d.autoClose !== undefined) {
+    document.getElementById('auto-close-enable').checked = d.autoClose;
+} else {
+    document.getElementById('auto-close-enable').checked = true; // 기본값
+}
+
+// [새로 추가하는 부분] 강제 마감 시간 설정 (위의 if~else가 끝난 바로 아래에 추가)
+if (d.autoCloseTime) {
+    // DB에 이미 저장된 마감 시간이 있다면 화면에 표시
+    document.getElementById('auto-close-time').value = d.autoCloseTime;
+} else if (d.t3_end) {
+    // 저장된 시간이 없다면 3T 종료 시간 기준으로 30분 더해서 기본값 생성
+    document.getElementById('auto-close-time').value = addMinutesToTime(d.t3_end, 30);
+}
 
         } else { 
             // 데이터가 아예 없을 때의 기본값
@@ -540,6 +560,25 @@ async function loadAllSettings() {
         console.error("데이터 로딩 중 에러 발생:", error);
     }
 }
+
+
+//////////
+// 시간을 계산해주는 유틸리티 함수 (script 태그 내 적절한 곳에 추가)
+function addMinutesToTime(timeStr, minsToAdd) {
+    if (!timeStr) return "22:00"; // 기본값
+    
+    // "21:30" 형태의 문자열을 시(hh)와 분(mm)으로 분리
+    const [hh, mm] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hh);
+    date.setMinutes(mm + minsToAdd);
+    
+    // 다시 "HH:mm" 형태로 변환하여 반환
+    const resH = String(date.getHours()).paautoClose: document.getElementById('auto-close-enable').checked,dStart(2, '0');
+    const resM = String(date.getMinutes()).padStart(2, '0');
+    return `${resH}:${resM}`;
+}
+
 
 //////////////////////////////
 // 6. 엑셀 업로드 처리
