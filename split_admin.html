@@ -531,15 +531,28 @@
         const dayIdx = targetDateObj.getDay();
         const targetMonthStr = (targetDateObj.getMonth() + 1) + "월";
 
-        let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
+
+        /////////////////////
+let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
         let reason = "";
+        let supervisor = ""; // 🌟 감독 교사 변수 추가
 
         if (globalCalendarSchedule.data[dateStr] !== undefined) {
             isOperating = globalCalendarSchedule.data[dateStr].active;
             reason = globalCalendarSchedule.data[dateStr].reason;
+            supervisor = globalCalendarSchedule.data[dateStr].supervisor || ""; // 데이터 가져오기
+        }
+
+        // 🌟 상단 제목 옆에 감독 교사 표시 업데이트
+        const supLabel = document.getElementById('daily-supervisor-name');
+        if (supLabel) {
+            supLabel.innerText = supervisor ? `(감독교사 : ${supervisor} 선생님)` : "";
         }
 
         const banner = document.getElementById('holiday-banner');
+//////////////////////////////////////////
+
+
         if (!isOperating) {
             banner.style.display = 'block'; 
             document.getElementById('holiday-reason').innerText = reason || "정규휴무 (운영 요일 아님)";
