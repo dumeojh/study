@@ -5,54 +5,84 @@
     <title>안성여고 - 다중 구역 도면 설계기 (Sandbox)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #007bff; --danger: #dc3545; --gray: #6c757d; }
+        :root { --primary: #007bff; --danger: #dc3545; --gray: #6c757d; --wood: #d4a373; --wood-dark: #bcaaa4; }
         body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; background: #f8f9fa; }
-        .designer-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .designer-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 1300px; margin: 0 auto; }
+        
         .room-tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding: 5px; }
-        .tab-btn { padding: 8px 18px; border-radius: 8px; border: 1px solid #ddd; background: white; cursor: pointer; font-weight: bold; white-space: nowrap; }
-        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .seat-grid { display: grid; gap: 3px; background: #eee; padding: 15px; border-radius: 10px; justify-content: start; margin-top: 15px; }
-        .seat-cell { width: 40px; height: 40px; border: 1px solid #ccc; background: white; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; border-radius: 4px; }
-        .seat-1 { background: #fff3cd; } /* 고정석 */
-        .seat-2 { background: #d1e7dd; } /* 자율석 */
-        .seat-3 { background: #444; color: white; } /* 벽 */
-        .tool-bar { margin: 15px 0; display: flex; gap: 10px; padding: 10px; background: #f1f3f5; border-radius: 8px; }
-        .tool-btn { padding: 8px 12px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; background: white; font-size: 13px; }
-        .tool-btn.active { border: 2px solid #000; font-weight: bold; }
-        .btn { padding: 10px 20px; border-radius: 6px; border: none; color: white; cursor: pointer; font-weight: bold; }
+        .tab-btn { padding: 10px 20px; border-radius: 8px; border: 1px solid #ddd; background: white; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.2s; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 8px rgba(0,123,255,0.2); }
+        
+        /* 🌟 그리드 및 셀 디자인 🌟 */
+        .seat-grid { display: grid; gap: 4px; background: #e9ecef; padding: 20px; border-radius: 10px; justify-content: start; margin-top: 15px; border: 1px solid #ced4da; }
+        .seat-cell { 
+            width: 100%; height: 100%; min-width: 35px; min-height: 35px; 
+            border: 1px dashed #ccc; background: transparent; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 11px; cursor: pointer; border-radius: 4px; transition: 0.2s;
+            text-align: center; line-height: 1.2; word-break: keep-all;
+        }
+        .seat-cell:hover { filter: brightness(0.9); }
+
+        /* 🪑 나무 책상 디자인 (고정석/자율석) */
+        .seat-1 { background: var(--wood); border: 2px solid #8d6e63; border-radius: 8px; box-shadow: 2px 3px 5px rgba(0,0,0,0.2); color: #3e2723; font-weight: 900; }
+        .seat-2 { background: var(--wood-dark); border: 2px solid #8d6e63; border-radius: 8px; box-shadow: 2px 3px 5px rgba(0,0,0,0.2); color: #3e2723; font-weight: 900; }
+        
+        /* 🏛️ 랜드마크 및 구조물 디자인 */
+        .seat-3 { background: #495057; border: 2px solid #212529; color: white; border-radius: 0; } /* 벽 */
+        .seat-4 { background: #cff4fc; border: 2px dashed #0dcaf0; color: #055160; font-weight: bold; border-radius: 0; box-shadow: inset 0 0 10px rgba(255,255,255,0.5); } /* 문 */
+        .seat-5 { background: #f8d7da; border: 2px solid #dc3545; color: #842029; font-weight: bold; border-radius: 8px; box-shadow: 0 4px 8px rgba(220,53,69,0.2); } /* 교사석 */
+        .seat-6 { background: #e0f7fa; border-right: 5px solid #00acc1; border-left: 1px solid #b2ebf2; color: #006064; font-weight: bold; border-radius: 0; } /* 창가 */
+        .seat-7 { background: #f3e5f5; border: 2px solid #ab47bc; color: #4a148c; font-weight: bold; border-radius: 4px; box-shadow: 2px 2px 4px rgba(0,0,0,0.1); } /* 사물함 */
+
+        .tool-bar { display: flex; gap: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; flex-wrap: wrap; }
+        .tool-btn { padding: 10px 15px; border: 1px solid #ced4da; border-radius: 6px; cursor: pointer; background: white; font-size: 14px; transition: 0.2s; }
+        .tool-btn.active { border: 2px solid #000; font-weight: bold; background: #eef6ff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transform: scale(1.05); }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; color: white; cursor: pointer; font-weight: bold; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div class="designer-card">
-    <h2>🎨 다중 구역 도면 설계 샌드박스</h2>
-    <p style="font-size: 13px; color: #666;">※ 실제 데이터를 건드리지 않고 여기서 충분히 설계한 뒤 '서버 배포'를 누르세요.</p>
-
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #007bff; padding-bottom: 15px; margin-bottom: 20px;">
+        <h2 style="margin: 0; color: #1a1a1a;">🎨 야간 자율학습실 도면 설계</h2>
+        <button class="btn" style="background: #6c757d;" onclick="location.href='index.html'">메인으로</button>
+    </div>
+    
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <div id="tab-container" class="room-tabs"></div>
-        <div>
+        <div style="display: flex; gap: 5px;">
             <button class="btn" style="background: var(--primary);" onclick="addRoom()">+ 구역 추가</button>
             <button class="btn" style="background: var(--danger);" onclick="deleteRoom()">- 구역 삭제</button>
         </div>
     </div>
 
-    <div style="background: #f1f3f5; padding: 15px; border-radius: 10px; display: flex; gap: 15px; align-items: center;">
-        가로: <input type="number" id="inp-cols" value="20" style="width:50px;">
-        세로: <input type="number" id="inp-rows" value="15" style="width:50px;">
-        <button onclick="resizeGrid()">크기 적용</button>
-        <span style="font-size: 12px; color: #666;">| 탭 더블클릭: 이름 변경</span>
+    <div style="background: #eef6ff; padding: 15px; border-radius: 10px; display: flex; gap: 15px; align-items: center; border: 1px solid #b6d4fe;">
+        <b style="color: #052c65;">현재 구역 크기:</b>
+        가로 칸: <input type="number" id="inp-cols" value="20" style="width:50px; text-align:center; padding:5px;">
+        세로 칸: <input type="number" id="inp-rows" value="15" style="width:50px; text-align:center; padding:5px;">
+        <button class="btn" style="background: #0d6efd; padding: 6px 12px;" onclick="resizeGrid()">크기 변경</button>
+        <span style="font-size: 12px; color: #666; margin-left: auto;">💡 탭 더블클릭: 구역 이름 변경 | 책상 클릭 시 가로/세로 병합 가능</span>
     </div>
 
     <div class="tool-bar">
-        <button class="tool-btn active" onclick="setTool(0, this)">⬜ 통로</button>
-        <button class="tool-btn" onclick="setTool(1, this)">🟨 고정석</button>
-        <button class="tool-btn" onclick="setTool(2, this)">🟩 자율석</button>
+        <b style="line-height: 40px; margin-right: 10px;">🛠️ 배치 도구:</b>
+        <button class="tool-btn active" onclick="setTool(0, this)">⬜ 빈 통로</button>
+        <button class="tool-btn seat-1" style="border-color:#8d6e63;" onclick="setTool(1, this)">🟨 고정석 책상</button>
+        <button class="tool-btn seat-2" style="border-color:#8d6e63;" onclick="setTool(2, this)">🟩 자율석 책상</button>
+        <div style="width: 2px; background: #ddd; margin: 0 5px;"></div>
         <button class="tool-btn" onclick="setTool(3, this)">⬛ 벽</button>
+        <button class="tool-btn" onclick="setTool(4, this)">🚪 출입구</button>
+        <button class="tool-btn" onclick="setTool(5, this)">👩‍🏫 교사석</button>
+        <button class="tool-btn" onclick="setTool(6, this)">🪟 창가</button>
+        <button class="tool-btn" onclick="setTool(7, this)">🗄️ 사물함</button>
     </div>
 
-    <div id="grid-container" class="seat-grid"></div>
+    <div style="overflow-x: auto; max-width: 100%;">
+        <div id="grid-container" class="seat-grid"></div>
+    </div>
 
-    <button class="btn" style="background: #198754; width: 100%; margin-top: 20px; padding: 15px; font-size: 18px;" onclick="saveToSupabase()">🌐 설계된 모든 구역 서버에 배포하기</button>
+    <button class="btn" style="background: #198754; width: 100%; margin-top: 20px; padding: 18px; font-size: 18px; box-shadow: 0 4px 10px rgba(25,135,84,0.3);" onclick="saveToSupabase()">🌐 설계 완료! 전체 구역 서버 배포하기</button>
 </div>
 
 <script>
@@ -60,12 +90,14 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let rooms = [{ name: "A실", rows: 15, cols: 20, grid: [] }];
+    // 🌟 A, B, C, D, E 5개 실 기본 세팅
+    let rooms = ['A실', 'B실', 'C실', 'D실', 'E실'].map(name => ({
+        name: name, rows: 15, cols: 20,
+        grid: Array.from({length: 15}, () => Array.from({length: 20}, () => ({type: 0, label: "", w: 1, h: 1})))
+    }));
+    
     let currentIdx = 0;
     let currentTool = 0;
-
-    // 초기화: 15x20 빈 그리드 생성
-    rooms[0].grid = Array.from({length:15}, () => Array.from({length:20}, () => ({type:0, label:""})));
 
     function renderTabs() {
         const container = document.getElementById('tab-container');
@@ -76,56 +108,119 @@
             btn.innerText = r.name;
             btn.onclick = () => switchRoom(i);
             btn.ondblclick = () => {
-                const n = prompt("이름 변경:", r.name);
-                if(n) { r.name = n; renderTabs(); }
+                const n = prompt("새로운 구역 이름을 입력하세요 (예: 3학년 자습실):", r.name);
+                if(n && n.trim()) { r.name = n.trim(); renderTabs(); }
             };
             container.appendChild(btn);
         });
     }
 
     function switchRoom(idx) {
-        // 현재 데이터 백업
-        rooms[currentIdx].grid = JSON.parse(JSON.stringify(getCurrentGridFromDOM()));
         currentIdx = idx;
         renderTabs();
         drawGrid();
     }
 
     function addRoom() {
-        const n = prompt("새 구역 이름:", "B실");
+        const n = prompt("추가할 구역의 이름을 입력하세요:", "F실");
         if(!n) return;
         rooms.push({
             name: n, rows: 15, cols: 20,
-            grid: Array.from({length:15}, () => Array.from({length:20}, () => ({type:0, label:""})))
+            grid: Array.from({length: 15}, () => Array.from({length: 20}, () => ({type: 0, label: "", w: 1, h: 1})))
         });
         switchRoom(rooms.length - 1);
     }
 
+    function deleteRoom() {
+        if(rooms.length <= 1) return alert("최소 1개의 구역은 남겨두어야 합니다.");
+        if(confirm(`정말 [${rooms[currentIdx].name}] 구역을 완전히 삭제하시겠습니까?`)) {
+            rooms.splice(currentIdx, 1);
+            switchRoom(0);
+        }
+    }
+
+    // 🌟 여러 셀 병합 및 렌더링 로직
     function drawGrid() {
         const r = rooms[currentIdx];
         const g = document.getElementById('grid-container');
         g.style.gridTemplateColumns = `repeat(${r.cols}, 40px)`;
+        g.style.gridTemplateRows = `repeat(${r.rows}, 40px)`;
         g.innerHTML = '';
+        
         document.getElementById('inp-rows').value = r.rows;
         document.getElementById('inp-cols').value = r.cols;
 
         r.grid.forEach((row, ri) => {
             row.forEach((cell, ci) => {
+                // type이 -1인 셀은 다른 책상에 병합되어 가려진 셀이므로 그리지 않음
+                if (cell.type === -1) return; 
+
                 const div = document.createElement('div');
                 div.className = `seat-cell seat-${cell.type}`;
                 div.innerText = cell.label || "";
-                div.onclick = () => {
-                    if([1,2].includes(currentTool)) cell.label = prompt("라벨(번호):", cell.label) || "";
-                    cell.type = currentTool;
-                    div.className = `seat-cell seat-${currentTool}`;
-                    div.innerText = cell.label;
-                };
+                
+                // 🌟 셀 병합 (CSS Grid span 속성 활용)
+                if (cell.w > 1) div.style.gridColumn = `span ${cell.w}`;
+                if (cell.h > 1) div.style.gridRow = `span ${cell.h}`;
+
+                div.onclick = () => handleCellClick(ri, ci);
                 g.appendChild(div);
             });
         });
     }
 
-    function getCurrentGridFromDOM() { return rooms[currentIdx].grid; }
+    function handleCellClick(rIdx, cIdx) {
+        const r = rooms[currentIdx];
+        let cell = r.grid[rIdx][cIdx];
+        
+        // 1. 만약 클릭한 셀이 큰 책상(병합된 셀)이었다면, 일단 모두 기본 통로(1x1)로 쪼개기(초기화)
+        if (cell.w > 1 || cell.h > 1) {
+            for(let i=0; i<cell.h; i++) {
+                for(let j=0; j<cell.w; j++) {
+                    if(r.grid[rIdx+i] && r.grid[rIdx+i][cIdx+j]) {
+                        r.grid[rIdx+i][cIdx+j] = {type: 0, label: "", w: 1, h: 1};
+                    }
+                }
+            }
+        }
+
+        // 2. 새로운 도구 적용
+        if ([1, 2].includes(currentTool)) {
+            // 책상일 경우 라벨과 크기 입력받기
+            let lbl = prompt("좌석 번호를 입력하세요 (예: A-1):", cell.label);
+            if(lbl === null) return; // 취소 시 중단
+            
+            let w = parseInt(prompt("책상의 가로 칸 수를 입력하세요 (기본 1):", 1)) || 1;
+            let h = parseInt(prompt("책상의 세로 칸 수를 입력하세요 (기본 1):", 1)) || 1;
+            
+            // 그리드 바깥으로 넘어가지 않도록 크기 제한
+            if(rIdx + h > r.rows) h = r.rows - rIdx;
+            if(cIdx + w > r.cols) w = r.cols - cIdx;
+
+            // 기준점(왼쪽 위) 셀에 정보 저장
+            r.grid[rIdx][cIdx] = { type: currentTool, label: lbl, w: w, h: h };
+            
+            // 병합되어 가려지는 셀들은 type: -1 로 처리하여 투명하게 만듦
+            for(let i=0; i<h; i++) {
+                for(let j=0; j<w; j++) {
+                    if(i === 0 && j === 0) continue; // 기준점은 건너뜀
+                    r.grid[rIdx+i][cIdx+j] = { type: -1, label: "", w: 1, h: 1 };
+                }
+            }
+        } else {
+            // 랜드마크나 통로일 경우 (1x1 크기 고정)
+            let icon = "";
+            if(currentTool === 4) icon = "🚪\n출입구";
+            else if(currentTool === 5) icon = "👩‍🏫\n교사석";
+            else if(currentTool === 6) icon = "🪟\n창가";
+            else if(currentTool === 7) icon = "🗄️\n사물함";
+            
+            r.grid[rIdx][cIdx] = { type: currentTool, label: icon, w: 1, h: 1 };
+        }
+        
+        drawGrid(); // 화면 다시 그리기
+    }
+
     function setTool(t, btn) {
         currentTool = t;
         document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
@@ -135,15 +230,28 @@
     function resizeGrid() {
         const nr = parseInt(document.getElementById('inp-rows').value);
         const nc = parseInt(document.getElementById('inp-cols').value);
-        rooms[currentIdx].rows = nr;
-        rooms[currentIdx].cols = nc;
-        rooms[currentIdx].grid = Array.from({length:nr}, () => Array.from({length:nc}, () => ({type:0, label:""})));
-        drawGrid();
+        if(nr < 5 || nc < 5) return alert("최소 5x5 이상이어야 합니다.");
+        if(confirm(`구역 크기를 ${nc}x${nr}로 변경하시겠습니까?\n주의: 크기를 줄이면 바깥쪽 좌석 데이터가 삭제될 수 있습니다.`)) {
+            // 기존 데이터를 유지하면서 크기 조절
+            let newGrid = Array.from({length: nr}, (_, i) => 
+                Array.from({length: nc}, (_, j) => {
+                    if (rooms[currentIdx].grid[i] && rooms[currentIdx].grid[i][j]) {
+                        return rooms[currentIdx].grid[i][j];
+                    }
+                    return {type: 0, label: "", w: 1, h: 1};
+                })
+            );
+            rooms[currentIdx].rows = nr;
+            rooms[currentIdx].cols = nc;
+            rooms[currentIdx].grid = newGrid;
+            drawGrid();
+        }
     }
 
     async function saveToSupabase() {
-        if(!confirm("모든 구역의 도면을 서버에 배포하시겠습니까? 기존 도면은 대체됩니다.")) return;
+        if(!confirm("설계한 모든 구역의 도면을 서버에 배포하시겠습니까?\n이후 학생과 교사용 페이지에 즉시 반영됩니다.")) return;
         
+        // 서버 저장 포맷으로 변환
         const payload = rooms.map(r => ({
             name: r.name, rows: r.rows, cols: r.cols, grid: JSON.stringify(r.grid)
         }));
@@ -154,9 +262,10 @@
         });
 
         if(error) alert("저장 실패: " + error.message);
-        else alert("성공적으로 배포되었습니다! 이제 다른 페이지에서도 이 구역들을 불러올 수 있습니다.");
+        else alert("성공적으로 배포되었습니다! 학생들과 선생님들이 새 도면을 볼 수 있습니다.");
     }
 
+    // 초기 실행
     renderTabs();
     drawGrid();
 </script>
