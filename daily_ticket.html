@@ -308,8 +308,8 @@
         document.getElementById('issue-btn').innerText = `[ ${label} ] 자리로 발권하기`;
     }
 
-    // =========================================================
-    // 5. 서버에 발권 내역 저장 (수파베이스)
+// =========================================================
+    // 5. 서버에 발권 내역 저장 (이중 예약 방지 로직 추가)
     // =========================================================
     async function issueTicket() {
         const btn = document.getElementById('issue-btn');
@@ -326,7 +326,38 @@
         };
 
         try {
-            // daily_reservations 테이블에 새 문서 추가 (중복 시 덮어쓰기)
+            // 🌟 1. 방금 전 찰나의 순간에 누군가 이 자리를 가져갔는지 DB에 다시 물어봅니다.
+            const { data: checkData, error: checkErr } = await supabaseClient
+                .from("daily_reservations")
+                .select("times")
+                .eq("date", todayStr)
+                .eq("seat_num", selectedSeatId);
+
+            if (checkErr) throw checkErr;
+
+            // 🌟 2. 만약 이 자리에 예약이 있다면, 나와 겹치는 타임인지 확인합니다.
+            if (checkData && checkData.length > 0) {
+                const myTimes = studentSchedule.split(','); // 내가 신청한 타임 (예: "1,2")
+                let isOverlap = false;
+
+                for (let res of checkData) {
+                    const bookedTimes = res.times.split(',');
+                    // 하나라도 겹치는 타임이 있는지 검사
+                    if (myTimes.some(t => bookedTimes.includes(t))) {
+                        isOverlap = true;
+                        break;
+                    }
+                }
+
+                // 🌟 3. 겹친다면 에러를 발생시키고 발권을 취소합니다.
+                if (isOverlap) {
+                    alert(`🚨 아차! 간발의 차이로 다른 학생이 먼저 [${selectedSeatId}] 자리를 발권했습니다.\n확인을 누르면 남은 빈자리를 다시 불러옵니다.`);
+                    location.reload(); // 화면을 새로고침해서 최신 빈자리 상태를 다시 보여줌
+                    return; // 더 이상 아래 코드를 실행하지 않고 함수 종료
+                }
+            }
+
+            // 4. 겹치는 예약이 없을 때만 안심하고 내 예약을 저장(upsert)합니다.
             const { error } = await supabaseClient.from("daily_reservations").upsert(ticketData, { onConflict: 'date, stu_id' });
             
             if (error) throw error;
@@ -338,7 +369,7 @@
             
             alert("발권이 완료되었습니다. 열공하세요! 🔥");
         } catch(e) {
-            alert("발권 오류: " + e.message);
+            alert("발권 오류: " + (e.message || e));
             btn.innerText = `[ ${selectedSeatId} ] 자리로 발권하기`; btn.disabled = false;
         }
     }
