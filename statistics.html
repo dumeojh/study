@@ -83,6 +83,8 @@
 
     <div class="tab-menu">
         <button class="tab-btn active" onclick="switchTab('tab-calendar', this)">📅 달력 현황</button>
+<button class="tab-btn" onclick="switchTab('tab-daily-matrix', this)">🗓️ 개인별 일자 현황</button>
+
         <button class="tab-btn" onclick="switchTab('tab-class', this)">🏫 반별 통계 현황</button>
         <button class="tab-btn" onclick="switchTab('tab-personal', this)">👤 개인별 통계 현황</button>
         <button class="tab-btn" onclick="switchTab('tab-yearly', this)" style="background: #fff3cd; color: #856404; border: 1px solid #ffeeba;">🏆 연간 누적 통계</button>
@@ -97,8 +99,28 @@
 
     <div id="loading">데이터를 분석 중입니다... 잠시만 기다려주세요 ⏳</div>
     
-    <div id="tab-calendar" class="tab-content active">
+<div id="tab-calendar" class="tab-content active">
         <div id="calendar-container"></div>
+    </div>
+
+    <div id="tab-daily-matrix" class="tab-content">
+        <div class="filter-area">
+            <div>
+                <label for="matrix-class-filter">🏫 반별 검색:</label>
+                <select id="matrix-class-filter" onchange="applyDailyMatrixFilter()">
+                    <option value="all">전체 보기</option>
+                </select>
+            </div>
+            <div style="margin-left:auto; font-size:13px; color:#666;">
+                ※ 숫자는 해당 일자에 출석한 <b>타임 횟수</b>를 의미합니다.
+            </div>
+        </div>
+        <div style="overflow-x: auto; border: 1px solid #dee2e6; border-radius: 8px;">
+            <table class="stat-class-table" style="min-width: 1200px; font-size: 12px; margin-top: 0;">
+                <thead id="matrix-thead"></thead>
+                <tbody id="matrix-tbody"></tbody>
+            </table>
+        </div>
     </div>
 
     <div id="tab-class" class="tab-content">
@@ -248,6 +270,10 @@
     let globalPersonalStatsData = []; 
     let globalYearlyStatsData = []; // 🌟 연간 통계용 전역 변수
 
+    // 👇 새로 추가할 전역 변수
+    let globalDailyMatrixData = [];
+    let matrixLastDate = 31;
+
     document.addEventListener("DOMContentLoaded", () => {
         const now = new Date();
         const monthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -288,6 +314,8 @@
             renderCalendar(year, month, lastDateObj.getDate());
             renderClassStats(year, month, lastDateObj.getDate());
             renderPersonalStats(year, month, lastDateObj.getDate());
+            // 👇 새로 추가: 일자 현황 렌더링 함수 호출
+            renderDailyMatrix(year, month, lastDateObj.getDate());
 
         } catch (error) {
             console.error("데이터 로딩 오류:", error);
@@ -297,6 +325,142 @@
             document.getElementById('calendar-container').style.display = 'block';
         }
     }
+
+// ---------- [🌟 새로 추가된 개인별 일자 현황 핵심 함수들 🌟] ---------- //
+    function renderDailyMatrix(year, month, lastDate) {
+        matrixLastDate = lastDate;
+        const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        let matrixStats = {};
+
+        // 1. 학생별 데이터 구조 초기화
+        applicationData.forEach(app => {
+            const stuIdStr = String(app.stu_id);
+            if (stuIdStr.length < 4) return;
+            const classCode = stuIdStr.slice(0, -2);
+            const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
+
+            if (!matrixStats[stuIdStr]) {
+                matrixStats[stuIdStr] = {
+                    stu_id: stuIdStr,
+                    stu_name: app.stu_name || '-',
+                    className: className,
+                    dailyCounts: new Array(lastDate).fill(0), // 1일부터 말일까지 배열 0으로 세팅
+                    totalCount: 0
+                };
+            }
+        });
+
+        // 2. 일자별 출석 타임 계산
+        for (let d = 1; d <= lastDate; d++) {
+            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dayIdx = new Date(year, month - 1, d).getDay();
+            const dayKey = daysEng[dayIdx];
+
+            let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
+            if (calendarSchedule.data[dateStr] !== undefined) {
+                isOperating = calendarSchedule.data[dateStr].active;
+            }
+
+            if (isOperating) {
+                const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
+                
+                applicationData.forEach(app => {
+                    if (app[dayKey]) {
+                        const stuIdStr = String(app.stu_id);
+                        if (stuIdStr.length < 4) return;
+                        
+                        const stat = matrixStats[stuIdStr];
+                        if (!stat) return;
+                        
+                        const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
+                        const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
+                        
+                        // 미입실(결석)이 아니라면 해당 일자에 타임수 누적
+                        if (studentLog && studentLog.status !== "미입실") {
+                            stat.dailyCounts[d - 1] += timesCount;
+                            stat.totalCount += timesCount;
+                        }
+                    }
+                });
+            }
+        }
+
+        globalDailyMatrixData = Object.values(matrixStats);
+
+        // 3. 반별 필터 옵션 생성
+        let classesSet = new Set();
+        globalDailyMatrixData.forEach(stat => classesSet.add(stat.className));
+        const sortedClassNames = Array.from(classesSet).sort();
+        
+        const classFilter = document.getElementById('matrix-class-filter');
+        const currentSelectedClass = classFilter.value; 
+        let optionsHtml = '<option value="all">전체 보기</option>';
+        sortedClassNames.forEach(c => {
+            optionsHtml += `<option value="${c}">${c}</option>`;
+        });
+        classFilter.innerHTML = optionsHtml;
+        if (sortedClassNames.includes(currentSelectedClass)) {
+            classFilter.value = currentSelectedClass;
+        } else {
+            classFilter.value = "all";
+        }
+
+        // 4. 테이블 헤더(1일~말일) 동적 생성
+        let theadHtml = `<tr>
+            <th style="width: 70px; position:sticky; left:0; background:#f8f9fa; z-index:2;">학급</th>
+            <th style="width: 50px; position:sticky; left:70px; background:#f8f9fa; z-index:2;">학번</th>
+            <th style="width: 60px; position:sticky; left:120px; background:#f8f9fa; z-index:2; border-right:2px solid #ccc;">이름</th>`;
+        
+        for(let d = 1; d <= lastDate; d++) {
+            const dayIdx = new Date(year, month - 1, d).getDay();
+            let color = "#495057";
+            if(dayIdx === 0) color = "#dc3545"; // 일요일 빨강
+            if(dayIdx === 6) color = "#0d6efd"; // 토요일 파랑
+            theadHtml += `<th style="width: 25px; padding: 5px; color: ${color}; font-size: 11px;">${d}</th>`;
+        }
+        theadHtml += `<th style="width: 50px; color: var(--primary); background:#eef6ff; border-left:2px solid #b6d4fe;">총계</th></tr>`;
+        document.getElementById('matrix-thead').innerHTML = theadHtml;
+
+        applyDailyMatrixFilter();
+    }
+
+    // 필터 및 화면 렌더링 함수
+    function applyDailyMatrixFilter() {
+        const tbody = document.getElementById('matrix-tbody');
+        const classValue = document.getElementById('matrix-class-filter').value;
+        
+        let filteredData = globalDailyMatrixData;
+        if (classValue !== "all") {
+            filteredData = filteredData.filter(stat => stat.className === classValue);
+        }
+
+        // 학번 순으로 정렬
+        filteredData.sort((a, b) => parseInt(a.stu_id) - parseInt(b.stu_id));
+
+        let html = "";
+        if (filteredData.length === 0) {
+            html = `<tr><td colspan="${matrixLastDate + 4}" style="color:#6c757d; padding:30px; text-align:center;">조건에 맞는 학생 데이터가 없습니다.</td></tr>`;
+        } else {
+            filteredData.forEach(stat => {
+                html += `<tr>
+                    <td style="position:sticky; left:0; background:white; z-index:1;">${stat.className}</td>
+                    <td style="position:sticky; left:70px; background:white; z-index:1; font-weight:bold;">${stat.stu_id}</td>
+                    <td style="position:sticky; left:120px; background:white; z-index:1; font-weight:bold; border-right:2px solid #eee;">${stat.stu_name}</td>`;
+                
+                for(let i = 0; i < matrixLastDate; i++) {
+                    const count = stat.dailyCounts[i];
+                    // 숫자가 0이면 회색 하이픈(-), 있으면 진한 숫자 표기
+                    const display = count > 0 ? `<b style="color:#333;">${count}</b>` : `<span style="color:#ddd;">-</span>`;
+                    html += `<td style="padding:6px 2px;">${display}</td>`;
+                }
+                
+                html += `<td style="font-weight:900; color:#0d6efd; background-color:#f4f8ff; border-left:2px solid #b6d4fe;">${stat.totalCount}</td>
+                </tr>`;
+            });
+        }
+        tbody.innerHTML = html;
+    }
+
 
     // 🌟 탭을 전환할 때 숨겨야 할 요소들 제어
     function switchTab(tabId, btn) {
