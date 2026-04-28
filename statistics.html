@@ -208,6 +208,24 @@
         </div>
     </div>
 
+<div id="daily-detail-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:1100; justify-content:center; align-items:center;">
+        <div style="background:white; padding:20px; border-radius:12px; width:90%; max-width:400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #ccc; padding-bottom:10px; margin-bottom:15px;">
+                <h4 id="dd-title" style="margin:0; font-size:16px; color:#333;">📅 00월 00일 상세 기록</h4>
+                <button class="btn btn-gray" style="padding:4px 8px; font-size:12px;" onclick="document.getElementById('daily-detail-modal').style.display='none'">닫기</button>
+            </div>
+            <div style="margin-bottom:10px; font-size:13px;">
+                <b>최종 마감 상태:</b> <span id="dd-status" style="font-weight:bold;"></span>
+            </div>
+            <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #eee;">
+                <b style="font-size:13px; color:#555; display:block; margin-bottom:10px;">🕒 실제 태그(스캔) 흐름</b>
+                <div id="dd-history" style="font-size:13px; line-height:1.6; color:#333;">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+
 <script>
     const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
@@ -244,8 +262,8 @@
             const { data: apps } = await supabaseClient.from('applications').select('*').eq('target_month', targetMonthStr);
             applicationData = apps || [];
 
-            const { data: logs } = await supabaseClient.from('attendance_logs')
-                .select('date, status, stu_id')
+        const { data: logs } = await supabaseClient.from('attendance_logs')
+                .select('date, status, stu_id, history') // 👈 history 추가
                 .gte('date', startDate)
                 .lte('date', endDate);
             attendanceLogsData = logs || [];
@@ -915,12 +933,23 @@ html += `<tr>
             }
             slotHtml += `</div>`;
 
-            let dateColor = dayIdx === 0 ? "color:#dc3545;" : (dayIdx === 6 ? "color:#0d6efd;" : "color:#333;");
-            html += `<td style="height:70px; padding:6px; vertical-align:top; background:white;">
+
+
+let dateColor = dayIdx === 0 ? "color:#dc3545;" : (dayIdx === 6 ? "color:#0d6efd;" : "color:#333;");
+            
+            // 🌟 (추가) 클릭 시 넘겨줄 데이터 추출
+            const statusVal = dailyLog ? dailyLog.status : '미입실';
+            const historyArrStr = (dailyLog && dailyLog.history) ? JSON.stringify(dailyLog.history).replace(/"/g, '&quot;') : '[]';
+
+            html += `<td style="height:70px; padding:6px; vertical-align:top; background:white; cursor:pointer; transition:0.2s;"
+                         onclick="openDailyDetail('${dateStr}', '${statusVal}', ${historyArrStr})"
+                         onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
                         <div style="font-weight:bold; margin-bottom:2px; font-size:12px; ${dateColor}">${d}</div>
                         ${slotHtml}
-                    </td>`;
-            
+                    </td>`;           
+
+
+
             if ((firstDay + d) % 7 === 0) html += `</tr><tr>`;
         }
 
@@ -944,6 +973,43 @@ html += `<tr>
             else comment = "🚨 잦은 결석이 확인됩니다! 학생과의 깊은 상담을 권장합니다.";
         }
         document.getElementById('sc-comment').innerText = comment;
+    }
+
+
+    // 🌟 특정 날짜를 클릭했을 때 상세 태그 흐름을 띄워주는 함수 (새로 추가) 🌟
+    function openDailyDetail(dateStr, status, historyList) {
+        const [y, m, d] = dateStr.split('-');
+        document.getElementById('dd-title').innerText = `📅 ${parseInt(m)}월 ${parseInt(d)}일 상세 기록`;
+        
+        // 최종 상태 색상 지정
+        let statusColor = "#dc3545"; // 기본 빨강 (미입실)
+        if(status === "입실" || status === "복귀") statusColor = "#0d6efd";
+        else if(status === "외출") statusColor = "#fd7e14";
+        else if(status === "귀가" || status === "귀가(누락)") statusColor = "#6c757d";
+        
+        document.getElementById('dd-status').innerHTML = `<span style="color:${statusColor}">${status}</span>`;
+        
+        // 타임라인 내역 그리기
+        let historyHtml = "";
+        if(!historyList || historyList.length === 0) {
+            historyHtml = "<div style='color:#999; text-align:center; padding:10px 0;'>키오스크 태그 기록이 없습니다.</div>";
+        } else {
+            historyList.forEach((h, idx) => {
+                // 텍스트에 따라 태그 색상 다르게 지정
+                let bg="#e7f1ff", col="#0d6efd", border="#b6d4fe"; 
+                if (h.includes("교사") || h.includes("빈자리")) { bg="#f3e8ff"; col="#5b21b6"; border="#8b5cf6"; }
+                else if (h.includes("외출")) { bg="#fff3cd"; col="#b38200"; border="#ffe69c"; }
+                else if (h.includes("귀가") || h.includes("누락")) { bg="#fff0f0"; col="#dc3545"; border="#f5c2c7"; }
+                
+                historyHtml += `<div style="margin-bottom:8px; display:flex; align-items:center;">
+                    <span style="display:inline-block; width:25px; text-align:center; color:#adb5bd; font-size:12px; font-weight:bold;">${idx+1}.</span> 
+                    <span style="display:inline-block; background:${bg}; color:${col}; border:1px solid ${border}; padding:4px 10px; border-radius:6px; font-weight:bold; font-size:12px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">${h}</span>
+                </div>`;
+            });
+        }
+        
+        document.getElementById('dd-history').innerHTML = historyHtml;
+        document.getElementById('daily-detail-modal').style.display = 'flex';
     }
 </script>
 
