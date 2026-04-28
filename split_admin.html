@@ -719,8 +719,8 @@ let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
         const filterStatusElement = document.getElementById('filter-daily-status');
         const statusFilter = filterStatusElement ? filterStatusElement.value : 'all';
         const timeSelectVal = parseInt(document.getElementById('daily-time').value);
-        const currentSlot = isNaN(timeSelectVal) ? 1 : timeSelectVal;
-        
+        let currentSlot = isNaN(timeSelectVal) ? 1 : timeSelectVal;
+
       // 🌟 여기서부터 추가: 현재 시간이 3T 종료 시간을 넘었는지 확인
         const now = new Date();
         const currentMin = now.getHours() * 60 + now.getMinutes();
