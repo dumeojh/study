@@ -183,6 +183,30 @@
         </table>
     </div>
 </div>
+<div id="student-calendar-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:25px; border-radius:15px; width:95%; max-width:650px; overflow-y:auto; max-height:90vh; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px;">
+                <h3 id="sc-title" style="margin:0; font-size: 18px; color:#1a1a1a;">🧑‍🎓 학생 상세 출결 달력</h3>
+                <button class="btn btn-gray" style="padding: 5px 12px; border-radius:6px; font-size:13px;" onclick="document.getElementById('student-calendar-modal').style.display='none'">닫기</button>
+            </div>
+            
+            <div id="sc-calendar-area" style="margin-top: 15px;"></div>
+            
+            <div style="background:#f8f9fa; padding:15px; border-radius:10px; margin-top:15px; display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; font-size:13px; text-align:center; border: 1px solid #eee;">
+                <div>신청 타임<br><b id="sc-total-apply" style="color:var(--primary); font-size:18px;">0</b>회</div>
+                <div>출석 타임<br><b id="sc-total-present" style="color:var(--success); font-size:18px;">0</b>회</div>
+                <div>참여율<br><b id="sc-rate" style="color:var(--danger); font-size:18px;">0</b>%</div>
+            </div>
+            
+            <div id="sc-comment" style="margin-top:15px; padding:12px; background:#eef6ff; border-radius:8px; font-size:14px; font-weight:bold; text-align:center; color:#052c65;"></div>
+            
+            <div style="margin-top:10px; text-align:center; font-size:11px; color:#666;">
+                <span style="display:inline-block; padding:2px 8px; background:var(--primary); color:white; border-radius:3px; margin-right:5px;">■</span>출석/인정 
+                <span style="display:inline-block; padding:2px 8px; background:#fff0f0; border:1px solid #dc3545; color:#dc3545; border-radius:3px; margin:0 5px;">■</span>미입실(결석)
+                <span style="display:inline-block; padding:2px 8px; background:transparent; border:1px solid #f0f0f0; color:#ccc; border-radius:3px; margin-left:5px;">■</span>미신청 타임
+            </div>
+        </div>
+    </div>
 
 <script>
     const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
@@ -605,6 +629,8 @@
         applyPersonalFilterAndSort();
     }
 
+
+
     function applyPersonalFilterAndSort() {
         const tbody = document.getElementById('personal-stat-body');
         const classValue = document.getElementById('class-filter').value;
@@ -651,10 +677,13 @@
                     attendHtml = `<span style="font-size:16px; font-weight:900;">${stat.attendedDays}일</span> <span style="font-size:12px; font-weight:normal; color:#6ea8fe;">(${stat.attendedTimes}타임)</span>`;
                 }
 
-                html += `<tr>
+html += `<tr>
                     <td>${stat.className}</td>
                     <td style="font-weight:bold;">${stat.stu_id}</td>
-                    <td>${stat.stu_name}</td>
+                    <td style="cursor:pointer; color:var(--primary); font-weight:bold; text-decoration:underline;" 
+                        onclick="openStudentCalendar('${stat.stu_id}', '${stat.stu_name}')">
+                        ${stat.stu_name} 🔍
+                    </td>
                     <td style="color:#6c757d;">${applyHtml}</td>
                     <td style="color:#0d6efd;">${attendHtml}</td>
                     <td style="font-weight:bold; ${rateColor}">${rate}%</td>
@@ -811,6 +840,110 @@
         }
 
         document.getElementById('yearly-stat-body').innerHTML = html;
+    }
+
+    // 🌟 학생 이름을 클릭했을 때 달력을 띄워주는 함수 (새로 추가) 🌟
+    function openStudentCalendar(stuId, stuName) {
+        const picker = document.getElementById('month-picker').value;
+        if (!picker) return;
+        const [year, month] = picker.split('-').map(Number);
+        
+        document.getElementById('student-calendar-modal').style.display = 'flex';
+        document.getElementById('sc-title').innerText = `🧑‍🎓 ${stuName} (${stuId}) - ${month}월 출결 달력`;
+
+        // 이번 달 데이터에서 해당 학생의 신청 내역 및 출결 로그 추출
+        const studentApp = applicationData.find(app => String(app.stu_id) === String(stuId));
+        const studentLogs = attendanceLogsData.filter(log => String(log.stu_id) === String(stuId));
+
+        const firstDay = new Date(year, month - 1, 1).getDay();
+        const lastDate = new Date(year, month, 0).getDate();
+        const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+        // 달력 테이블 헤더
+        let html = `<table class="stat-calendar" style="height:auto;">
+            <thead>
+                <tr>
+                    <th style="color:#dc3545; padding:8px;">일</th><th style="padding:8px;">월</th><th style="padding:8px;">화</th>
+                    <th style="padding:8px;">수</th><th style="padding:8px;">목</th><th style="padding:8px;">금</th><th style="color:#0d6efd; padding:8px;">토</th>
+                </tr>
+            </thead>
+            <tbody><tr>`;
+        
+        let tApply = 0, tPresent = 0;
+
+        for(let i = 0; i < firstDay; i++) html += `<td style="height:70px;"></td>`;
+
+        for(let d = 1; d <= lastDate; d++) {
+            const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const dayIdx = new Date(year, month - 1, d).getDay();
+            const dayKey = daysEng[dayIdx];
+
+            // 운영 요일 및 공휴일 체크
+            let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
+            let reason = "";
+            if (calendarSchedule.data[dateStr] !== undefined) {
+                isOperating = calendarSchedule.data[dateStr].active;
+                reason = calendarSchedule.data[dateStr].reason;
+            }
+
+            let slotHtml = `<div style="display:flex; flex-direction:column; gap:2px; margin-top:2px;">`;
+
+            if (!isOperating) {
+                slotHtml += `<div style="font-size:9px; color:#dc3545; font-weight:bold; margin-top:10px; text-align:center;">${reason || "미운영"}</div>`;
+            } else {
+                const appliedTimes = (studentApp && studentApp[dayKey]) ? studentApp[dayKey].split(',').filter(v => v) : [];
+                const dailyLog = studentLogs.find(l => l.date === dateStr);
+                const isLogPresent = dailyLog && dailyLog.status !== "미입실"; // 미입실 빼고 모두 참석으로 간주
+
+                [1, 2, 3].forEach(t => {
+                    const isApplied = appliedTimes.includes(String(t));
+                    
+                    // 기본 스타일 (미신청)
+                    let bg = "transparent", col = "#ccc", border = "1px solid #f0f0f0";
+                    
+                    if (isApplied) {
+                        tApply++;
+                        if (isLogPresent) {
+                            tPresent++;
+                            bg = "var(--primary)"; col = "white"; border = "1px solid var(--primary)"; // 참석 (파란색)
+                        } else {
+                            bg = "#fff0f0"; col = "var(--danger)"; border = "1px solid var(--danger)"; // 결석 (빨간색 테두리)
+                        }
+                    }
+                    slotHtml += `<div style="font-size:10px; font-weight:bold; padding:2px 0; border-radius:3px; text-align:center; background:${bg}; color:${col}; border:${border}; line-height:1;">${t}T</div>`;
+                });
+            }
+            slotHtml += `</div>`;
+
+            let dateColor = dayIdx === 0 ? "color:#dc3545;" : (dayIdx === 6 ? "color:#0d6efd;" : "color:#333;");
+            html += `<td style="height:70px; padding:6px; vertical-align:top; background:white;">
+                        <div style="font-weight:bold; margin-bottom:2px; font-size:12px; ${dateColor}">${d}</div>
+                        ${slotHtml}
+                    </td>`;
+            
+            if ((firstDay + d) % 7 === 0) html += `</tr><tr>`;
+        }
+
+        const lastDayIdx = new Date(year, month - 1, lastDate).getDay();
+        if (lastDayIdx < 6) {
+            for (let i = lastDayIdx + 1; i <= 6; i++) html += `<td style="height:70px;"></td>`;
+        }
+
+        html += `</tr></tbody></table>`;
+        document.getElementById('sc-calendar-area').innerHTML = html;
+        
+        const rate = tApply > 0 ? Math.round((tPresent / tApply) * 100) : 0;
+        document.getElementById('sc-total-apply').innerText = tApply;
+        document.getElementById('sc-total-present').innerText = tPresent;
+        document.getElementById('sc-rate').innerText = rate + "%";
+        
+        let comment = "이번 달 신청 데이터가 없습니다.";
+        if (tApply > 0) {
+            if (rate >= 80) comment = "✨ 훌륭합니다! 성실하게 참여하고 있습니다.";
+            else if (rate >= 60) comment = "🙂 무난하게 참여 중이나, 결석한 날의 사유 확인이 필요합니다.";
+            else comment = "🚨 잦은 결석이 확인됩니다! 학생과의 깊은 상담을 권장합니다.";
+        }
+        document.getElementById('sc-comment').innerText = comment;
     }
 </script>
 
