@@ -117,7 +117,9 @@
     </div>
 
     <div id="tab-personal" class="tab-content">
-        <div class="filter-area">
+
+
+<div class="filter-area">
             <div>
                 <label for="class-filter">🏫 반별 검색:</label>
                 <select id="class-filter" onchange="applyPersonalFilterAndSort()">
@@ -132,7 +134,14 @@
                     <option value="attend_times_desc">출석 횟수 (타임) 높은 순</option>
                 </select>
             </div>
+            <div style="margin-left: auto;">
+                <label for="search-filter">🔍 학생 검색:</label>
+                <input type="text" id="search-filter" placeholder="이름 또는 학번 입력" onkeyup="applyPersonalFilterAndSort()" style="width: 160px; padding: 6px 12px;">
+            </div>
         </div>
+
+
+
 
         <table class="stat-class-table">
             <thead>
@@ -648,17 +657,30 @@
     }
 
 
-
-    function applyPersonalFilterAndSort() {
+function applyPersonalFilterAndSort() {
         const tbody = document.getElementById('personal-stat-body');
         const classValue = document.getElementById('class-filter').value;
         const sortValue = document.getElementById('sort-filter').value;
+        // 🌟 검색어 가져오기 (양쪽 공백 제거)
+        const searchInput = document.getElementById('search-filter');
+        const searchValue = searchInput ? searchInput.value.trim() : ""; 
 
         let filteredData = globalPersonalStatsData;
+
+        // 1. 반별 필터 적용
         if (classValue !== "all") {
-            filteredData = globalPersonalStatsData.filter(stat => stat.className === classValue);
+            filteredData = filteredData.filter(stat => stat.className === classValue);
         }
 
+        // 2. 🌟 검색어 필터 적용 (이름 또는 학번에 검색어가 포함되어 있는지 확인)
+        if (searchValue !== "") {
+            filteredData = filteredData.filter(stat => 
+                stat.stu_name.includes(searchValue) || 
+                stat.stu_id.includes(searchValue)
+            );
+        }
+
+        // 3. 정렬 적용
         filteredData.sort((a, b) => {
             if (sortValue === "stu_id_asc") return parseInt(a.stu_id) - parseInt(b.stu_id);
             else if (sortValue === "attend_days_desc") {
@@ -695,7 +717,7 @@
                     attendHtml = `<span style="font-size:16px; font-weight:900;">${stat.attendedDays}일</span> <span style="font-size:12px; font-weight:normal; color:#6ea8fe;">(${stat.attendedTimes}타임)</span>`;
                 }
 
-html += `<tr>
+                html += `<tr>
                     <td>${stat.className}</td>
                     <td style="font-weight:bold;">${stat.stu_id}</td>
                     <td style="cursor:pointer; color:var(--primary); font-weight:bold; text-decoration:underline;" 
@@ -711,7 +733,6 @@ html += `<tr>
         
         tbody.innerHTML = html;
     }
-
     // ---------- [🌟 새로 추가된 연간 통계용 핵심 함수들 🌟] ---------- //
 
     // 특정 1개의 달(Month)에 대한 학생별 출결 타임을 계산해주는 헬퍼 함수
