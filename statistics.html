@@ -919,7 +919,20 @@ html += `<tr>
                 const isLogPresent = dailyLog && dailyLog.status !== "미입실"; // 미입실 빼고 모두 참석으로 간주
 //////////////////////////////////////
 
-[1, 2, 3].forEach(t => {
+// 🌟 (수정됨) dailyLog를 밖으로 꺼내서 오류 해결!
+            const dailyLog = studentLogs.find(l => l.date === dateStr);
+
+            let slotHtml = `<div style="display:flex; flex-direction:column; gap:2px; margin-top:2px;">`;
+
+            if (!isOperating) {
+                slotHtml += `<div style="font-size:9px; color:#dc3545; font-weight:bold; margin-top:10px; text-align:center;">${reason || "미운영"}</div>`;
+            } else {
+                const appliedTimes = (studentApp && studentApp[dayKey]) ? studentApp[dayKey].split(',').filter(v => v) : [];
+                const isLogPresent = dailyLog && dailyLog.status !== "미입실"; // 미입실 빼고 모두 참석으로 간주
+//////////////////////////////////////
+
+// 👇👇👇 새로 붙여넣을 코드 👇👇👇
+                [1, 2, 3].forEach(t => {
                     const isApplied = appliedTimes.includes(String(t));
                     
                     // 기본 스타일 (미신청)
@@ -937,7 +950,7 @@ html += `<tr>
                             tPresent++;
                             rightBg = "var(--primary)"; // 참석 (파란색)
                         } else {
-                            rightBg = "var(--danger)"; // 결석 (빨간색)
+                            rightBg = "#ff9999"; // 결석 (파스텔톤 빨간색)
                         }
                     }
                     
@@ -948,6 +961,12 @@ html += `<tr>
                         <div style="flex:1; background:${rightBg}; border-left:1px solid ${borderColor};"></div>
                     </div>`;
                 });
+// 👆👆👆 새로 붙여넣을 코드 끝 👆👆👆
+
+            }
+            slotHtml += `</div>`;
+
+
 
             }
             slotHtml += `</div>`;
