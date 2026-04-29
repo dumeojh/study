@@ -364,13 +364,22 @@
             const sched = schedDoc.value;
             if (sched.layoutMode) layoutMode = sched.layoutMode; // 👈 설정된 모드가 있으면 덮어쓰기
             
-            // 기존 스케줄(시간) 설정 처리
+// 기존 스케줄(시간) 설정 처리
             currentSchedule.t1 = sched.t1 || "16:00";
             currentSchedule.t2 = sched.t2 || "18:50";
             currentSchedule.t3 = sched.t3 || "20:10";
-            currentSchedule.t3_end = sched.t3_end || "21:30"; // 🌟 이 줄을 추가합니다.
+            currentSchedule.t3_end = sched.t3_end || "21:30";
+            
+            // 🌟 추가: 환경설정의 '최소 인정 기준(분)' 값을 숫자로 가져옵니다.
+            currentSchedule.t1_req = parseInt(sched.t1_req) || 0;
+            currentSchedule.t2_req = parseInt(sched.t2_req) || 0;
+            currentSchedule.t3_req = parseInt(sched.t3_req) || 0;
             
             const t1_end = sched.t1_end || "18:10";
+
+
+
+
             const t2_end = sched.t2_end || "20:10";
             const t3_end = sched.t3_end || "21:30";
             
@@ -910,19 +919,41 @@ let recText = "-";
                 });
             }
 
+
 // 👇👇 [여기부터 타임 횟수 계산 로직 추가] 👇👇
             let recTimes = 0;
             if (status === "미입실" || status === "귀가(누락)") {
-                recTimes = 0; // 결석이거나 태그 누락이면 0타임
-            } else if (status === "귀가") {
-                // 정상 귀가 시: 귀가한 타임(finishSlot)까지만 인정
-                [0, 1, 2, 3].forEach(t => {
-                    if (st.rawTimes.includes(String(t)) && t <= finishSlot) recTimes++;
-                });
-            } else { 
-                // 입실, 복귀, 외출 등 현재 진행 중일 때: 현재 교시(currentSlot)까지만 누적 표시
-                [0, 1, 2, 3].forEach(t => {
-                    if (st.rawTimes.includes(String(t)) && t <= currentSlot) recTimes++;
+                recTimes = 0; 
+            } else {
+                let finishMin = 9999;
+                if (status === "귀가" && log && log.history) {
+                    for (let i = log.history.length - 1; i >= 0; i--) {
+                        if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
+                            const match = log.history[i].match(/(\d{2}:\d{2})/);
+                            if (match) { 
+                                const [h, m] = match[1].split(':').map(Number);
+                                finishMin = h * 60 + m; 
+                                break; 
+                            }
+                        }
+                    }
+                } else {
+                    const now = new Date();
+                    finishMin = now.getHours() * 60 + now.getMinutes();
+                }
+
+                const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+                
+                [1, 2, 3].forEach(t => {
+                    if (st.rawTimes.includes(String(t))) {
+                        let startStr = currentSchedule[`t${t}`];
+                        let reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0; // 환경설정 값 적용
+                        if (startStr && !isNaN(reqMin)) {
+                            let passMin = timeToMin(startStr) + reqMin;
+                            // 퇴실 시간(혹은 현재 시간)이 '시작시간+환경설정 인정기준'을 넘었을 때만 인정!
+                            if (finishMin >= passMin) recTimes++;
+                        }
+                    }
                 });
             }
 
