@@ -461,61 +461,58 @@
         renderStatusTable();
     }
 
-
 async function manualSessionCredit() {
         const stuId = document.getElementById('ds-current-stu-id').value;
         const stuName = document.getElementById('ds-current-stu-name').value;
         const targetDate = document.getElementById('daily-date').value;
         const logId = `${targetDate}_${stuId}`;
 
-        // 1. 체크된 타임 가져오기
-        const selectedSlots = Array.from(document.querySelectorAll('.manual-t-chk:checked')).map(cb => cb.value);
+        const selectedSlots = Array.from(document.querySelectorAll('.manual-t-chk:checked'))
+                                   .map(cb => parseInt(cb.value))
+                                   .sort((a, b) => a - b);
+                                   
         if (selectedSlots.length === 0) return alert("인정할 타임을 하나 이상 선택해 주세요.");
 
-        if (!confirm(`[주의] 선택한 타임(${selectedSlots.join(',')}T)으로 출결 데이터를 새로 생성합니다.\n기존의 모든 태그 기록은 삭제됩니다. 계속하시겠습니까?`)) return;
+        if (!confirm(`[주의] 선택한 타임(${selectedSlots.join(',')}T)의 출결 데이터를 생성합니다.\n기존 기록은 삭제됩니다. 계속하시겠습니까?`)) return;
 
-        // 2. 타임별 흐름 데이터(History) 생성
         let newHistory = [];
-        selectedSlots.forEach(t => {
-            const startStr = currentSchedule[`t${t}`]; // 환경설정 시작 시간
-            const reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0; // 최소 인정 분
+        const lastIdx = selectedSlots.length - 1;
+
+        selectedSlots.forEach((t, index) => {
+            const startStr = currentSchedule[`t${t}`];
+            let endStr = currentSchedule[`t${t}_end`];
             
-            if (startStr) {
-                // 시작 시간
-                newHistory.push(`${t}T입실(교사) (${startStr})`);
-                
-                // 인정 가능한 종료 시간 계산 (시작 + 최소분)
+            // 종료 시간 설정이 없을 경우를 대비한 자동 계산
+            if (!endStr) {
+                const reqMin = parseInt(currentSchedule[`t${t}_req`]) || 60;
                 const [h, m] = startStr.split(':').map(Number);
                 const d = new Date(); d.setHours(h); d.setMinutes(m + reqMin);
-                const endStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-                
-                newHistory.push(`${t}T귀가(교사) (${endStr})`);
+                endStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
             }
+
+            // 선생님 요청사항: 중간 타임은 '외출', 마지막 타임은 '귀가'로 표시
+            const actionLabel = (index === lastIdx) ? "귀가" : "외출";
+
+            newHistory.push(`${t}T입실(교사) (${startStr})`);
+            newHistory.push(`${t}T${actionLabel}(교사) (${endStr})`);
         });
 
-        newHistory.sort(); // 시간순 정렬
-
         try {
-            // 3. DB 저장 (Upsert - 기존 기록 덮어씀)
             const { error } = await supabaseClient.from('attendance_logs').upsert({
                 id: logId,
                 date: targetDate,
                 stu_id: stuId,
                 stu_name: stuName,
-                status: "귀가", // 수동 인정 시 최종 상태는 귀가로 세팅
+                status: "귀가", 
                 last_update_time: new Date().toISOString(),
                 history: newHistory
             });
 
             if (error) throw error;
-            
-            alert("성공적으로 출결 데이터가 생성되었습니다.");
+            alert("출결 데이터가 생성되었습니다.");
             document.getElementById('daily-status-modal').style.display = 'none';
-            loadDailyDataAndRender(); // 화면 갱신
-
-        } catch (e) {
-            alert("저장 오류: " + e.message);
-        }
+            loadDailyDataAndRender(); 
+        } catch (e) { alert("저장 오류: " + e.message); }
     }
 
     // =========================================================
@@ -1005,7 +1002,7 @@ let recText = "-";
                 if (log && log.history) {
                     log.history.forEach(h => {
                         [1, 2, 3].forEach(t => {
-                            if (h.includes(`${t}T귀가(교사)`)) {
+                            if (h.includes('${t}T귀가(교사)') || h.includes('${t}T외출(교사)')){
                                 manualRecognized.add(t);
                             }
                         });
