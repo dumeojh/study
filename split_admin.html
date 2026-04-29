@@ -298,13 +298,27 @@
                 <div id="ds-recent-log" style="font-size: 13px; color: #555; text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #ccc;">
                 </div>
 
-                <h4 style="margin: 0 0 10px 0; color: #333; font-size: 14px; text-align: center;">👨‍🏫 교사 직접 출결 승인</h4>
+ <h4 style="margin: 0 0 10px 0; color: #333; font-size: 14px; text-align: center;">👨‍🏫 교사 직접 출결 승인</h4>
+                
+                <div style="background:#f0f9ff; padding:12px; border-radius:10px; margin-bottom:15px; border:1px solid #b6d4fe; text-align:center;">
+                    <p style="font-size:12px; color:#052c65; font-weight:bold; margin:0 0 8px 0;">🎯 클릭 시 해당 타임까지 자동 인정됩니다.</p>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn" style="flex:1; background:#6c757d; font-size:12px; padding:8px 0;" onclick="manualSessionCredit(1)">1T 인정</button>
+                        <button class="btn" style="flex:1; background:#6c757d; font-size:12px; padding:8px 0;" onclick="manualSessionCredit(2)">1~2T 인정</button>
+                        <button class="btn" style="flex:1; background:#6c757d; font-size:12px; padding:8px 0;" onclick="manualSessionCredit(3)">1~3T 인정</button>
+                    </div>
+                    <div style="margin-top:10px; border-top:1px dashed #b6d4fe; padding-top:8px;">
+                        <input type="time" id="manual-time-input" style="padding:4px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+                        <span style="font-size:11px; color:#666;">(직접 입력 필요시 사용)</span>
+                    </div>
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <button id="btn-manual-in" class="btn" style="background:#0d6efd; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('입실(교사인정)', this)">🟢 입실 처리</button>
                     <button id="btn-manual-return" class="btn" style="background:#198754; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('복귀(교사인정)', this)">🔵 복귀 처리</button>
                     <button id="btn-manual-out" class="btn" style="background:#fd7e14; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('외출(교사인정)', this)">🟡 외출 처리</button>
                     <button id="btn-manual-absent" class="btn" style="background:#d63384; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('미입실(빈자리)', this)">🔴 빈자리 처리</button>
-                    <button id="btn-manual-finish" class="btn" style="background:#6c757d; color:white; padding:15px; font-size:14px; grid-column: span 2;" onclick="manualAttendanceUpdate('귀가(교사인정)', this)">⚪ 최종 귀가 처리</button>
+                    <button id="btn-manual-finish" class="btn" style="background:#6c757d; color:white; padding:15px; font-size:14px; grid-column: span 2;" onclick="manualAttendanceUpdate('귀가(교사인정)', this)">⚪ 최종 귀가 (시간 기준)</button>
                 </div>
                 
                 <input type="hidden" id="ds-current-stu-id">
@@ -1087,13 +1101,19 @@ const tr = document.createElement('tr');
         document.getElementById('daily-list-summary').innerHTML = `전체 대상: ${stat.total}명 | <span style="color:var(--primary);">입실: ${stat.present}명</span> | <span style="color:#fd7e14;">외출: ${stat.out}명</span> | <span style="color:var(--gray);">귀가: ${stat.finish}명</span> | <span style="color:var(--danger);">미입실: ${stat.absent}명</span>`;
     }
 
-    function openDailyStatus(stuId, stuName, seatNum, phone) {
+
+
+function openDailyStatus(stuId, stuName, seatNum, phone) {
         document.getElementById('daily-status-modal').style.display = 'flex';
         document.getElementById('ds-name').innerText = stuName;
         document.getElementById('ds-info').innerText = `학번: ${stuId} | 좌석: ${seatNum}`;
         
         document.getElementById('ds-current-stu-id').value = stuId;
         document.getElementById('ds-current-stu-name').value = stuName;
+
+        // 🌟 추가됨: 모달 열 때 시간 칸에 '현재 시간'을 기본으로 꽂아줍니다.
+        const now = new Date();
+        document.getElementById('manual-time-input').value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
         const phoneBox = document.getElementById('ds-phone');
         if (phone) {
@@ -1156,8 +1176,37 @@ const tr = document.createElement('tr');
         }
     }
 
+// 🌟 1. 새로 추가됨: 타임 버튼 누르면 시간 자동 계산하는 함수
+    async function manualSessionCredit(targetTimeSlot) {
+        const stuId = document.getElementById('ds-current-stu-id').value;
+        const stuName = document.getElementById('ds-current-stu-name').value;
+        
+        const startTimeStr = currentSchedule[`t${targetTimeSlot}`];
+        const reqMin = parseInt(currentSchedule[`t${targetTimeSlot}_req`]) || 0;
+        
+        if (!startTimeStr) {
+            alert("환경설정에서 운영 시간을 먼저 확인해 주세요."); return;
+        }
 
-async function manualAttendanceUpdate(actionLabel, btnElement) {
+        const [h, m] = startTimeStr.split(':').map(Number);
+        const dateObj = new Date();
+        dateObj.setHours(h);
+        dateObj.setMinutes(m + reqMin);
+
+        const autoTimeStr = `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
+        
+        if(!confirm(`${stuName} 학생을 ${targetTimeSlot}타임까지 이수한 것으로 처리하시겠습니까?\n(기록 시간: ${autoTimeStr})`)) return;
+
+        // 화면 입력창에 시간 꽂아주기
+        document.getElementById('manual-time-input').value = autoTimeStr;
+        
+        // 귀가 처리 버튼 실행
+        const btnFinish = document.getElementById('btn-manual-finish');
+        manualAttendanceUpdate(`${targetTimeSlot}T이수(교사확인)`, btnFinish);
+    }
+
+    // 🌟 2. 수정됨: 귀찮은 팝업 없애고, 입력칸의 시간을 읽어와서 저장하는 함수
+    async function manualAttendanceUpdate(actionLabel, btnElement) {
         const stuId = document.getElementById('ds-current-stu-id').value;
         const stuName = document.getElementById('ds-current-stu-name').value;
         const targetDate = document.getElementById('daily-date').value;
@@ -1167,20 +1216,12 @@ async function manualAttendanceUpdate(actionLabel, btnElement) {
         const originalBg = btnElement.style.background;
         const allBtns = btnElement.parentElement.querySelectorAll('.btn');
         
-        // 1. 현재 시간 가져오기 (기본값)
-        const nowObj = new Date();
-        let timeStr = nowObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
-
-        // 🌟 [추가] 과거 날짜 수정이거나 수동 입력이 필요한 경우 시간을 묻습니다.
-        // 오늘이 아닌 날짜를 수정할 때는 무조건 묻고, 오늘인 경우에도 정확한 기록을 위해 묻는 팝업을 띄웁니다.
-        const userTime = prompt(`[출결 수동 기록] ${targetDate} 기록입니다.\n인정할 시간(HH:MM)을 입력하세요.`, timeStr);
-        
-        if (userTime === null) return; // '취소' 누르면 중단
-        if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(userTime)) {
-            alert("시간 형식이 올바르지 않습니다. (예: 21:30)");
-            return;
+        // 화면의 시간 입력칸 값 읽어오기
+        const timeInput = document.getElementById('manual-time-input');
+        if(!timeInput || !timeInput.value) {
+            alert("적용할 시간을 선택해 주세요."); return;
         }
-        timeStr = userTime; // 입력받은 시간으로 교체
+        const timeStr = timeInput.value;
 
         // 버튼 비활성화 (중복 클릭 방지)
         allBtns.forEach(b => b.disabled = true);
@@ -1192,11 +1233,11 @@ async function manualAttendanceUpdate(actionLabel, btnElement) {
         if (actionLabel.includes('복귀')) sysStatus = "복귀";
         if (actionLabel.includes('외출')) sysStatus = "외출";
         if (actionLabel.includes('미입실') || actionLabel.includes('빈자리')) sysStatus = "미입실";
-        if (actionLabel.includes('귀가')) sysStatus = "귀가";
+        if (actionLabel.includes('귀가') || actionLabel.includes('이수')) sysStatus = "귀가";
 
         const historyText = `${actionLabel} (${timeStr})`;
         
-        // 데이터베이스용 ISO 시간 생성 (선택한 날짜 + 입력한 시간 기준)
+        // ISO 시간 생성
         const [h, m] = timeStr.split(':').map(Number);
         const recordDate = new Date(targetDate);
         recordDate.setHours(h, m, 0, 0);
@@ -1217,7 +1258,7 @@ async function manualAttendanceUpdate(actionLabel, btnElement) {
                 stu_id: stuId,
                 stu_name: stuName,
                 status: sysStatus,
-                last_update_time: recordDate.toISOString(), // 입력한 시간으로 저장
+                last_update_time: recordDate.toISOString(), 
                 history: newHistory
             });
 
