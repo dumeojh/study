@@ -221,7 +221,7 @@
                         <th>진행 상황</th> 
                         <th>신청 및 실제 흐름</th>
                         <th>현재 상태</th>
-                        <th>최근 스캔 시간</th>
+                        <th>출석 인정 시간</th>
                     </tr>
                 </thead>
                 <tbody id="daily-list-body"></tbody>
@@ -807,21 +807,86 @@ let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
         if (sortBy === "id") targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
         else if (sortBy === "seat") targetStudents.sort((a, b) => String(a.seatNum).localeCompare(String(b.seatNum), undefined, { numeric: true }));
 
+// 👇👇 [여기부터 새로 추가] 출석 인정 시간 계산 함수 👇👇
+        const calcRecognizedTime = (log) => {
+            if (!log || !log.history || log.history.length === 0) return 0;
+            if (log.status === "미입실" || log.status === "귀가(누락)") return 0; // 누락 시 0분 처리
+
+            let totalMins = 0;
+            let lastInTime = null;
+            const [ty, tm, td] = targetDateStr.split('-');
+
+            const parseTime = (timeStr) => {
+                const [h, m] = timeStr.split(':').map(Number);
+                const d = new Date();
+                d.setFullYear(Number(ty), Number(tm)-1, Number(td));
+                d.setHours(h, m, 0, 0);
+                return d;
+            };
+
+            log.history.forEach(h => {
+                const match = h.match(/(\d{2}:\d{2})/);
+                if (!match) return;
+                const timeObj = parseTime(match[1]);
+
+                if (h.includes("입실") || h.includes("복귀")) {
+                    lastInTime = timeObj;
+                } else if (h.includes("외출") || h.includes("귀가")) {
+                    if (lastInTime) {
+                        let diff = (timeObj - lastInTime) / 60000;
+                        if (diff > 0) totalMins += diff;
+                        lastInTime = null;
+                    }
+                }
+            });
+
+            // 현재 입실/복귀 중이라면 실시간 흐른 시간 추가
+            if (lastInTime && (log.status === "입실" || log.status === "복귀")) {
+                const now = new Date();
+                const isToday = now.getFullYear() === Number(ty) && now.getMonth() === Number(tm)-1 && now.getDate() === Number(td);
+                if (isToday) {
+                    let diff = (now - lastInTime) / 60000;
+                    if (diff > 0) totalMins += diff;
+                }
+            }
+            return Math.floor(totalMins);
+        };
+        // 👆👆 [여기까지 추가] 👆👆
+
         let stat = { total: targetStudents.length, present: 0, out: 0, absent: 0, finish: 0 };
 
-        targetStudents.forEach(st => {
+targetStudents.forEach(st => {
             const log = attendanceLogsData[String(st.stuId)];
-            let status = "미입실"; let tagTime = "-"; let statusColor = "var(--danger)"; 
+            let status = "미입실"; let statusColor = "var(--danger)"; 
             let historyHtml = `<span style="color:#aaa; font-size:11px;">기록 없음</span>`;
             let groupedHistory = { 0: [], 1: [], 2: [], 3: [] };
 
+            // 👇👇 [추가됨] 출석 시간 텍스트 변환 로직 👇👇
+            let recMins = calcRecognizedTime(log);
+            let recText = "-";
+            if (recMins > 0) {
+                let h = Math.floor(recMins / 60);
+                let m = recMins % 60;
+                recText = h > 0 ? `<b style="color:var(--primary);">${h}</b>시간 <b style="color:var(--primary);">${m}</b>분` : `<b style="color:var(--primary);">${m}</b>분`;
+            } else if (log && log.status !== "미입실") {
+                if (log.status === "귀가(누락)") recText = `<span style="color:#dc3545; font-weight:bold;">0분 (누락)</span>`;
+                else recText = `<span style="color:#dc3545; font-weight:bold;">0분</span>`;
+            }
+
             if (log) {
                 status = log.status;
+                // 기존 tagTime 추출 로직 삭제됨 (사용하지 않음)
+
+
+
                 if (log.lastUpdateTime) {
                     const dt = new Date(log.lastUpdateTime);
                     tagTime = dt.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
                 }
+             
                 
+
+
                 if (log.history && log.history.length > 0) {
                     log.history.forEach(h => {
                         const tmMatch = h.match(/(\d{2}:\d{2})/);
@@ -1012,9 +1077,8 @@ const tr = document.createElement('tr');
 
 
                 <td style="text-align: left; padding-left: 15px; vertical-align: middle;">${historyHtml}</td>
-                <td style="font-weight:900; color:${statusColor}; vertical-align: middle;">${status}</td>
-                <td style="color:#555; vertical-align: middle;">${tagTime}</td>
-            `;
+<td style="font-weight:900; color:${statusColor}; vertical-align: middle;">${status}</td>
+                <td style="color:#555; vertical-align: middle;">${recText}</td> `;
             tbody.appendChild(tr);
         });
         
