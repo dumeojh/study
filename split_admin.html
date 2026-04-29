@@ -1156,7 +1156,8 @@ const tr = document.createElement('tr');
         }
     }
 
-    async function manualAttendanceUpdate(actionLabel, btnElement) {
+
+async function manualAttendanceUpdate(actionLabel, btnElement) {
         const stuId = document.getElementById('ds-current-stu-id').value;
         const stuName = document.getElementById('ds-current-stu-name').value;
         const targetDate = document.getElementById('daily-date').value;
@@ -1166,6 +1167,22 @@ const tr = document.createElement('tr');
         const originalBg = btnElement.style.background;
         const allBtns = btnElement.parentElement.querySelectorAll('.btn');
         
+        // 1. 현재 시간 가져오기 (기본값)
+        const nowObj = new Date();
+        let timeStr = nowObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+        // 🌟 [추가] 과거 날짜 수정이거나 수동 입력이 필요한 경우 시간을 묻습니다.
+        // 오늘이 아닌 날짜를 수정할 때는 무조건 묻고, 오늘인 경우에도 정확한 기록을 위해 묻는 팝업을 띄웁니다.
+        const userTime = prompt(`[출결 수동 기록] ${targetDate} 기록입니다.\n인정할 시간(HH:MM)을 입력하세요.`, timeStr);
+        
+        if (userTime === null) return; // '취소' 누르면 중단
+        if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(userTime)) {
+            alert("시간 형식이 올바르지 않습니다. (예: 21:30)");
+            return;
+        }
+        timeStr = userTime; // 입력받은 시간으로 교체
+
+        // 버튼 비활성화 (중복 클릭 방지)
         allBtns.forEach(b => b.disabled = true);
         btnElement.innerText = "⏳ 처리 중...";
         btnElement.style.background = "#495057";
@@ -1177,9 +1194,12 @@ const tr = document.createElement('tr');
         if (actionLabel.includes('미입실') || actionLabel.includes('빈자리')) sysStatus = "미입실";
         if (actionLabel.includes('귀가')) sysStatus = "귀가";
 
-        const nowObj = new Date();
-        const timeStr = nowObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
         const historyText = `${actionLabel} (${timeStr})`;
+        
+        // 데이터베이스용 ISO 시간 생성 (선택한 날짜 + 입력한 시간 기준)
+        const [h, m] = timeStr.split(':').map(Number);
+        const recordDate = new Date(targetDate);
+        recordDate.setHours(h, m, 0, 0);
 
         try {
             const { data: currentData } = await supabaseClient
@@ -1197,7 +1217,7 @@ const tr = document.createElement('tr');
                 stu_id: stuId,
                 stu_name: stuName,
                 status: sysStatus,
-                last_update_time: nowObj.toISOString(),
+                last_update_time: recordDate.toISOString(), // 입력한 시간으로 저장
                 history: newHistory
             });
 
