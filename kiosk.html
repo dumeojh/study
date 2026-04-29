@@ -439,11 +439,17 @@
 
             const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); 
 
-            const { data: pastLogs, error: fetchError } = await supabaseClient
+
+
+const { data: pastLogs, error: fetchError } = await supabaseClient
                 .from('attendance_logs')
                 .select('*')
                 .lt('date', todayStr)
-                .not('status', 'in', '("귀가", "귀가(누락)")');
+                .neq('status', '귀가')         // 🌟 확실하게 '귀가' 제외
+                .neq('status', '귀가(누락)');   // 🌟 확실하게 '귀가(누락)' 제외
+
+
+
 
             if (fetchError) throw fetchError;
 
