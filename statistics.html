@@ -280,11 +280,16 @@
     let attendanceLogsData = [];
     let calendarSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
     let globalPersonalStatsData = []; 
-    let globalYearlyStatsData = []; // 🌟 연간 통계용 전역 변수
+
+
+let globalYearlyStatsData = []; // 🌟 연간 통계용 전역 변수
 
     // 👇 새로 추가할 전역 변수
     let globalDailyMatrixData = [];
     let matrixLastDate = 31;
+
+    // 🌟 추가: 통계용 시간 설정 및 최소 인정 기준 변수
+    let currentSchedule = { t1: "16:00", t2: "18:50", t3: "20:10", t1_req: 60, t2_req: 60, t3_req: 60 };
 
     document.addEventListener("DOMContentLoaded", () => {
         const now = new Date();
@@ -317,10 +322,21 @@
                 .lte('date', endDate);
             attendanceLogsData = logs || [];
 
-            const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
+const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
             if (cal && cal.value) {
                 if (cal.value.data) calendarSchedule.data = JSON.parse(cal.value.data);
                 if (cal.value.defaultDays) calendarSchedule.defaultDays = cal.value.defaultDays;
+            }
+
+            // 🌟 추가: 운영 시간 및 최소 인정 기준(분) 데이터 불러오기
+            const { data: sched } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+            if (sched && sched.value) {
+                currentSchedule.t1 = sched.value.t1 || "16:00";
+                currentSchedule.t2 = sched.value.t2 || "18:50";
+                currentSchedule.t3 = sched.value.t3 || "20:10";
+                currentSchedule.t1_req = parseInt(sched.value.t1_req) || 0;
+                currentSchedule.t2_req = parseInt(sched.value.t2_req) || 0;
+                currentSchedule.t3_req = parseInt(sched.value.t3_req) || 0;
             }
 
             renderCalendar(year, month, lastDateObj.getDate());
@@ -337,6 +353,50 @@
             document.getElementById('calendar-container').style.display = 'block';
         }
     }
+
+// ---------- [🌟 새로 추가된 공통 타임 계산 함수 🌟] ---------- //
+function getRecognizedTimes(log, appliedTimesStr) {
+    if (!log || log.status === "미입실" || log.status === "귀가(누락)") return 0;
+    
+    let finishMin = 9999; 
+    if (log.status === "귀가" && log.history) {
+        for (let i = log.history.length - 1; i >= 0; i--) {
+            if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
+                const match = log.history[i].match(/(\d{2}:\d{2})/);
+                if (match) { 
+                    const [h, m] = match[1].split(':').map(Number);
+                    finishMin = h * 60 + m; 
+                    break; 
+                }
+            }
+        }
+    } else if (log.status === "입실" || log.status === "복귀" || log.status === "외출") {
+        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+        if (log.date === todayStr) {
+            const now = new Date();
+            finishMin = now.getHours() * 60 + now.getMinutes();
+        }
+    }
+
+    const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    let recognizedCount = 0;
+
+    [1, 2, 3].forEach(t => {
+        if (appliedTimesStr.includes(String(t))) {
+            let startStr = currentSchedule[`t${t}`];
+            let reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0;
+            if (startStr && !isNaN(reqMin)) {
+                let passMin = timeToMin(startStr) + reqMin;
+                if (finishMin >= passMin) recognizedCount++;
+            }
+        }
+    });
+    return recognizedCount;
+}
+// ------------------------------------------------------------- //
+
+
+
 
 // ---------- [🌟 새로 추가된 개인별 일자 현황 핵심 함수들 🌟] ---------- //
     function renderDailyMatrix(year, month, lastDate) {
@@ -388,10 +448,13 @@
                         const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
                         
                         // 미입실(결석)이 아니라면 해당 일자에 타임수 누적
-                        if (studentLog && studentLog.status !== "미입실") {
-                            stat.dailyCounts[d - 1] += timesCount;
-                            stat.totalCount += timesCount;
-                        }
+const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
+if (recognizedCount > 0) {
+    stat.dailyCounts[d - 1] += recognizedCount;
+    stat.totalCount += recognizedCount;
+}
+
+
                     }
                 });
             }
@@ -710,9 +773,14 @@
                             classStats[className].totalTimes += timesCount;
                             
                             const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
-                            if (studentLog && studentLog.status !== "미입실") {
-                                classStats[className].attendedTimes += timesCount;
-                            }
+
+
+const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
+if (recognizedCount > 0) {
+    classStats[className].attendedTimes += recognizedCount;
+}
+
+
                         }
                     }
                 });
@@ -816,11 +884,15 @@
                         stat.appliedTimes += timesCount;
 
                         const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
+           
                         
-                        if (studentLog && studentLog.status !== "미입실") {
-                            stat.attendedDays += 1;
-                            stat.attendedTimes += timesCount;
-                        }
+const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
+if (recognizedCount > 0) {
+    stat.attendedDays += 1;
+    stat.attendedTimes += recognizedCount;
+}
+
+
                     }
                 });
             }
@@ -963,9 +1035,13 @@ function applyPersonalFilterAndSort() {
                         const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
                         
                         // 미입실이 아니라면(정상입실/복귀/귀가/외출 등 모두 인정) 타임 횟수 누적
-                        if (studentLog && studentLog.status !== "미입실") {
-                            if(stats[stuIdStr]) stats[stuIdStr].attendedTimes += timesCount;
-                        }
+
+
+const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
+if (recognizedCount > 0) {
+    if(stats[stuIdStr]) stats[stuIdStr].attendedTimes += recognizedCount;
+}
+
                     }
                 });
             }
