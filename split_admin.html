@@ -1002,7 +1002,7 @@ let recText = "-";
                 if (log && log.history) {
                     log.history.forEach(h => {
                         [1, 2, 3].forEach(t => {
-                            if (h.includes('${t}T귀가(교사)') || h.includes('${t}T외출(교사)')){
+                    if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`)){
                                 manualRecognized.add(t);
                             }
                         });
