@@ -175,30 +175,41 @@
         <div id="supervisor-grid" class="seat-grid"></div>
     </div>
 
-    <div id="tab-daily-list" class="tab-content">
-        <div class="form-card" style="margin-bottom: 15px; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
-                <div>
-                    <b style="color: #555;">조회 정렬:</b>
-                    <select id="sort-daily-list" onchange="renderDailyList()" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-left: 5px;">
-                        <option value="id">학번순 보기</option>
-                        <option value="seat">좌석순 보기</option>
-                    </select>
-                </div>
-                <div>
-                    <b style="color: #555;">상태 필터:</b>
-                    <select id="filter-daily-status" onchange="renderDailyList()" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-left: 5px;">
-                        <option value="all">전체 보기</option>
-                        <option value="미입실">🔴 미입실 (결석/누락)</option>
-                        <option value="입실">🟢 입실 완료 (정상/복귀)</option>
-                        <option value="외출">🟡 외출 중</option>
-                        <option value="귀가">⚪ 귀가 완료</option>
-                    </select>
-                </div>
+<div id="tab-daily-list" class="tab-content">
+        <div class="form-card" style="margin-bottom: 15px; padding: 15px;">
+            <div id="daily-list-date-display" style="font-size: 18px; font-weight: 900; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid #dee2e6; padding-bottom: 10px;">
+                📅 0000년 00월 00일 일일 현황
             </div>
-            <div id="daily-list-summary" style="font-size: 15px; font-weight: bold; background: white; padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                    <div>
+                        <b style="color: #555;">조회 정렬:</b>
+                        <select id="sort-daily-list" onchange="renderDailyList()" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-left: 5px;">
+                            <option value="id">학번순 보기</option>
+                            <option value="seat">좌석순 보기</option>
+                        </select>
+                    </div>
+                    <div>
+                        <b style="color: #555;">상태 필터:</b>
+                        <select id="filter-daily-status" onchange="renderDailyList()" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-left: 5px;">
+                            <option value="all">전체 보기</option>
+                            <option value="미입실">🔴 미입실 (결석/누락)</option>
+                            <option value="입실">🟢 입실 완료 (정상/복귀)</option>
+                            <option value="외출">🟡 외출 중</option>
+                            <option value="귀가">⚪ 귀가 완료</option>
+                        </select>
+                    </div>
+                    <div>
+                        <b style="color: #555;">🔍 검색:</b>
+                        <input type="text" id="search-daily-list" placeholder="이름 또는 학번" onkeyup="renderDailyList()" style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-left: 5px; width: 140px;">
+                    </div>
+                </div>
+                <div id="daily-list-summary" style="font-size: 14px; font-weight: bold; background: white; padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd;">
+                </div>
             </div>
         </div>
+
 
         <div style="overflow-x:auto;">
             <table>
@@ -715,9 +726,23 @@ let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
         const targetDay = ['sun','mon','tue','wed','thu','fri','sat'][targetDateObj.getDay()];
         const targetMonthStr = (targetDateObj.getMonth() + 1) + "월";
 
+        // 👇👇 [여기부터 추가] 날짜 화면 표시 업데이트 👇👇
+        const daysKor = ['일','월','화','수','목','금','토'];
+        const dateDisplayEl = document.getElementById('daily-list-date-display');
+        if(dateDisplayEl) {
+            dateDisplayEl.innerText = `📅 ${targetDateObj.getFullYear()}년 ${targetDateObj.getMonth() + 1}월 ${targetDateObj.getDate()}일 (${daysKor[targetDateObj.getDay()]}요일) 일일 현황`;
+        }
+        // 👆👆 [여기까지 추가] 👆👆
+
         const sortBy = document.getElementById('sort-daily-list').value;
         const filterStatusElement = document.getElementById('filter-daily-status');
         const statusFilter = filterStatusElement ? filterStatusElement.value : 'all';
+
+// 👇👇 [여기 추가] 검색어 값 가져오기 👇👇
+        const searchInput = document.getElementById('search-daily-list');
+        const searchKeyword = searchInput ? searchInput.value.trim() : "";
+        // 👆👆 [여기까지 추가] 👆👆
+
         const timeSelectVal = parseInt(document.getElementById('daily-time').value);
         let currentSlot = isNaN(timeSelectVal) ? 1 : timeSelectVal;
 
@@ -769,6 +794,16 @@ let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
         });
 
         let targetStudents = Array.from(targetStudentsMap.values());
+
+// 👇👇 [여기부터 추가] 검색어(이름/학번) 필터링 적용 👇👇
+        if (searchKeyword !== "") {
+            targetStudents = targetStudents.filter(st => 
+                String(st.stuName).includes(searchKeyword) || 
+                String(st.stuId).includes(searchKeyword)
+            );
+        }
+        // 👆👆 [여기까지 추가] 👆👆
+
         if (sortBy === "id") targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
         else if (sortBy === "seat") targetStudents.sort((a, b) => String(a.seatNum).localeCompare(String(b.seatNum)));
 
