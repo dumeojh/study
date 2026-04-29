@@ -298,27 +298,26 @@
                 <div id="ds-recent-log" style="font-size: 13px; color: #555; text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #ccc;">
                 </div>
 
- <h4 style="margin: 0 0 10px 0; color: #333; font-size: 14px; text-align: center;">👨‍🏫 교사 직접 출결 승인</h4>
+
+
+<h4 style="margin: 0 0 10px 0; color: #333; font-size: 14px; text-align: center;">👨‍🏫 교사 직접 출결 승인</h4>
                 
-                <div style="background:#f0f9ff; padding:12px; border-radius:10px; margin-bottom:15px; border:1px solid #b6d4fe; text-align:center;">
-                    <p style="font-size:12px; color:#052c65; font-weight:bold; margin:0 0 8px 0;">🎯 클릭 시 해당 타임까지 자동 인정됩니다.</p>
-                    <div style="display: flex; gap: 5px;">
-                        <button class="btn" style="flex:1; background:#6c757d; font-size:12px; padding:8px 0;" onclick="manualSessionCredit(1)">1T 인정</button>
-                        <button class="btn" style="flex:1; background:#6c757d; font-size:12px; padding:8px 0;" onclick="manualSessionCredit(2)">1~2T 인정</button>
-                        <button class="btn" style="flex:1; background:#6c757d; font-size:12px; padding:8px 0;" onclick="manualSessionCredit(3)">1~3T 인정</button>
+                <div style="background:#f0f9ff; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #b6d4fe; text-align:center;">
+                    <p style="font-size:12px; color:#052c65; font-weight:bold; margin:0 0 10px 0;">🎯 인정할 타임을 체크하세요 (기존 기록 삭제됨)</p>
+                    <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 12px; background: white; padding: 10px; border-radius: 8px; border: 1px solid #d0e7ff;">
+                        <label style="font-weight:bold; cursor:pointer; font-size:15px;"><input type="checkbox" class="manual-t-chk" value="1"> 1T</label>
+                        <label style="font-weight:bold; cursor:pointer; font-size:15px;"><input type="checkbox" class="manual-t-chk" value="2"> 2T</label>
+                        <label style="font-weight:bold; cursor:pointer; font-size:15px;"><input type="checkbox" class="manual-t-chk" value="3"> 3T</label>
                     </div>
-                    <div style="margin-top:10px; border-top:1px dashed #b6d4fe; padding-top:8px;">
-                        <input type="time" id="manual-time-input" style="padding:4px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
-                        <span style="font-size:11px; color:#666;">(직접 입력 필요시 사용)</span>
-                    </div>
+                    <button class="btn" style="width:100%; background:var(--primary); font-size:15px; padding:12px; box-shadow: 0 4px 6px rgba(0,123,255,0.2);" onclick="manualSessionCredit()">✅ 선택 타임 출결 데이터 생성</button>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <button id="btn-manual-in" class="btn" style="background:#0d6efd; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('입실(교사인정)', this)">🟢 입실 처리</button>
-                    <button id="btn-manual-return" class="btn" style="background:#198754; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('복귀(교사인정)', this)">🔵 복귀 처리</button>
-                    <button id="btn-manual-out" class="btn" style="background:#fd7e14; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('외출(교사인정)', this)">🟡 외출 처리</button>
-                    <button id="btn-manual-absent" class="btn" style="background:#d63384; color:white; padding:15px; font-size:14px;" onclick="manualAttendanceUpdate('미입실(빈자리)', this)">🔴 빈자리 처리</button>
-                    <button id="btn-manual-finish" class="btn" style="background:#6c757d; color:white; padding:15px; font-size:14px; grid-column: span 2;" onclick="manualAttendanceUpdate('귀가(교사인정)', this)">⚪ 최종 귀가 (시간 기준)</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; opacity: 0.8;">
+                    <button class="btn" style="background:#0d6efd; padding:10px; font-size:12px;" onclick="manualAttendanceUpdate('입실(수동)', this)">🟢 수동입실</button>
+                    <button class="btn" style="background:#198754; padding:10px; font-size:12px;" onclick="manualAttendanceUpdate('복귀(수동)', this)">🔵 수동복귀</button>
+                    <button class="btn" style="background:#fd7e14; padding:10px; font-size:12px;" onclick="manualAttendanceUpdate('외출(수동)', this)">🟡 수동외출</button>
+                    <button class="btn" style="background:#d63384; padding:10px; font-size:12px;" onclick="manualAttendanceUpdate('미입실(수동)', this)">🔴 수동결석</button>
+                    <input type="time" id="manual-time-input" style="grid-column: span 2; padding:5px; margin-top:5px; text-align:center;">
                 </div>
                 
                 <input type="hidden" id="ds-current-stu-id">
@@ -326,7 +325,10 @@
             </div>
         </div>
     </div>
+  
     
+
+
     <div id="counsel-modal" class="modal-overlay">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px;">
@@ -457,6 +459,63 @@
             });
         }
         renderStatusTable();
+    }
+
+
+async function manualSessionCredit() {
+        const stuId = document.getElementById('ds-current-stu-id').value;
+        const stuName = document.getElementById('ds-current-stu-name').value;
+        const targetDate = document.getElementById('daily-date').value;
+        const logId = `${targetDate}_${stuId}`;
+
+        // 1. 체크된 타임 가져오기
+        const selectedSlots = Array.from(document.querySelectorAll('.manual-t-chk:checked')).map(cb => cb.value);
+        if (selectedSlots.length === 0) return alert("인정할 타임을 하나 이상 선택해 주세요.");
+
+        if (!confirm(`[주의] 선택한 타임(${selectedSlots.join(',')}T)으로 출결 데이터를 새로 생성합니다.\n기존의 모든 태그 기록은 삭제됩니다. 계속하시겠습니까?`)) return;
+
+        // 2. 타임별 흐름 데이터(History) 생성
+        let newHistory = [];
+        selectedSlots.forEach(t => {
+            const startStr = currentSchedule[`t${t}`]; // 환경설정 시작 시간
+            const reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0; // 최소 인정 분
+            
+            if (startStr) {
+                // 시작 시간
+                newHistory.push(`${t}T입실(교사) (${startStr})`);
+                
+                // 인정 가능한 종료 시간 계산 (시작 + 최소분)
+                const [h, m] = startStr.split(':').map(Number);
+                const d = new Date(); d.setHours(h); d.setMinutes(m + reqMin);
+                const endStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                
+                newHistory.push(`${t}T귀가(교사) (${endStr})`);
+            }
+        });
+
+        newHistory.sort(); // 시간순 정렬
+
+        try {
+            // 3. DB 저장 (Upsert - 기존 기록 덮어씀)
+            const { error } = await supabaseClient.from('attendance_logs').upsert({
+                id: logId,
+                date: targetDate,
+                stu_id: stuId,
+                stu_name: stuName,
+                status: "귀가", // 수동 인정 시 최종 상태는 귀가로 세팅
+                last_update_time: new Date().toISOString(),
+                history: newHistory
+            });
+
+            if (error) throw error;
+            
+            alert("성공적으로 출결 데이터가 생성되었습니다.");
+            document.getElementById('daily-status-modal').style.display = 'none';
+            loadDailyDataAndRender(); // 화면 갱신
+
+        } catch (e) {
+            alert("저장 오류: " + e.message);
+        }
     }
 
     // =========================================================
@@ -934,42 +993,66 @@ let recText = "-";
             }
 
 
+
+
 // 👇👇 [여기부터 타임 횟수 계산 로직 추가] 👇👇
             let recTimes = 0;
             if (status === "미입실" || status === "귀가(누락)") {
                 recTimes = 0; 
             } else {
-                let finishMin = 9999;
-                if (status === "귀가" && log && log.history) {
-                    for (let i = log.history.length - 1; i >= 0; i--) {
-                        if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
-                            const match = log.history[i].match(/(\d{2}:\d{2})/);
-                            if (match) { 
-                                const [h, m] = match[1].split(':').map(Number);
-                                finishMin = h * 60 + m; 
-                                break; 
+                // 🌟 [핵심 변경] 수동 인정된 태그가 있는지 먼저 확인
+                let manualRecognized = new Set();
+                if (log && log.history) {
+                    log.history.forEach(h => {
+                        [1, 2, 3].forEach(t => {
+                            if (h.includes(`${t}T귀가(교사)`)) {
+                                manualRecognized.add(t);
+                            }
+                        });
+                    });
+                }
+                
+                // 교사가 수동으로 인정한 기록이 있다면 그 개수를 우선 적용!
+                if (manualRecognized.size > 0) {
+                    recTimes = manualRecognized.size;
+                } else {
+                    // 수동 인정 기록이 없다면 기존 시간 기반 계산법 적용
+                    let finishMin = 9999;
+                    if (status === "귀가" && log && log.history) {
+                        for (let i = log.history.length - 1; i >= 0; i--) {
+                            if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
+                                const match = log.history[i].match(/(\d{2}:\d{2})/);
+                                if (match) { 
+                                    const [h, m] = match[1].split(':').map(Number);
+                                    finishMin = h * 60 + m; 
+                                    break; 
+                                }
                             }
                         }
+                    } else {
+                        const now = new Date();
+                        finishMin = now.getHours() * 60 + now.getMinutes();
                     }
-                } else {
-                    const now = new Date();
-                    finishMin = now.getHours() * 60 + now.getMinutes();
-                }
 
-                const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
-                
-                [1, 2, 3].forEach(t => {
-                    if (st.rawTimes.includes(String(t))) {
-                        let startStr = currentSchedule[`t${t}`];
-                        let reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0; // 환경설정 값 적용
-                        if (startStr && !isNaN(reqMin)) {
-                            let passMin = timeToMin(startStr) + reqMin;
-                            // 퇴실 시간(혹은 현재 시간)이 '시작시간+환경설정 인정기준'을 넘었을 때만 인정!
-                            if (finishMin >= passMin) recTimes++;
+                    const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+                    
+                    [1, 2, 3].forEach(t => {
+                        if (st.rawTimes.includes(String(t))) {
+                            let startStr = currentSchedule[`t${t}`];
+                            let reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0; 
+                            if (startStr && !isNaN(reqMin)) {
+                                let passMin = timeToMin(startStr) + reqMin;
+                                if (finishMin >= passMin) recTimes++;
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
+
+
+
+
+
 
             if (recTimes > 0) {
                 recText = `<b style="color:var(--primary); font-size:15px;">${recTimes}</b>타임`;
