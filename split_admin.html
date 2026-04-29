@@ -1256,34 +1256,8 @@ function openDailyStatus(stuId, stuName, seatNum, phone) {
         }
     }
 
-// 🌟 1. 새로 추가됨: 타임 버튼 누르면 시간 자동 계산하는 함수
-    async function manualSessionCredit(targetTimeSlot) {
-        const stuId = document.getElementById('ds-current-stu-id').value;
-        const stuName = document.getElementById('ds-current-stu-name').value;
-        
-        const startTimeStr = currentSchedule[`t${targetTimeSlot}`];
-        const reqMin = parseInt(currentSchedule[`t${targetTimeSlot}_req`]) || 0;
-        
-        if (!startTimeStr) {
-            alert("환경설정에서 운영 시간을 먼저 확인해 주세요."); return;
-        }
 
-        const [h, m] = startTimeStr.split(':').map(Number);
-        const dateObj = new Date();
-        dateObj.setHours(h);
-        dateObj.setMinutes(m + reqMin);
 
-        const autoTimeStr = `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
-        
-        if(!confirm(`${stuName} 학생을 ${targetTimeSlot}타임까지 이수한 것으로 처리하시겠습니까?\n(기록 시간: ${autoTimeStr})`)) return;
-
-        // 화면 입력창에 시간 꽂아주기
-        document.getElementById('manual-time-input').value = autoTimeStr;
-        
-        // 귀가 처리 버튼 실행
-        const btnFinish = document.getElementById('btn-manual-finish');
-        manualAttendanceUpdate(`${targetTimeSlot}T이수(교사확인)`, btnFinish);
-    }
 
     // 🌟 2. 수정됨: 귀찮은 팝업 없애고, 입력칸의 시간을 읽어와서 저장하는 함수
     async function manualAttendanceUpdate(actionLabel, btnElement) {
