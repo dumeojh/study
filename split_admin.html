@@ -805,7 +805,7 @@ let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
         // 👆👆 [여기까지 추가] 👆👆
 
         if (sortBy === "id") targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
-        else if (sortBy === "seat") targetStudents.sort((a, b) => String(a.seatNum).localeCompare(String(b.seatNum)));
+        else if (sortBy === "seat") targetStudents.sort((a, b) => String(a.seatNum).localeCompare(String(b.seatNum), undefined, { numeric: true }));
 
         let stat = { total: targetStudents.length, present: 0, out: 0, absent: 0, finish: 0 };
 
