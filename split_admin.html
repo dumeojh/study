@@ -1424,7 +1424,9 @@ function openDailyStatus(stuId, stuName, seatNum, phone) {
         document.querySelectorAll('#tab-manual input').forEach(i => i.value = ""); 
     }
 
-// --- 여기서부터 복사하세요 ---
+
+///////////////////////////////////
+// --- 수정된 데이터 저장 로직 시작 ---
 async function saveManualEntry() {
     // 1. 입력 필드에서 데이터 가져오기
     const id = document.getElementById('edit-doc-id').value; 
@@ -1433,7 +1435,7 @@ async function saveManualEntry() {
     const target_month = document.getElementById('m-month').value;
     const type = document.getElementById('m-type').value;
     
-    // 요일별 교시 데이터 (1, 2, 3타임 등)[cite: 2]
+    // 요일별 교시 데이터 (1, 2, 3타임 등)
     const daysData = {
         mon: document.getElementById('m-mon').value.trim(),
         tue: document.getElementById('m-tue').value.trim(),
@@ -1444,15 +1446,16 @@ async function saveManualEntry() {
         sun: document.getElementById('m-sun').value.trim()
     };
 
-    // [보안 강화] 학번과 이름이 입력되었는지 확인[cite: 2]
+    // [보안 점검 1] 학번과 이름이 입력되었는지 확인
     if (!stu_id || !stu_name) {
         alert("학번과 이름을 모두 입력해야 합니다.");
         return;
     }
 
     try {
-        // [보안 강화] DB에 등록된 이름과 일치하는지 확인[cite: 2]
-        const { data: student, error: fetchError } = await supabaseClient
+        // [보안 점검 2] 기존에 등록된 데이터가 있다면 학번과 이름이 일치하는지 확인
+        // (다른 학생의 학번을 실수로 입력하여 데이터를 덮어쓰는 것을 방지)[cite: 2]
+        const { data: existingStudent, error: fetchError } = await supabaseClient
             .from('applications')
             .select('stu_name')
             .eq('stu_id', stu_id)
@@ -1461,13 +1464,13 @@ async function saveManualEntry() {
 
         if (fetchError) throw fetchError;
 
-        // 기존 데이터가 있는데 이름이 다를 경우 차단
-        if (student && student.stu_name !== stu_name) {
-            alert("보안 오류: 해당 학번으로 등록된 이름과 일치하지 않습니다.");
+        // 기존에 해당 학번으로 등록된 이름과 입력한 이름이 다르면 저장 차단[cite: 2]
+        if (existingStudent && existingStudent.stu_name !== stu_name) {
+            alert(`보안 오류: 학번(${stu_id})에 등록된 이름과 입력하신 이름이 일치하지 않습니다.\n본인의 학번을 다시 확인해주세요.`);
             return;
         }
 
-        // [형식 검사] 자율석 선택 시 교시 입력 여부 확인[cite: 2]
+        // [형식 점검] 자율석 선택 시 교시가 하나라도 입력되었는지 확인[cite: 2]
         if (type === '자율석') {
             const allEmpty = Object.values(daysData).every(val => val === "");
             if (allEmpty) {
@@ -1480,7 +1483,7 @@ async function saveManualEntry() {
         const { error: saveError } = await supabaseClient
             .from('applications')
             .upsert({
-                id: id || undefined, 
+                id: id || undefined, // 기존 수정 시에는 ID 포함, 신규 추가 시에는 자동 생성
                 stu_id,
                 stu_name,
                 target_month,
@@ -1492,21 +1495,18 @@ async function saveManualEntry() {
 
         if (saveError) throw saveError;
 
-        alert("성공적으로 저장되었습니다!");
+        alert("데이터가 성공적으로 저장되었습니다!");
         
-        // 저장 후 모달창 닫기 및 목록 갱신 (함수가 정의되어 있는 경우)[cite: 2]
-        if (typeof bootstrap !== 'undefined') {
-            const modal = bootstrap.Modal.getInstance(document.getElementById('manualEntryModal'));
-            if (modal) modal.hide();
-        }
-        if (typeof fetchDataAndRender === 'function') fetchDataAndRender();
+        // 폼 초기화 및 테이블 새로고침
+        resetManualForm();
+        renderStatusTable();
 
     } catch (err) {
-        console.error("저장 중 오류:", err);
-        alert("오류가 발생했습니다: " + err.message);
+        console.error("저장 중 오류 발생:", err);
+        alert("저장 중 오류가 발생했습니다: " + err.message);
     }
 }
-// --- 여기까지 복사해서 붙여넣으세요 ---
+// --- 수정 완료 ---
 
 
 
