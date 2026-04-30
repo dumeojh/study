@@ -1424,32 +1424,92 @@ function openDailyStatus(stuId, stuName, seatNum, phone) {
         document.querySelectorAll('#tab-manual input').forEach(i => i.value = ""); 
     }
 
-    async function saveManualEntry() {
-        const id = document.getElementById('edit-doc-id').value;
-        const data = { 
-            target_month: document.getElementById('m-month').value, 
-            stu_id: String(document.getElementById('m-id').value), 
-            stu_name: document.getElementById('m-name').value, 
-            type: document.getElementById('m-type').value, 
-            seat_num: document.getElementById('m-seatNum').value, 
-            mon: document.getElementById('m-mon').value || "", 
-            tue: document.getElementById('m-tue').value || "", 
-            wed: document.getElementById('m-wed').value || "", 
-            thu: document.getElementById('m-thu').value || "", 
-            fri: document.getElementById('m-fri').value || "", 
-            sat: document.getElementById('m-sat').value || "", 
-            sun: document.getElementById('m-sun').value || "",
-            last_update_time: new Date().toISOString()
-        };
-        try {
-            if(id) await supabaseClient.from("applications").update(data).eq("id", id); 
-            else await supabaseClient.from("applications").insert([data]);
-            alert("저장되었습니다."); 
-            resetManualForm(); 
-            fetchBaseData(); 
-            switchTab('tab-status', document.querySelectorAll('.tab-btn')[2]);
-        } catch(e) { alert("오류: " + e.message); }
+// --- 여기서부터 복사하세요 ---
+async function saveManualEntry() {
+    // 1. 입력 필드에서 데이터 가져오기
+    const id = document.getElementById('edit-doc-id').value; 
+    const stu_id = parseInt(document.getElementById('m-id').value);
+    const stu_name = document.getElementById('m-name').value.trim();
+    const target_month = document.getElementById('m-month').value;
+    const type = document.getElementById('m-type').value;
+    
+    // 요일별 교시 데이터 (1, 2, 3타임 등)[cite: 2]
+    const daysData = {
+        mon: document.getElementById('m-mon').value.trim(),
+        tue: document.getElementById('m-tue').value.trim(),
+        wed: document.getElementById('m-wed').value.trim(),
+        thu: document.getElementById('m-thu').value.trim(),
+        fri: document.getElementById('m-fri').value.trim(),
+        sat: document.getElementById('m-sat').value.trim(),
+        sun: document.getElementById('m-sun').value.trim()
+    };
+
+    // [보안 강화] 학번과 이름이 입력되었는지 확인[cite: 2]
+    if (!stu_id || !stu_name) {
+        alert("학번과 이름을 모두 입력해야 합니다.");
+        return;
     }
+
+    try {
+        // [보안 강화] DB에 등록된 이름과 일치하는지 확인[cite: 2]
+        const { data: student, error: fetchError } = await supabaseClient
+            .from('applications')
+            .select('stu_name')
+            .eq('stu_id', stu_id)
+            .eq('target_month', target_month)
+            .maybeSingle();
+
+        if (fetchError) throw fetchError;
+
+        // 기존 데이터가 있는데 이름이 다를 경우 차단
+        if (student && student.stu_name !== stu_name) {
+            alert("보안 오류: 해당 학번으로 등록된 이름과 일치하지 않습니다.");
+            return;
+        }
+
+        // [형식 검사] 자율석 선택 시 교시 입력 여부 확인[cite: 2]
+        if (type === '자율석') {
+            const allEmpty = Object.values(daysData).every(val => val === "");
+            if (allEmpty) {
+                alert("자율석은 최소 하나 이상의 요일에 신청 교시(예: 1, 2)를 입력해야 합니다.");
+                return;
+            }
+        }
+
+        // 2. Supabase에 최종 저장 (upsert: 있으면 수정, 없으면 추가)[cite: 2]
+        const { error: saveError } = await supabaseClient
+            .from('applications')
+            .upsert({
+                id: id || undefined, 
+                stu_id,
+                stu_name,
+                target_month,
+                type,
+                ...daysData,
+                seat_num: document.getElementById('m-seatNum').value,
+                updated_at: new Date().toISOString()
+            });
+
+        if (saveError) throw saveError;
+
+        alert("성공적으로 저장되었습니다!");
+        
+        // 저장 후 모달창 닫기 및 목록 갱신 (함수가 정의되어 있는 경우)[cite: 2]
+        if (typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('manualEntryModal'));
+            if (modal) modal.hide();
+        }
+        if (typeof fetchDataAndRender === 'function') fetchDataAndRender();
+
+    } catch (err) {
+        console.error("저장 중 오류:", err);
+        alert("오류가 발생했습니다: " + err.message);
+    }
+}
+// --- 여기까지 복사해서 붙여넣으세요 ---
+
+
+
 
     async function closeMissingTags() {
         const targetDate = document.getElementById('daily-date').value; 
