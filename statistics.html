@@ -1241,40 +1241,31 @@ async function fetchYearlyData() {
 
 
 
-
-                [1, 2, 3].forEach(t => {
-                    const isApplied = appliedTimes.includes(String(t));
-                    
-                    // 기본 스타일 (미신청)
-                    let leftBg = "transparent", leftCol = "#ccc", borderColor = "#f0f0f0";
-                    let rightBg = "transparent";
-                    
-                   if (isApplied) {
+// ... (기존 openStudentCalendar 코드 중 타임 루프 부분)
+[1, 2, 3].forEach(t => {
+    const isApplied = appliedTimes.includes(String(t));
+    let leftBg = "transparent", leftCol = "#ccc", borderColor = "#f0f0f0";
+    let rightBg = "transparent";
+    
+    if (isApplied) {
         tApply++;
-        
-        // 해당 타임(t)이 실제로 인정되었는지 함수를 통해 확인
-        const recognizedCount = getRecognizedTimes(dailyLog, String(t));
-        
-        if (recognizedCount > 0) { 
+        // 🌟 수정된 판정 함수 호출 (개수가 아닌 '해당 타임'의 인정 여부 체크)
+        if (isThisTimeRecognized(dailyLog, t)) { 
             tPresent++;
-            rightBg = "var(--primary)"; 
+            rightBg = "var(--primary)"; // 인정 시 파란색
         } else {
-            rightBg = "#ff9999"; 
+            rightBg = "#ff9999"; // 미인정 시 분홍색
         }
+        leftCol = "#333";
+        borderColor = "#ddd";
     }
-
-
-
-
-
-                    
-                    // flex를 사용하여 2:1 (2/3, 1/3) 비율로 분할
-                    slotHtml += `
-                    <div style="display:flex; width:100%; height:18px; font-size:10px; font-weight:bold; border-radius:3px; overflow:hidden; border:1px solid ${borderColor}; margin-bottom:1px;">
-                        <div style="flex:2; display:flex; justify-content:center; align-items:center; background:${leftBg}; color:${leftCol};">${t}T</div>
-                        <div style="flex:1; background:${rightBg}; border-left:1px solid ${borderColor};"></div>
-                    </div>`;
-                });
+    
+    slotHtml += `
+    <div style="display:flex; width:100%; height:18px; font-size:10px; font-weight:bold; border-radius:3px; overflow:hidden; border:1px solid ${borderColor}; margin-bottom:1px;">
+        <div style="flex:2; display:flex; justify-content:center; align-items:center; background:${leftBg}; color:${leftCol};">${t}T</div>
+        <div style="flex:1; background:${rightBg}; border-left:1px solid ${borderColor};"></div>
+    </div>`;
+});
             }
             slotHtml += `</div>`;
 
@@ -1320,6 +1311,54 @@ let dateColor = dayIdx === 0 ? "color:#dc3545;" : (dayIdx === 6 ? "color:#0d6efd
         document.getElementById('sc-comment').innerText = comment;
     }
 
+
+    // 특정 타임(1, 2, 3)이 인정 기준을 충족하는지 개별 확인하는 함수
+function isThisTimeRecognized(log, targetTime) {
+    if (!log || log.status === "미입실" || log.status === "귀가(누락)") return false;[cite: 15]
+    
+    // 1. 수동 인정 확인: 해당 타임에 교사 승인 기록이 있는지 체크
+    if (log.history) {
+        const isManual = log.history.some(h => 
+            h.includes(`${targetTime}T귀가(교사)`) || h.includes(`${targetTime}T외출(교사)`)
+        );[cite: 15]
+        if (isManual) return true;[cite: 15]
+    }
+
+    // 2. 시간 기반 계산 (수동 인정이 없는 경우)
+    let finishMin = 0; 
+    if (log.status === "귀가" && log.history) {
+        for (let i = log.history.length - 1; i >= 0; i--) {
+            if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
+                const match = log.history[i].match(/(\d{2}:\d{2})/);
+                if (match) { 
+                    const [h, m] = match[1].split(':').map(Number);
+                    finishMin = h * 60 + m;[cite: 15]
+                    break; 
+                }
+            }
+        }
+    } else if (["입실", "복귀", "외출"].includes(log.status)) {
+        const now = new Date();
+        finishMin = now.getHours() * 60 + now.getMinutes();[cite: 15]
+    }
+
+    // 설정된 기준 시간과 비교
+    const timeToMin = (t) => { 
+        if (!t) return 0;
+        const [h, m] = t.split(':').map(Number); 
+        return h * 60 + m; 
+    };
+
+    const startStr = currentSchedule[`t${targetTime}`];[cite: 15]
+    const reqMin = parseInt(currentSchedule[`t${targetTime}_req`]) || 0;[cite: 15]
+    
+    if (startStr) {
+        const passMin = timeToMin(startStr) + reqMin;[cite: 15]
+        return finishMin >= passMin; // 기준 시간을 넘었을 때만 true 반환
+    }
+
+    return false;
+}
 
     // 🌟 특정 날짜를 클릭했을 때 상세 태그 흐름을 띄워주는 함수 (새로 추가) 🌟
     function openDailyDetail(dateStr, status, historyList) {
