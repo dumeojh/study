@@ -355,64 +355,123 @@ const { data: cal } = await supabaseClient.from('settings').select('value').eq('
     }
 
 
+// [수정] 연간 데이터 통합 집계 함수 (속도 및 정확도 개선)
+async function fetchYearlyData() {
+    const year = parseInt(document.getElementById('yearly-year').value);
+    if (!year) return;
 
-// ---------- [🌟 새로 추가된 공통 타임 계산 함수 🌟] ---------- //
+    document.getElementById('loading').style.display = 'block';
+    const tbody = document.getElementById('yearly-stat-body');
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding:40px;"><b>데이터를 통합 분석 중입니다... ⏳</b></td></tr>`;
+
+    try {
+        // 1. 필요한 설정값 동시 로드
+        const [{ data: cal }, { data: sched }] = await Promise.all([
+            supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle(),
+            supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle()
+        ]);
+
+        let calSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
+        if (cal?.value) {
+            calSchedule.data = JSON.parse(cal.value.data || "{}");
+            calSchedule.defaultDays = cal.value.defaultDays || [1, 2, 3, 4, 5];
+        }
+
+        // 2. 1년치(3월~12월) 데이터 통째로 가져오기
+        const targetMonths = Array.from({ length: 10 }, (_, i) => `${i + 3}월`);
+        const [appsRes, logsRes] = await Promise.all([
+            supabaseClient.from('applications').select('*').in('target_month', targetMonths),
+            supabaseClient.from('attendance_logs').select('date, status, stu_id, history').gte('date', `${year}-03-01`).lte('date', `${year}-12-31`)
+        ]);
+
+        const allApps = appsRes.data || [];
+        const allLogs = logsRes.data || [];
+        let yearlyStats = {};
+
+        // 3. 월별 루프 (메모리 내 계산)
+        for (let m = 3; m <= 12; m++) {
+            const monthPrefix = `${year}-${String(m).padStart(2, '0')}`;
+            const monthApps = allApps.filter(a => a.target_month === `${m}월`);
+            const monthLogs = allLogs.filter(l => l.date?.startsWith(monthPrefix));
+
+            const mStats = calculateMonthStats(year, m, monthApps, monthLogs, calSchedule);
+
+            for (let stuId in mStats) {
+                if (!yearlyStats[stuId]) {
+                    yearlyStats[stuId] = { 
+                        stu_id: stuId, 
+                        stu_name: mStats[stuId].stu_name, 
+                        total: 0,
+                        ...Object.fromEntries(Array.from({length:10}, (_,i)=>[`m${i+3}`, 0]))
+                    };
+                }
+                yearlyStats[stuId][`m${m}`] = mStats[stuId].attendedTimes;
+                yearlyStats[stuId].total += mStats[stuId].attendedTimes;
+            }
+        }
+
+        globalYearlyStatsData = Object.values(yearlyStats);
+        renderYearlyTable();
+
+    } catch (e) {
+        console.error("집계 오류:", e);
+        tbody.innerHTML = `<tr><td colspan="13" style="color:red; padding:20px;">데이터 로드 실패</td></tr>`;
+    } finally {
+        document.getElementById('loading').style.display = 'none';
+    }
+}
+
+// [보정] 타임 판정 로직 (모달과 통계 일치화)
 function getRecognizedTimes(log, appliedTimesStr) {
     if (!log || log.status === "미입실" || log.status === "귀가(누락)") return 0;
-    
-    // 🌟 [핵심 변경] 수동 인정된 태그가 있는지 먼저 확인
-    let manualRecognized = new Set();
+    if (!appliedTimesStr) return 0;
+
+    let appliedArray = appliedTimesStr.split(',').map(v => v.trim()).filter(v => v);
+    let recognizedCount = 0;
+
+    // 1. 교사 수동 인정 체크 (가장 우선)
     if (log.history) {
+        let manualSet = new Set();
         log.history.forEach(h => {
-            [1, 2, 3].forEach(t => {
-                if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`)) {
-                    manualRecognized.add(t);
-                }
+            appliedArray.forEach(t => {
+                if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`)) manualSet.add(t);
             });
         });
+        if (manualSet.size > 0) return manualSet.size;
     }
-    
-    // 만약 교사가 수동으로 인정한 기록이 있다면 그 개수를 우선 반환 (건너뛴 타임도 정확히 반영)
-    if (manualRecognized.size > 0) return manualRecognized.size;
 
-    // --------------------------------------------------
-    // 기존 키오스크 사용자를 위한 시간 기반 계산 로직 (유지)
-    let finishMin = 9999; 
+    // 2. 시간 기반 체크 (키오스크 귀가)
     if (log.status === "귀가" && log.history) {
+        let lastTimeStr = "";
         for (let i = log.history.length - 1; i >= 0; i--) {
             if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
                 const match = log.history[i].match(/(\d{2}:\d{2})/);
-                if (match) { 
-                    const [h, m] = match[1].split(':').map(Number);
-                    finishMin = h * 60 + m; 
-                    break; 
-                }
+                if (match) { lastTimeStr = match[1]; break; }
             }
         }
-    } else if (log.status === "입실" || log.status === "복귀" || log.status === "외출") {
-        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
-        if (log.date === todayStr) {
-            const now = new Date();
-            finishMin = now.getHours() * 60 + now.getMinutes();
+
+        if (lastTimeStr) {
+            const [h, m] = lastTimeStr.split(':').map(Number);
+            const finishMin = h * 60 + m;
+            const timeToMin = (t) => { const [sh, sm] = t.split(':').map(Number); return sh * 60 + sm; };
+
+            appliedArray.forEach(t => {
+                const startStr = currentSchedule[`t${t}`];
+                const reqMin = currentSchedule[`t${t}_req`] || 0;
+                if (startStr && finishMin >= (timeToMin(startStr) + reqMin)) recognizedCount++;
+            });
         }
+    } else if (["입실", "복귀", "외출"].includes(log.status)) {
+        // 현재 진행 중인 학생은 신청한 타임 중 이미 지난 타임들만 인정
+        // (이 부분은 통계 시점에 따라 0으로 둘지 선택 가능)
+        return 0; 
     }
 
-    const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
-    let recognizedCount = 0;
-
-    [1, 2, 3].forEach(t => {
-        if (appliedTimesStr.includes(String(t))) {
-            let startStr = currentSchedule[`t${t}`];
-            let reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0;
-            if (startStr && !isNaN(reqMin)) {
-                let passMin = timeToMin(startStr) + reqMin;
-                if (finishMin >= passMin) recognizedCount++;
-            }
-        }
-    });
     return recognizedCount;
 }
-// ------------------------------------------------------------- //
+
+
+
 
 
 
@@ -1068,75 +1127,12 @@ if (recognizedCount > 0) {
         return stats;
     }
 
-// 사용자가 '연간 데이터 집계' 버튼을 누르면 1년 치를 효율적으로 가져오는 함수
-async function fetchYearlyData() {
-    const year = parseInt(document.getElementById('yearly-year').value);
-    if (!year) return;
 
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('yearly-stat-body').innerHTML = `<tr><td colspan="13" style="color:#0d6efd; padding:40px; text-align:center; font-size:16px;"><b>데이터를 통합 집계 중입니다. 잠시만 기다려주세요... ⏳</b></td></tr>`;
 
-    try {
-        // 1. 달력 설정 가져오기 (기존 동일)
-        const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
-        let calSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
-        if (cal && cal.value) {
-            if (cal.value.data) calSchedule.data = JSON.parse(cal.value.data);
-            if (cal.value.defaultDays) calSchedule.defaultDays = cal.value.defaultDays;
-        }
+/////////////////////////
 
-        let yearlyStats = {}; // 학번별 누적 데이터
 
-        // 2. 통합 쿼리 준비: 3월~12월 리스트 생성
-        const targetMonths = Array.from({ length: 10 }, (_, i) => `${i + 3}월`);
-        const startDate = `${year}-03-01`;
-        const endDate = `${year}-12-31`;
 
-        // 3. 단 한 번의 호출로 1년 치 신청 내역과 출결 내역을 모두 가져옵니다
-        // .in() 연산자를 사용하여 여러 달을 동시에 조회합니다.
-        const [appsResponse, logsResponse] = await Promise.all([
-            supabaseClient.from('applications').select('*').in('target_month', targetMonths),
-            supabaseClient.from('attendance_logs').select('date, status, stu_id').gte('date', startDate).lte('date', endDate)
-        ]);
-
-        const allApps = appsResponse.data || [];
-        const allLogs = logsResponse.data || [];
-
-        // 4. 월별로 반복하며 메모리 내에서 데이터 필터링 및 계산
-        for (let m = 3; m <= 12; m++) {
-            const monthLabel = `${m}월`;
-            const monthPrefix = `${year}-${String(m).padStart(2, '0')}`;
-
-            // 해당 월에 해당하는 데이터만 메모리(배열)에서 추출
-            const monthApps = allApps.filter(a => a.target_month === monthLabel);
-            const monthLogs = allLogs.filter(l => l.date && l.date.startsWith(monthPrefix));
-
-            // 기존 계산 로직 활용[cite: 1]
-            const mStats = calculateMonthStats(year, m, monthApps, monthLogs, calSchedule);
-
-            // 결과 합산
-            for (let stuId in mStats) {
-                if (!yearlyStats[stuId]) {
-                    yearlyStats[stuId] = { stu_id: stuId, stu_name: mStats[stuId].stu_name, total: 0 };
-                    for (let i = 3; i <= 12; i++) yearlyStats[stuId][`m${i}`] = 0;
-                }
-                yearlyStats[stuId][`m${m}`] = mStats[stuId].attendedTimes;
-                yearlyStats[stuId].total += mStats[stuId].attendedTimes;
-            }
-        }
-
-        // 5. 렌더링 (기존 동일)[cite: 1]
-        globalYearlyStatsData = Object.values(yearlyStats);
-        renderYearlyTable();
-
-    } catch (e) {
-        console.error("연간 집계 오류:", e);
-        alert("연간 데이터 집계 중 오류가 발생했습니다.");
-        document.getElementById('yearly-stat-body').innerHTML = `<tr><td colspan="13" style="color:red; padding:20px; text-align:center;">오류가 발생했습니다. 잠시 후 다시 시도해주세요.</td></tr>`;
-    } finally {
-        document.getElementById('loading').style.display = 'none';
-    }
-}
 
     // 집계된 연간 데이터를 정렬하고 화면 표에 뿌려주는 함수
     function renderYearlyTable() {
