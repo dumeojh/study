@@ -397,6 +397,8 @@
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
     document.getElementById('daily-date').value = todayStr;
 
+
+
 // =========================================================
     // 2. 기초 데이터 불러오기 (도면 모드 선택 기능 적용)
     // =========================================================
@@ -487,6 +489,28 @@
                 };
             });
         }
+// 여기서부터 추가
+// 1. 현재 날짜의 '월' 정보를 가져옵니다 (예: 5)
+const currentMonth = new Date().getMonth() + 1; 
+
+// 2. 시스템에서 사용하는 형식인 'N월' 문자열을 만듭니다 (예: "5월")
+const currentMonthStr = currentMonth + "월";
+
+// 3. '월 선택' 드롭다운(select) 요소의 값을 현재 월로 변경합니다.
+const monthSelect = document.getElementById('filter-month');
+if (monthSelect) {
+    monthSelect.value = currentMonthStr;
+}
+
+// 4. '개별 수정/추가' 탭의 '적용 월' 항목도 현재 월로 변경해줍니다.
+const manualMonthSelect = document.getElementById('m-month');
+if (manualMonthSelect) {
+    manualMonthSelect.value = currentMonthStr;
+}
+// 여기까지 추가(끝)
+
+
+        // 5. 변경된 필터 조건으로 테이블을 다시 그립니다.
         renderStatusTable();
     }
 
