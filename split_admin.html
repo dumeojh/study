@@ -229,21 +229,50 @@
         </div>
     </div>
 
-    <div id="tab-status" class="tab-content">
-        <select id="filter-month" onchange="renderStatusTable()" style="padding:8px; margin-bottom:10px; border-radius:5px; border:1px solid #ddd;">
-            <option value="all">전체보기</option>
-            <option value="1월">1월</option><option value="2월">2월</option><option value="3월">3월</option>
-            <option value="4월" selected>4월</option><option value="5월">5월</option><option value="6월">6월</option>
-            <option value="7월">7월</option><option value="8월">8월</option><option value="9월">9월</option>
-            <option value="10월">10월</option><option value="11월">11월</option><option value="12월">12월</option>
-        </select>
-        <div style="overflow-x:auto;">
-            <table>
-                <thead><tr><th>월</th><th>학번</th><th>이름</th><th>종류</th><th>좌석</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th><th>일</th></tr></thead>
-                <tbody id="status-body"></tbody>
-            </table>
+<!-- tab-status 컨텐츠 영역 수정 -->
+<div id="tab-status" class="tab-content">
+    <div class="form-card" style="margin-bottom: 15px; padding: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+        <!-- 월 선택 (기존) -->
+        <div>
+            <b style="color: #555;">📅 월 선택:</b>
+            <select id="filter-month" onchange="renderStatusTable()" style="padding:8px; border-radius:5px; border:1px solid #ddd; margin-left: 5px;">
+                <option value="all">전체보기</option>
+                <option value="1월">1월</option><option value="2월">2월</option><option value="3월">3월</option>
+                <option value="4월" selected>4월</option><option value="5월">5월</option><option value="6월">6월</option>
+                <option value="7월">7월</option><option value="8월">8월</option><option value="9월">9월</option>
+                <option value="10월">10월</option><option value="11월">11월</option><option value="12월">12월</option>
+            </select>
+        </div>
+
+        <!-- 반별 조회 추가 -->
+        <div>
+            <b style="color: #555;">🏫 반별 조회:</b>
+            <select id="filter-class" onchange="renderStatusTable()" style="padding:8px; border-radius:5px; border:1px solid #ddd; margin-left: 5px;">
+                <option value="all">전체 반</option>
+                <option value="1">1반</option><option value="2">2반</option>
+                <option value="3">3반</option><option value="4">4반</option>
+                <option value="5">5반</option><option value="6">6반</option>
+            </select>
+        </div>
+
+        <!-- 이름/학번 검색 추가 -->
+        <div style="flex-grow: 1;">
+            <b style="color: #555;">🔍 검색:</b>
+            <input type="text" id="search-status-list" placeholder="이름 또는 학번 입력" onkeyup="renderStatusTable()" 
+                   style="padding: 8px; border-radius: 5px; border: 1px solid #ddd; margin-left: 5px; width: 200px;">
         </div>
     </div>
+
+    <div style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>월</th><th>학번</th><th>이름</th><th>종류</th><th>좌석</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th><th>일</th></tr></thead>
+            <tbody id="status-body"></tbody>
+        </table>
+    </div>
+</div>
+
+
+
 
     <div id="tab-manual" class="tab-content">
         <div class="form-card">
@@ -1400,16 +1429,61 @@ function openDailyStatus(stuId, stuName, seatNum, phone) {
         document.getElementById('c-comment').innerText = rate >= 80 ? "✨ 매우 성실한 학생입니다." : "⚠️ 정기적인 참여가 필요합니다.";
     }
 
-    function renderStatusTable() {
-        const tbody = document.getElementById('status-body'); tbody.innerHTML = "";
-        const month = document.getElementById('filter-month').value;
-        Object.keys(applicationData).map(id => applicationData[id]).sort((a,b)=>String(a.stuId).localeCompare(String(b.stuId))).forEach(d => {
-            if(month !== "all" && d.targetMonth !== month) return;
+function renderStatusTable() {
+    const tbody = document.getElementById('status-body'); 
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    // 필터링 기준값 가져오기
+    const month = document.getElementById('filter-month').value;
+    const classFilter = document.getElementById('filter-class').value;
+    const searchKeyword = document.getElementById('search-status-list').value.trim();
+
+    Object.keys(applicationData)
+        .map(id => applicationData[id])
+        .sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)))
+        .forEach(d => {
+            // 1. 월 필터링
+            if (month !== "all" && d.targetMonth !== month) return;
+
+            // 2. 반 필터링 (학번이 3학년 1반이면 31xx 형태라고 가정)
+            // 학번의 앞 두자리(학년+반) 중 '반' 부분만 추출하거나, 
+            // 안성여고 학번 체계에 따라 d.stuId.toString().substring(1, 2) 등으로 조정 가능합니다.
+            if (classFilter !== "all") {
+                const stuIdStr = String(d.stuId);
+                // 일반적인 학번 체계(GBCN)에서 2번째 자리가 '반'인 경우 예시
+                const classNum = stuIdStr.length >= 2 ? stuIdStr.substring(1, 2) : "";
+                if (classNum !== classFilter) return;
+            }
+
+            // 3. 이름 또는 학번 검색 필터링
+            if (searchKeyword !== "") {
+                const matchName = String(d.stuName).includes(searchKeyword);
+                const matchId = String(d.stuId).includes(searchKeyword);
+                if (!matchName && !matchId) return;
+            }
+
+            // 테이블 행 생성 (기존 로직 유지)
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${d.targetMonth}</td><td onclick="fillEditForm('${d.docId}')" style="cursor:pointer; color:var(--primary);">${d.stuId}</td><td onclick="openCounsel('${d.docId}')" style="cursor:pointer; font-weight:bold;">${d.stuName}</td><td>${d.type}</td><td>${d.seatNum||'-'}</td><td>${d.mon||''}</td><td>${d.tue||''}</td><td>${d.wed||''}</td><td>${d.thu||''}</td><td>${d.fri||''}</td><td>${d.sat||''}</td><td>${d.sun||''}</td>`;
+            tr.innerHTML = `
+                <td>${d.targetMonth}</td>
+                <td onclick="fillEditForm('${d.docId}')" style="cursor:pointer; color:var(--primary);">${d.stuId}</td>
+                <td onclick="openCounsel('${d.docId}')" style="cursor:pointer; font-weight:bold;">${d.stuName}</td>
+                <td>${d.type}</td>
+                <td>${d.seatNum||'-'}</td>
+                <td>${d.mon||''}</td>
+                <td>${d.tue||''}</td>
+                <td>${d.wed||''}</td>
+                <td>${d.thu||''}</td>
+                <td>${d.fri||''}</td>
+                <td>${d.sat||''}</td>
+                <td>${d.sun||''}</td>
+            `;
             tbody.appendChild(tr);
         });
-    }
+}
+
+
 
     function fillEditForm(id) {
         const d = applicationData[id]; document.getElementById('edit-doc-id').value = id;
@@ -1486,7 +1560,7 @@ async function saveManualEntry() {
 
         alert("데이터가 성공적으로 저장되었습니다!");
         resetManualForm();
-        renderStatusTable();
+        renderStatusTable(); //F5 새로고침 효과
 
     } catch (err) {
         alert("저장 중 오류 발생: " + err.message);
