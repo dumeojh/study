@@ -1178,136 +1178,132 @@ if (recognizedCount > 0) {
         document.getElementById('yearly-stat-body').innerHTML = html;
     }
 
-    // 🌟 학생 이름을 클릭했을 때 달력을 띄워주는 함수 (새로 추가) 🌟
-    function openStudentCalendar(stuId, stuName) {
-        const picker = document.getElementById('month-picker').value;
-        if (!picker) return;
-        const [year, month] = picker.split('-').map(Number);
-        
-        document.getElementById('student-calendar-modal').style.display = 'flex';
-        document.getElementById('sc-title').innerText = `🧑‍🎓 ${stuName} (${stuId}) - ${month}월 출결 달력`;
-
-        // 이번 달 데이터에서 해당 학생의 신청 내역 및 출결 로그 추출
-        const studentApp = applicationData.find(app => String(app.stu_id) === String(stuId));
-        const studentLogs = attendanceLogsData.filter(log => String(log.stu_id) === String(stuId));
-
-        const firstDay = new Date(year, month - 1, 1).getDay();
-        const lastDate = new Date(year, month, 0).getDate();
-        const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-
-        // 달력 테이블 헤더
-        let html = `<table class="stat-calendar" style="height:auto;">
-            <thead>
-                <tr>
-                    <th style="color:#dc3545; padding:8px;">일</th><th style="padding:8px;">월</th><th style="padding:8px;">화</th>
-                    <th style="padding:8px;">수</th><th style="padding:8px;">목</th><th style="padding:8px;">금</th><th style="color:#0d6efd; padding:8px;">토</th>
-                </tr>
-            </thead>
-            <tbody><tr>`;
-        
-        let tApply = 0, tPresent = 0;
-
-        for(let i = 0; i < firstDay; i++) html += `<td style="height:70px;"></td>`;
-
-        for(let d = 1; d <= lastDate; d++) {
-            const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const dayIdx = new Date(year, month - 1, d).getDay();
-            const dayKey = daysEng[dayIdx];
 
 
+    /////////////////////////////////////////////
+function openStudentCalendar(stuId, stuName) {
+    const picker = document.getElementById('month-picker').value;
+    if (!picker) return;
+    const [year, month] = picker.split('-').map(Number);
+    
+    document.getElementById('student-calendar-modal').style.display = 'flex';
+    document.getElementById('sc-title').innerText = `🧑‍🎓 ${stuName} (${stuId}) - ${month}월 출결 달력`;
 
-// 운영 요일 및 공휴일 체크
-            let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
-            let reason = "";
-            if (calendarSchedule.data[dateStr] !== undefined) {
-                isOperating = calendarSchedule.data[dateStr].active;
-                reason = calendarSchedule.data[dateStr].reason;
-            }
+    // 데이터 추출 시 타입 일관성 확보
+    const studentApp = applicationData.find(app => String(app.stu_id) === String(stuId));
+    const studentLogs = attendanceLogsData.filter(log => String(log.stu_id) === String(stuId));
 
-            // 🌟 (수정됨) dailyLog를 밖으로 꺼내서 오류 해결!
-            const dailyLog = studentLogs.find(l => l.date === dateStr);
+    const firstDay = new Date(year, month - 1, 1).getDay();
+    const lastDate = new Date(year, month, 0).getDate();
+    const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
-            let slotHtml = `<div style="display:flex; flex-direction:column; gap:2px; margin-top:2px;">`;
+    let html = `<table class="stat-calendar" style="height:auto;">
+        <thead>
+            <tr>
+                <th style="color:#dc3545; padding:8px;">일</th><th style="padding:8px;">월</th><th style="padding:8px;">화</th>
+                <th style="padding:8px;">수</th><th style="padding:8px;">목</th><th style="padding:8px;">금</th><th style="color:#0d6efd; padding:8px;">토</th>
+            </tr>
+        </thead>
+        <tbody><tr>`;
+    
+    let tApply = 0, tPresent = 0;
 
-            if (!isOperating) {
-                slotHtml += `<div style="font-size:9px; color:#dc3545; font-weight:bold; margin-top:10px; text-align:center;">${reason || "미운영"}</div>`;
-            } else {
-                const appliedTimes = (studentApp && studentApp[dayKey]) ? studentApp[dayKey].split(',').filter(v => v) : [];
-                const isLogPresent = dailyLog && dailyLog.status !== "미입실"; // 미입실 빼고 모두 참석으로 간주
+    for(let i = 0; i < firstDay; i++) html += `<td style="height:70px;"></td>`;
 
-                [1, 2, 3].forEach(t => {
-                    const isApplied = appliedTimes.includes(String(t));
-                    
-                    // 기본 스타일 (미신청)
-                    let leftBg = "transparent", leftCol = "#ccc", borderColor = "#f0f0f0";
-                    let rightBg = "transparent";
-                    
-                    if (isApplied) {
-                        tApply++;
-                        // 신청한 경우 왼쪽 부분 (2/3) 스타일
-                        leftBg = "#f8f9fa"; 
-                        leftCol = "#333";
-                        borderColor = "#ced4da";
-                        
-                        if (isLogPresent) {
-                            tPresent++;
-                            rightBg = "var(--primary)"; // 참석 (파란색)
-                        } else {
-                            rightBg = "#ff9999"; // 결석 (파스텔톤 빨간색)
-                        }
-                    }
-                    
-                    // flex를 사용하여 2:1 (2/3, 1/3) 비율로 분할
-                    slotHtml += `
-                    <div style="display:flex; width:100%; height:18px; font-size:10px; font-weight:bold; border-radius:3px; overflow:hidden; border:1px solid ${borderColor}; margin-bottom:1px;">
-                        <div style="flex:2; display:flex; justify-content:center; align-items:center; background:${leftBg}; color:${leftCol};">${t}T</div>
-                        <div style="flex:1; background:${rightBg}; border-left:1px solid ${borderColor};"></div>
-                    </div>`;
-                });
-            }
-            slotHtml += `</div>`;
+    for(let d = 1; d <= lastDate; d++) {
+        const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dayIdx = new Date(year, month - 1, d).getDay();
+        const dayKey = daysEng[dayIdx];
 
+        let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
+        let reason = "";
+        if (calendarSchedule.data[dateStr] !== undefined) {
+            isOperating = calendarSchedule.data[dateStr].active;
+            reason = calendarSchedule.data[dateStr].reason;
+        }
 
+        const dailyLog = studentLogs.find(l => l.date === dateStr);
+        let slotHtml = `<div style="display:flex; flex-direction:column; gap:2px; margin-top:2px;">`;
 
-let dateColor = dayIdx === 0 ? "color:#dc3545;" : (dayIdx === 6 ? "color:#0d6efd;" : "color:#333;");
+        if (!isOperating) {
+            slotHtml += `<div style="font-size:9px; color:#dc3545; font-weight:bold; margin-top:10px; text-align:center;">${reason || "미운영"}</div>`;
+        } else {
+            // 신청한 타임들 배열화 (예: ["1", "2"])
+            const appliedStr = (studentApp && studentApp[dayKey]) ? studentApp[dayKey] : "";
+            const appliedTimes = appliedStr.split(',').filter(v => v.trim());
             
-            // 🌟 (추가) 클릭 시 넘겨줄 데이터 추출
-            const statusVal = dailyLog ? dailyLog.status : '미입실';
-            const historyArrStr = (dailyLog && dailyLog.history) ? JSON.stringify(dailyLog.history).replace(/"/g, '&quot;') : '[]';
+            // 🌟 통계 일관성: 메인 화면과 동일한 '인정 타임 수' 계산 함수 호출
+            // 만약 getRecognizedTimes 함수가 전역에 없다면, 메인 로직의 해당 부분을 참조해야 함
+            const recognizedCount = (typeof getRecognizedTimes === 'function') 
+                                    ? getRecognizedTimes(dailyLog, appliedStr) 
+                                    : (dailyLog && dailyLog.status !== "미입실" ? appliedTimes.length : 0);
 
-            html += `<td style="height:70px; padding:6px; vertical-align:top; background:white; cursor:pointer; transition:0.2s;"
-                         onclick="openDailyDetail('${dateStr}', '${statusVal}', ${historyArrStr})"
-                         onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
-                        <div style="font-weight:bold; margin-bottom:2px; font-size:12px; ${dateColor}">${d}</div>
-                        ${slotHtml}
-                    </td>`;           
-
-
-
-            if ((firstDay + d) % 7 === 0) html += `</tr><tr>`;
+            [1, 2, 3].forEach(t => {
+                const isApplied = appliedTimes.includes(String(t));
+                let leftBg = "transparent", leftCol = "#ccc", borderColor = "#f0f0f0", rightBg = "transparent";
+                
+                if (isApplied) {
+                    tApply++;
+                    leftBg = "#f8f9fa"; leftCol = "#333"; borderColor = "#ced4da";
+                    
+                    // 신청 순서에 따른 인정 여부 판정
+                    const appliedIndex = appliedTimes.indexOf(String(t)) + 1;
+                    if (appliedIndex <= recognizedCount) {
+                        rightBg = "var(--primary)"; // 출석 인정
+                        tPresent++;
+                    } else {
+                        rightBg = "#ff9999"; // 결석 혹은 인정 시간 미달
+                    }
+                }
+                
+                slotHtml += `
+                <div style="display:flex; width:100%; height:18px; font-size:10px; font-weight:bold; border-radius:3px; overflow:hidden; border:1px solid ${borderColor}; margin-bottom:1px;">
+                    <div style="flex:2; display:flex; justify-content:center; align-items:center; background:${leftBg}; color:${leftCol};">${t}T</div>
+                    <div style="flex:1; background:${rightBg}; border-left:1px solid ${borderColor};"></div>
+                </div>`;
+            });
         }
+        slotHtml += `</div>`;
 
-        const lastDayIdx = new Date(year, month - 1, lastDate).getDay();
-        if (lastDayIdx < 6) {
-            for (let i = lastDayIdx + 1; i <= 6; i++) html += `<td style="height:70px;"></td>`;
-        }
+        let dateColor = dayIdx === 0 ? "color:#dc3545;" : (dayIdx === 6 ? "color:#0d6efd;" : "color:#333;");
+        const statusVal = dailyLog ? dailyLog.status : '미입실';
+        const historyArrStr = (dailyLog && dailyLog.history) ? JSON.stringify(dailyLog.history).replace(/"/g, '&quot;') : '[]';
 
-        html += `</tr></tbody></table>`;
-        document.getElementById('sc-calendar-area').innerHTML = html;
-        
-        const rate = tApply > 0 ? Math.round((tPresent / tApply) * 100) : 0;
-        document.getElementById('sc-total-apply').innerText = tApply;
-        document.getElementById('sc-total-present').innerText = tPresent;
-        document.getElementById('sc-rate').innerText = rate + "%";
-        
-        let comment = "이번 달 신청 데이터가 없습니다.";
-        if (tApply > 0) {
-            if (rate >= 80) comment = "✨ 훌륭합니다! 성실하게 참여하고 있습니다.";
-            else if (rate >= 60) comment = "🙂 무난하게 참여 중이나, 결석한 날의 사유 확인이 필요합니다.";
-            else comment = "🚨 잦은 결석이 확인됩니다! 학생과의 깊은 상담을 권장합니다.";
-        }
-        document.getElementById('sc-comment').innerText = comment;
+        html += `<td style="height:70px; padding:6px; vertical-align:top; background:white; cursor:pointer; transition:0.2s;"
+                     onclick="openDailyDetail('${dateStr}', '${statusVal}', ${historyArrStr})"
+                     onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
+                    <div style="font-weight:bold; margin-bottom:2px; font-size:12px; ${dateColor}">${d}</div>
+                    ${slotHtml}
+                </td>`;           
+
+        if ((firstDay + d) % 7 === 0) html += `</tr><tr>`;
     }
+
+    // (이하 마무리 코드는 동일)
+    const lastDayIdx = new Date(year, month - 1, lastDate).getDay();
+    if (lastDayIdx < 6) {
+        for (let i = lastDayIdx + 1; i <= 6; i++) html += `<td style="height:70px;"></td>`;
+    }
+    html += `</tr></tbody></table>`;
+    document.getElementById('sc-calendar-area').innerHTML = html;
+    
+    const rate = tApply > 0 ? Math.round((tPresent / tApply) * 100) : 0;
+    document.getElementById('sc-total-apply').innerText = tApply;
+    document.getElementById('sc-total-present').innerText = tPresent;
+    document.getElementById('sc-rate').innerText = rate + "%";
+    
+    let comment = "이번 달 신청 데이터가 없습니다.";
+    if (tApply > 0) {
+        if (rate >= 80) comment = "✨ 훌륭합니다! 성실하게 참여하고 있습니다.";
+        else if (rate >= 60) comment = "🙂 무난하게 참여 중이나, 결석한 날의 사유 확인이 필요합니다.";
+        else comment = "🚨 잦은 결석이 확인됩니다! 학생과의 깊은 상담을 권장합니다.";
+    }
+    document.getElementById('sc-comment').innerText = comment;
+}
+
+
+
+
 
 
     // 🌟 특정 날짜를 클릭했을 때 상세 태그 흐름을 띄워주는 함수 (새로 추가) 🌟
