@@ -1487,60 +1487,97 @@ function openDailyStatus(stuId, stuName, seatNum, phone) {
         document.getElementById('c-comment').innerText = rate >= 80 ? "✨ 매우 성실한 학생입니다." : "⚠️ 정기적인 참여가 필요합니다.";
     }
 
-function renderStatusTable() {
+/**
+ * DB에서 최신 데이터를 가져와서 테이블을 다시 그리는 함수
+ * async를 붙여 서버 응답을 기다릴 수 있게 합니다.
+ */
+async function renderStatusTable() {
     const tbody = document.getElementById('status-body'); 
     if (!tbody) return;
-    tbody.innerHTML = "";
 
-    // 필터링 기준값 가져오기
-    const month = document.getElementById('filter-month').value;
-    const classFilter = document.getElementById('filter-class').value;
-    const searchKeyword = document.getElementById('search-status-list').value.trim();
+    // 1. 사용자에게 데이터를 불러오는 중임을 알림
+    tbody.innerHTML = "<tr><td colspan='12' style='text-align:center;'>데이터 동기화 중...</td></tr>";
 
-    Object.keys(applicationData)
-        .map(id => applicationData[id])
-        .sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)))
-        .forEach(d => {
-            // 1. 월 필터링
-            if (month !== "all" && d.targetMonth !== month) return;
+    try {
+        // 2. Supabase에서 전체 데이터를 새로 가져옴
+        // (팁: 성능을 위해 현재 선택된 달(filter-month) 데이터만 select 하는 것이 더 좋습니다)
+        const { data, error } = await supabaseClient
+            .from('applications')
+            .select('*');
 
-            // 2. 반 필터링 (학번이 3학년 1반이면 31xx 형태라고 가정)
-            // 학번의 앞 두자리(학년+반) 중 '반' 부분만 추출하거나, 
-            // 안성여고 학번 체계에 따라 d.stuId.toString().substring(1, 2) 등으로 조정 가능합니다.
-            if (classFilter !== "all") {
-                const stuIdStr = String(d.stuId);
-                // 일반적인 학번 체계(GBCN)에서 2번째 자리가 '반'인 경우 예시
-                const classNum = stuIdStr.length >= 2 ? stuIdStr.substring(1, 2) : "";
-                if (classNum !== classFilter) return;
-            }
+        if (error) throw error;
 
-            // 3. 이름 또는 학번 검색 필터링
-            if (searchKeyword !== "") {
-                const matchName = String(d.stuName).includes(searchKeyword);
-                const matchId = String(d.stuId).includes(searchKeyword);
-                if (!matchName && !matchId) return;
-            }
-
-            // 테이블 행 생성 (기존 로직 유지)
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${d.targetMonth}</td>
-                <td onclick="fillEditForm('${d.docId}')" style="cursor:pointer; color:var(--primary);">${d.stuId}</td>
-                <td onclick="openCounsel('${d.docId}')" style="cursor:pointer; font-weight:bold;">${d.stuName}</td>
-                <td>${d.type}</td>
-                <td>${d.seatNum||'-'}</td>
-                <td>${d.mon||''}</td>
-                <td>${d.tue||''}</td>
-                <td>${d.wed||''}</td>
-                <td>${d.thu||''}</td>
-                <td>${d.fri||''}</td>
-                <td>${d.sat||''}</td>
-                <td>${d.sun||''}</td>
-            `;
-            tbody.appendChild(tr);
+        // 3. 서버 데이터를 기존 앱에서 사용하는 applicationData 형식으로 변환
+        // 이 과정이 있어야 기존의 필터링 로직이 정상 작동합니다.
+        const freshData = {};
+        data.forEach(item => {
+            freshData[item.id] = {
+                docId: item.id,
+                stuId: item.stu_id,
+                stuName: item.stu_name,
+                targetMonth: item.target_month,
+                type: item.type,
+                seatNum: item.seat_num,
+                mon: item.mon, tue: item.tue, wed: item.wed, 
+                thu: item.thu, fri: item.fri, sat: item.sat, sun: item.sun
+            };
         });
-}
 
+        // 전역 변수 갱신
+        applicationData = freshData;
+
+        // 4. 화면 초기화 및 필터링 시작
+        tbody.innerHTML = "";
+        const month = document.getElementById('filter-month').value;
+        const classFilter = document.getElementById('filter-class').value;
+        const searchKeyword = document.getElementById('search-status-list').value.trim();
+
+        // 5. 데이터를 순회하며 테이블 행 생성 (기존 필터 로직 유지)
+        Object.keys(applicationData)
+            .map(id => applicationData[id])
+            .sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)))
+            .forEach(d => {
+                // 월 필터링
+                if (month !== "all" && d.targetMonth !== month) return;
+
+                // 반 필터링
+                if (classFilter !== "all") {
+                    const stuIdStr = String(d.stuId);
+                    const classNum = stuIdStr.length >= 2 ? stuIdStr.substring(1, 2) : "";
+                    if (classNum !== classFilter) return;
+                }
+
+                // 이름 또는 학번 검색 필터링
+                if (searchKeyword !== "") {
+                    const matchName = String(d.stuName).includes(searchKeyword);
+                    const matchId = String(d.stuId).includes(searchKeyword);
+                    if (!matchName && !matchId) return;
+                }
+
+                // 6. 실제 행(Row) 생성
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${d.targetMonth}</td>
+                    <td onclick="fillEditForm('${d.docId}')" style="cursor:pointer; color:var(--primary);">${d.stuId}</td>
+                    <td onclick="openCounsel('${d.docId}')" style="cursor:pointer; font-weight:bold;">${d.stuName}</td>
+                    <td>${d.type}</td>
+                    <td>${d.seatNum || '-'}</td>
+                    <td>${d.mon || ''}</td>
+                    <td>${d.tue || ''}</td>
+                    <td>${d.wed || ''}</td>
+                    <td>${d.thu || ''}</td>
+                    <td>${d.fri || ''}</td>
+                    <td>${d.sat || ''}</td>
+                    <td>${d.sun || ''}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+    } catch (err) {
+        console.error("데이터 로드 오류:", err);
+        tbody.innerHTML = `<tr><td colspan='12' style='color:red; text-align:center;'>오류 발생: ${err.message}</td></tr>`;
+    }
+}
 
 
     function fillEditForm(id) {
