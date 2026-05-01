@@ -1239,6 +1239,9 @@ async function fetchYearlyData() {
                 const appliedTimes = (studentApp && studentApp[dayKey]) ? studentApp[dayKey].split(',').filter(v => v) : [];
                 const isLogPresent = dailyLog && dailyLog.status !== "미입실"; // 미입실 빼고 모두 참석으로 간주
 
+
+
+
                 [1, 2, 3].forEach(t => {
                     const isApplied = appliedTimes.includes(String(t));
                     
@@ -1246,20 +1249,24 @@ async function fetchYearlyData() {
                     let leftBg = "transparent", leftCol = "#ccc", borderColor = "#f0f0f0";
                     let rightBg = "transparent";
                     
-                    if (isApplied) {
-                        tApply++;
-                        // 신청한 경우 왼쪽 부분 (2/3) 스타일
-                        leftBg = "#f8f9fa"; 
-                        leftCol = "#333";
-                        borderColor = "#ced4da";
-                        
-                        if (isLogPresent) {
-                            tPresent++;
-                            rightBg = "var(--primary)"; // 참석 (파란색)
-                        } else {
-                            rightBg = "#ff9999"; // 결석 (파스텔톤 빨간색)
-                        }
-                    }
+                   if (isApplied) {
+        tApply++;
+        
+        // 해당 타임(t)이 실제로 인정되었는지 함수를 통해 확인
+        const recognizedCount = getRecognizedTimes(dailyLog, String(t));
+        
+        if (recognizedCount > 0) { 
+            tPresent++;
+            rightBg = "var(--primary)"; 
+        } else {
+            rightBg = "#ff9999"; 
+        }
+    }
+
+
+
+
+
                     
                     // flex를 사용하여 2:1 (2/3, 1/3) 비율로 분할
                     slotHtml += `
