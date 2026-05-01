@@ -1600,31 +1600,50 @@ async function saveManualEntry() {
             return;
         }
 
-        // 2. Supabase 저장 실행[cite: 2]
-        const { error: saveError } = await supabaseClient
-            .from('applications')
-            .upsert({
-                id: id || undefined, // 수정 시에는 기존 ID 사용
-                stu_id,
-                stu_name,
-                target_month,
-                type,
-                ...daysData,
-                seat_num: document.getElementById('m-seatNum').value,
-                updated_at: new Date().toISOString()
-            });
 
-        if (saveError) throw saveError;
+
+// 2. Supabase 저장 실행 (upsert 대신 update/insert 명확히 분리)
+        
+        // 데이터베이스에 전송할 객체 구성
+        const payload = {
+            stu_id: stu_id,
+            stu_name: stu_name,
+            target_month: target_month,
+            type: type,
+            ...daysData,
+            // [핵심] 자율석으로 변경 시 기존 고정 좌석 번호를 비워주어 현황판 오류 방지
+            seat_num: type === '자율석' ? null : document.getElementById('m-seatNum').value,
+            updated_at: new Date().toISOString()
+        };
+
+        if (id) {
+            // [수정 모드] edit-doc-id 값이 있을 경우 명확하게 update 수행
+            const { error: updateError } = await supabaseClient
+                .from('applications')
+                .update(payload)
+                .eq('id', id); // 만약 DB의 id 컬럼이 숫자형(int8)이라면 parseInt(id)로 변경
+
+            if (updateError) throw updateError;
+        } else {
+            // [신규 모드] 기존 데이터가 없을 경우 insert 수행
+            const { error: insertError } = await supabaseClient
+                .from('applications')
+                .insert([payload]);
+
+            if (insertError) throw insertError;
+        }
 
         alert("데이터가 성공적으로 저장되었습니다!");
         resetManualForm();
-        renderStatusTable(); //F5 새로고침 효과
+        
+        // [중요] renderStatusTable() 함수 내부에서 Supabase 데이터를 
+        // 다시 fetch(select) 하고 있는지 꼭 확인해야 합니다.
+        renderStatusTable(); 
 
     } catch (err) {
         alert("저장 중 오류 발생: " + err.message);
     }
-} 
-
+}
 
 
     async function closeMissingTags() {
