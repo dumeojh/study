@@ -574,6 +574,9 @@ async function manualSessionCredit() {
     async function loadDailyDataAndRender() {
         const dateStr = document.getElementById('daily-date').value;
 
+// [추가] 날짜 변경 시 일일 현황 탭의 제목 레이블도 즉시 동기화
+    updateDailyListDateLabel(dateStr);
+
         const { data: logs } = await supabaseClient.from('attendance_logs').select('*').eq('date', dateStr);
         attendanceLogsData = {};
         if (logs) {
@@ -599,6 +602,18 @@ async function manualSessionCredit() {
         renderDailySupervisorMap();
         renderDailyList();
     }
+
+// 2. 날짜 레이블 업데이트 전용 함수 추가
+function updateDailyListDateLabel(dateStr) {
+    const dateDisplayEl = document.getElementById('daily-list-date-display');
+    if (dateDisplayEl) {
+        const targetDateObj = new Date(dateStr);
+        const daysKor = ['일', '월', '화', '수', '목', '금', '토'];
+        dateDisplayEl.innerText = `📅 ${targetDateObj.getFullYear()}년 ${targetDateObj.getMonth() + 1}월 ${targetDateObj.getDate()}일 (${daysKor[targetDateObj.getDay()]}요일) 일일 현황`;
+    }
+}
+
+
 
     fetchBaseData().then(() => {
         loadDailyDataAndRender();
@@ -854,6 +869,9 @@ let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
         tbody.innerHTML = '';
         
         const targetDateStr = document.getElementById('daily-date').value;
+
+        // [수정] 렌더링 시점에 다시 한번 날짜 레이블 확인 (동기화 보장)
+    updateDailyListDateLabel(targetDateStr);
 
 // 🌟 추가: 오늘이 운영일인지 확인하는 로직
     const dayIdx = new Date(targetDateStr).getDay();
