@@ -854,6 +854,22 @@ let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
         tbody.innerHTML = '';
         
         const targetDateStr = document.getElementById('daily-date').value;
+
+// 🌟 추가: 오늘이 운영일인지 확인하는 로직
+    const dayIdx = new Date(targetDateStr).getDay();
+    let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
+    if (globalCalendarSchedule.data[targetDateStr] !== undefined) {
+        isOperating = globalCalendarSchedule.data[targetDateStr].active;
+    }
+
+    // 🌟 운영하지 않는 날이면 명단 출력을 중단함
+    if (!isOperating) {
+        const tbody = document.getElementById('daily-list-body');
+        tbody.innerHTML = '<tr><td colspan="7" style="padding:50px; color:var(--danger); font-weight:bold;">🚨 오늘은 운영일이 아니므로 명단이 표시되지 않습니다.</td></tr>';
+        document.getElementById('daily-list-summary').innerText = "운영 중지일";
+        return; 
+    }
+
         const targetDateObj = new Date(targetDateStr);
         const targetDay = ['sun','mon','tue','wed','thu','fri','sat'][targetDateObj.getDay()];
         const targetMonthStr = (targetDateObj.getMonth() + 1) + "월";
