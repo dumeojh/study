@@ -718,6 +718,7 @@
         // 1. [신규] 명단에서 존재하는 학년/반을 추출하여 드롭다운 목록을 만드는 함수
         function updateClassFilterOptions() {
             const select = document.getElementById('class-filter-select');
+            if (!select) return; // 요소가 없으면 중단
             const classes = new Set();
 
             // 학번 앞 2자리(학년+반) 추출 (예: 3701 -> 37)
@@ -726,6 +727,8 @@
                     classes.add(String(stu.id).substring(0, 2));
                 }
             });
+
+
 
             // 정렬 후 옵션 추가
             const sortedClasses = Array.from(classes).sort();
@@ -745,8 +748,8 @@
 
             rows.forEach(row => {
                 // 행에서 학번(2번째 셀)과 이름(4번째 셀) 텍스트 추출
-                const stuId = row.cells[2].innerText;
-                const stuName = row.cells[3].innerText.toLowerCase();
+                const stuId = row.cells[1].innerText;
+                const stuName = row.cells[2].innerText.toLowerCase();
 
                 // 필터 조건 확인 (반 일치 여부 && 검색어 포함 여부)
                 const matchClass = (classTerm === "" || stuId.startsWith(classTerm));
