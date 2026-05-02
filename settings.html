@@ -295,7 +295,7 @@
     </div>
 </div>
 
-
+<!-- ▼ 여기서부터 복사하세요 ▼ -->
 <div id="tab-priority" class="card">
     <h3>💺 고정석 운영 설정</h3>
     <div style="margin-bottom: 20px; padding: 15px; background: #eef2f7; border-radius: 10px;">
@@ -305,22 +305,40 @@
         <button onclick="saveOpMode()" class="btn btn-primary" style="margin-top:10px;">모드 저장</button>
     </div>
 
-    <h4>학생별 고정석 권한 부여</h4>
-    <div id="student-priority-table" style="max-height: 400px; overflow-y: auto;">
-        <table style="width:100%; border-collapse: collapse;">
+    <h4>학생별 고정석 권한 및 월별 참여 통계</h4>
+    <p style="font-size:12px; color:#666;">* 3월~12월 참여 횟수를 기반으로 수동/자동 지정 여부를 결정하세요. [상세보기]를 누르면 일자별 현황을 봅니다.</p>
+
+    <!-- 표가 옆으로 길어지므로 가로 스크롤(overflow-x: auto)을 추가했습니다 -->
+    <div id="student-priority-table" style="max-height: 400px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;">
+        <table style="width:100%; border-collapse: collapse; text-align: center; white-space: nowrap;">
             <thead>
-                <tr style="background:#f8f9fa;">
-                    <th>학번</th>
-                    <th>이름</th>
-                    <th>고정석 권한</th>
+                <tr style="background:#f8f9fa; border-bottom: 2px solid #ccc;">
+                    <th style="padding: 10px; position: sticky; left: 0; background: #f8f9fa; z-index: 2;">학번</th>
+                    <th style="padding: 10px; position: sticky; left: 60px; background: #f8f9fa; z-index: 2;">이름</th>
+                    <th style="padding: 10px; color:var(--primary);">권한 체크</th>
+                    <!-- 통계용 월별 헤더 추가 -->
+                    <th style="padding: 10px;">3월</th>
+                    <th style="padding: 10px;">4월</th>
+                    <th style="padding: 10px;">5월</th>
+                    <th style="padding: 10px;">6월</th>
+                    <th style="padding: 10px;">7월</th>
+                    <th style="padding: 10px;">8월</th>
+                    <th style="padding: 10px;">9월</th>
+                    <th style="padding: 10px;">10월</th>
+                    <th style="padding: 10px;">11월</th>
+                    <th style="padding: 10px;">12월</th>
+                    <th style="padding: 10px; color:var(--danger);">총계</th>
+                    <th style="padding: 10px;">일자현황</th>
                 </tr>
             </thead>
             <tbody id="student-list-body">
-                </tbody>
+                <!-- 자바스크립트에서 데이터가 여기에 들어옵니다 -->
+            </tbody>
         </table>
     </div>
-    <button onclick="savePriorityList()" class="btn btn-success" style="width:100%; margin-top:15px;">권한 설정 저장</button>
+    <button onclick="savePriorityList()" class="btn btn-success" style="width:100%; margin-top:15px; padding: 15px; font-size: 16px;">권한 설정 저장</button>
 </div>
+<!-- ▲ 여기까지 복사하세요 ▲ -->
 
 <script>
     const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
@@ -906,30 +924,117 @@ async function handleExcelUpload() {
     reader.readAsArrayBuffer(file);
 }
 
+
 // 1. 학생 명단을 불러와서 테이블 생성
 async function loadStudentPriorityList() {
-    // 기존에 업로드된 명단(roster) 가져오기
+    // 1-1. 기존에 업로드된 명단(roster) 가져오기
     const { data } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
-    const roster = JSON.parse(data.value.list);
     
-    // 현재 고정석 권한을 가진 학생 명단 가져오기
+    // ✅ [안전장치 추가] DB에 값이 비어있을 때 프로그램이 멈추는 에러를 방지합니다.
+    const roster = data && data.value ? JSON.parse(data.value.list) : {};
+    
+    // 1-2. 현재 고정석 권한을 가진 학생 명단 가져오기
     const { data: priorityData } = await supabaseClient.from('settings').select('value').eq('key', 'priority_students').maybeSingle();
-    const priorityIds = priorityData ? priorityData.value.ids : [];
+    
+    // ✅ [안전장치 추가] 우선순위 데이터가 아예 없을 때도 대비했습니다.
+    const priorityIds = priorityData && priorityData.value ? priorityData.value.ids : [];
 
     const tbody = document.getElementById('student-list-body');
     tbody.innerHTML = "";
 
+    // 1-3. 명단을 반복하면서 표(테이블)에 한 줄씩 그리기
     for (let id in roster) {
+        // 이 학생이 고정석 명단(priorityIds)에 있다면 체크박스에 'checked' 속성을 줍니다.
         const isChecked = priorityIds.includes(id) ? 'checked' : '';
+        
+        // ✅ [기능 추가] 학생의 월별 출결 횟수를 담을 임시 데이터입니다.
+        // 나중에 Supabase 출결 테이블에서 진짜 데이터를 가져와 여기에 연결할 예정입니다.
+        const mockStats = { 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0, total:0 };
+
+        // ✅ [화면 추가] 기존 <td>3개만 있던 부분에 통계 <td>들과 모바일 화면을 위한 스타일을 추가했습니다.
         tbody.innerHTML += `
-            <tr>
-                <td>${id}</td>
-                <td>${roster[id]}</td>
-                <td><input type="checkbox" class="priority-check" value="${id}" ${isChecked}></td>
+            <tr style="border-bottom: 1px solid #eee;">
+                <!-- 학번과 이름은 표를 옆으로 스크롤해도 안 사라지게 고정(sticky) 처리했습니다 -->
+                <td style="padding:8px; position: sticky; left: 0; background: white; z-index: 1;">${id}</td>
+                <td style="padding:8px; position: sticky; left: 60px; background: white; z-index: 1; font-weight: bold;">${roster[id]}</td>
+                
+                <!-- 기존 선생님 코드의 체크박스 부분 -->
+                <td style="padding:8px;"><input type="checkbox" class="priority-check" value="${id}" ${isChecked} style="transform: scale(1.3);"></td>
+                
+                <!-- 추가된 월별 통계 칸 -->
+                <td style="color:#666;">${mockStats[3]}</td>
+                <td style="color:#666;">${mockStats[4]}</td>
+                <td style="color:#666;">${mockStats[5]}</td>
+                <td style="color:#666;">${mockStats[6]}</td>
+                <td style="color:#666;">${mockStats[7]}</td>
+                <td style="color:#666;">${mockStats[8]}</td>
+                <td style="color:#666;">${mockStats[9]}</td>
+                <td style="color:#666;">${mockStats[10]}</td>
+                <td style="color:#666;">${mockStats[11]}</td>
+                <td style="color:#666;">${mockStats[12]}</td>
+                <td style="font-weight:bold; color:#dc3545;">${mockStats.total}</td>
+                
+                <!-- 추가된 상세보기 버튼 (이전 답변에서 만든 showStudentDetail 함수를 실행합니다) -->
+                <td style="padding:8px;">
+                    <button class="btn" style="background:#17a2b8; color:white; border:none; padding:4px 10px; font-size:11px; border-radius:4px; cursor:pointer;" onclick="showStudentDetail('${id}', '${roster[id]}')">상세보기</button>
+                </td>
             </tr>
         `;
     }
 }
+
+/ ▼ 자바스크립트 맨 아랫부분에 이 새로운 함수를 통째로 추가해 주세요 ▼
+
+// ✅ [초보자용 주석] 상세보기 버튼을 눌렀을 때 학생의 일자별 현황을 보여주는 팝업창(모달) 함수입니다.
+async function showStudentDetail(stuId, name) {
+    
+    // ✅ 추후 이 안에서 Supabase에 "select * from 출결테이블 where 학번 = stuId"를 날려서
+    // 실제 데이터를 가져오게 됩니다. 지금은 레이아웃(디자인)만 먼저 만들어 둔 상태입니다.
+
+    let html = `
+        <div id="student-detail-modal" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:30px; border-radius:20px; box-shadow:0 0 35px rgba(0,0,0,0.6); z-index:10001; width:90%; max-width:500px; max-height:80vh; overflow-y:auto;">
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid #333; padding-bottom: 10px;">
+                <h3 style="margin:0; border-left:none; padding-left:0; color:var(--primary);">📅 ${stuId} ${name} 일자별 현황</h3>
+                <button onclick="document.getElementById('student-detail-modal').remove()" style="border:none; background:none; font-size:24px; cursor:pointer;">&times;</button>
+            </div>
+            
+            <p style="font-size:13px; color:#666;">학생의 월별 상세 참여 기록입니다. (고정석 수동/자동 지정 판단용)</p>
+            
+            <!-- 임시로 보여주는 데이터 테이블 구조 -->
+            <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:center;">
+                <thead>
+                    <tr style="background:#f8f9fa; border-bottom:1px solid #ddd;">
+                        <th style="padding:10px;">날짜</th>
+                        <th style="padding:10px;">입실시간</th>
+                        <th style="padding:10px;">상태</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 실제로는 DB 데이터를 불러와 반복문으로 출력해야 합니다 -->
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:10px;">2026-05-01 (금)</td>
+                        <td style="padding:10px;">18:05</td>
+                        <td style="padding:10px; color:green; font-weight:bold;">정상 참여</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:10px;">2026-05-02 (토)</td>
+                        <td style="padding:10px;">-</td>
+                        <td style="padding:10px; color:red;">결석</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <button class="btn" style="background:var(--gray); width:100%; margin-top:20px; padding:12px;" onclick="document.getElementById('student-detail-modal').remove()">닫기</button>
+        </div>
+    `;
+
+    // 혹시 이전에 열려있던 창이 있으면 지우고 새로운 창을 띄웁니다.
+    const oldModal = document.getElementById('student-detail-modal');
+    if(oldModal) oldModal.remove();
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+
 
 // 2. 체크된 학생들만 모아서 저장
 async function savePriorityList() {
