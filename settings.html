@@ -1295,6 +1295,66 @@
             reader.readAsArrayBuffer(file);
         }
 
+        // 1. [신규] 반별 드롭다운 목록을 생성하는 함수
+        function updateClassFilterOptions() {
+            const select = document.getElementById('class-filter-select');
+            const classes = new Set();
+
+            // 학번 앞 2자리(학년+반) 추출 (예: 3701 -> 37)
+            allStudentData.forEach(stu => {
+                if (stu.id && stu.id.length >= 2) {
+                    classes.add(String(stu.id).substring(0, 2));
+                }
+            });
+
+            // 정렬 후 옵션 추가
+            const sortedClasses = Array.from(classes).sort();
+            select.innerHTML = '<option value="">전체 보기</option>';
+            sortedClasses.forEach(cls => {
+                const grade = cls.substring(0, 1);
+                const ban = parseInt(cls.substring(1));
+                select.innerHTML += `<option value="${cls}">${grade}학년 ${ban}반</option>`;
+            });
+        }
+
+        // 2. [수정] 검색과 반별 필터를 동시에 적용하는 함수
+        function filterPriorityTable() {
+            const classTerm = document.getElementById('class-filter-select').value; // 선택된 반
+            const searchTerm = document.getElementById('priority-search-input').value.toLowerCase(); // 검색어
+            const rows = document.querySelectorAll('#student-list-body tr');
+
+            rows.forEach(row => {
+                // 행에서 학번과 이름 텍스트 추출
+                const stuId = row.cells[1].innerText;
+                const stuName = row.cells[2].innerText.toLowerCase();
+
+                // 필터 조건 확인
+                const matchClass = classTerm === "" || stuId.startsWith(classTerm);
+                const matchSearch = stuId.includes(searchTerm) || stuName.includes(searchTerm);
+
+                // 두 조건이 모두 맞을 때만 표시
+                row.style.display = (matchClass && matchSearch) ? "" : "none";
+            });
+        }
+
+        // 3. [수정] 데이터 로드 후 필터 옵션 업데이트 호출
+        async function loadStudentPriorityList() {
+            // ... (기존 데이터 로드 로직 유지) ...
+
+            // 데이터 로드 완료 후 테이블 렌더링 및 반 목록 갱신
+            renderPriorityTable();
+            updateClassFilterOptions(); // 이 줄을 추가하세요!
+        }
+
+        // 4. [신규] 뷰 초기화
+        function resetPriorityView() {
+            document.getElementById('class-filter-select').value = "";
+            document.getElementById('priority-search-input').value = "";
+            sortPriorityByClass();
+        }
+
+
+
         async function loadStudentPriorityList() {
             // 1. 기초 설정 데이터 및 기존 고정석 명단 가져오기
             const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
