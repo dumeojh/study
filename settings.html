@@ -293,6 +293,33 @@
     </div>
 </div>
 
+
+<div class="card">
+    <h3>💺 고정석 운영 설정</h3>
+    <div style="margin-bottom: 20px; padding: 15px; background: #eef2f7; border-radius: 10px;">
+        <p><strong>운영 모드 선택:</strong></p>
+        <label><input type="radio" name="opMode" value="manual" checked> 수동 지정 (관리자가 선택한 학생만)</label><br>
+        <label><input type="radio" name="opMode" value="auto"> 자동 분석 (전월 참여율 상위 30명)</label>
+        <button onclick="saveOpMode()" class="btn btn-primary" style="margin-top:10px;">모드 저장</button>
+    </div>
+
+    <h4>학생별 고정석 권한 부여</h4>
+    <div id="student-priority-table" style="max-height: 400px; overflow-y: auto;">
+        <table style="width:100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background:#f8f9fa;">
+                    <th>학번</th>
+                    <th>이름</th>
+                    <th>고정석 권한</th>
+                </tr>
+            </thead>
+            <tbody id="student-list-body">
+                </tbody>
+        </table>
+    </div>
+    <button onclick="savePriorityList()" class="btn btn-success" style="width:100%; margin-top:15px;">권한 설정 저장</button>
+</div>
+
 <script>
     const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
@@ -871,6 +898,43 @@ async function handleExcelUpload() {
         }
     }; 
     reader.readAsArrayBuffer(file);
+}
+
+// 1. 학생 명단을 불러와서 테이블 생성
+async function loadStudentPriorityList() {
+    // 기존에 업로드된 명단(roster) 가져오기
+    const { data } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
+    const roster = JSON.parse(data.value.list);
+    
+    // 현재 고정석 권한을 가진 학생 명단 가져오기
+    const { data: priorityData } = await supabaseClient.from('settings').select('value').eq('key', 'priority_students').maybeSingle();
+    const priorityIds = priorityData ? priorityData.value.ids : [];
+
+    const tbody = document.getElementById('student-list-body');
+    tbody.innerHTML = "";
+
+    for (let id in roster) {
+        const isChecked = priorityIds.includes(id) ? 'checked' : '';
+        tbody.innerHTML += `
+            <tr>
+                <td>${id}</td>
+                <td>${roster[id]}</td>
+                <td><input type="checkbox" class="priority-check" value="${id}" ${isChecked}></td>
+            </tr>
+        `;
+    }
+}
+
+// 2. 체크된 학생들만 모아서 저장
+async function savePriorityList() {
+    const checkedIds = Array.from(document.querySelectorAll('.priority-check:checked')).map(el => el.value);
+    
+    const { error } = await supabaseClient.from('settings').upsert({
+        key: 'priority_students',
+        value: { ids: checkedIds }
+    });
+
+    if (!error) alert("고정석 권한 명단이 저장되었습니다.");
 }
 </script>
 </body>
