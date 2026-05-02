@@ -73,6 +73,16 @@
     </div>
 
 <div id="tab-schedule" class="card active">
+
+<!-- 🌟 감독교사 환경설정 추가 -->
+<div style="background:#fff3cd; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #ffeeba;">
+    <b style="color:#856404;">👨‍🏫 감독교사 명단 관리 및 소급 입력</b>
+    <p style="font-size:12px; margin:5px 0;">감독교사 성함과 3~4월의 기존 감독 횟수를 입력하세요. (엔터로 구분)</p>
+    <textarea id="supervisor-list-input" style="width:100%; height:80px; padding:10px; border-radius:5px; border:1px solid #ccc;" 
+              placeholder="이름,3월횟수,4월횟수 (예: 오장한,2,3)"></textarea>
+    <div style="font-size:11px; color:#666; margin-top:5px;">* 입력 형식: 이름,3월개수,4월개수 (한 줄에 한 명씩)</div>
+</div>
+
         <h3>📅 야자 운영 달력 및 요일 설정</h3>
         <p style="font-size:12px; color:#666;">* 기본으로 운영할 요일을 선택하세요. (체크 해제된 요일은 학생 신청 화면에서도 제외됩니다)</p>
         
@@ -348,26 +358,57 @@ function renderCalendar() {
         document.getElementById('calendar-container').innerHTML = html + `</tr></tbody></table>`;
     }
 
-    function toggleDate(dStr) {
-        const data = currentSchedule[dStr] || { active: false };
-        
-        if (data.active) {
-            // 🌟 활성화된 상태에서 클릭 시: 감독교사 수정 OR 휴무 처리 선택
-            const action = confirm(`[${dStr}] 현재 야자 운영일입니다.\n\n[확인]을 누르면 미운영(휴무)으로 변경합니다.\n[취소]를 누르면 감독 교사 이름을 수정합니다.`);
-            if (action) {
-                const reason = prompt("야자 미운영 사유 (예: 시험, 공휴일):", "공휴일");
-                if(reason !== null) currentSchedule[dStr] = { active: false, reason: reason, supervisor: "" };
-            } else {
-                const sup = prompt("감독 교사 이름을 입력하세요 (예: 오장한):", data.supervisor || "");
-                if (sup !== null) currentSchedule[dStr].supervisor = sup.trim();
-            }
+
+
+
+function toggleDate(dStr) {
+    const data = currentSchedule[dStr] || { active: false };
+    
+    // 감독교사 명단 가져오기
+    const listRaw = document.getElementById('supervisor-list-input').value.trim();
+    const supervisors = listRaw.split('\n').map(line => line.split(',')[0].trim()).filter(n => n);
+
+    if (data.active) {
+        const action = confirm(`[${dStr}] 현재 야자 운영일입니다.\n\n[확인]: 미운영(휴무)으로 변경\n[취소]: 감독교사 변경/통계 확인`);
+        if (action) {
+            const reason = prompt("야자 미운영 사유:", "공휴일");
+            if(reason !== null) currentSchedule[dStr] = { active: false, reason: reason, supervisor: "" };
+            renderCalendar();
         } else {
-            // 🌟 미운영 상태에서 클릭 시: 활성화 및 감독교사 입력
-            const sup = prompt(`[${dStr}] 야자를 운영합니다.\n감독 교사 이름을 입력하세요 (선택):`, "");
-            if(sup !== null) currentSchedule[dStr] = { active: true, reason: "", supervisor: sup.trim() };
+            showSupervisorSelector(dStr, data.supervisor, supervisors);
         }
-        renderCalendar();
+    } else {
+        showSupervisorSelector(dStr, "", supervisors);
     }
+}
+
+// 🌟 드롭다운 선택 팝업창 함수
+function showSupervisorSelector(dStr, currentSup, supervisors) {
+    let options = `<option value="">-- 선택 없음 --</option>`;
+    supervisors.forEach(s => {
+        options += `<option value="${s}" ${s === currentSup ? 'selected' : ''}>${s}</option>`;
+    });
+
+    // 간단한 커스텀 모달 또는 prompt 대신 사용 가능한 UI 구성
+    const div = document.createElement('div');
+    div.style = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:25px; border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.3); z-index:10000; text-align:center;";
+    div.innerHTML = `
+        <h3>[${dStr}] 감독교사 선택</h3>
+        <select id="pop-sup-select" style="font-size:18px; padding:10px; width:200px;">${options}</select>
+        <div style="margin-top:20px; display:flex; gap:10px;">
+            <button class="btn" style="background:var(--primary); flex:1;" onclick="applySupSelection('${dStr}')">적용</button>
+            <button class="btn" style="background:var(--gray); flex:1;" onclick="this.parentElement.parentElement.remove()">취소</button>
+        </div>
+    `;
+    document.body.appendChild(div);
+}
+
+function applySupSelection(dStr) {
+    const selectedSup = document.getElementById('pop-sup-select').value;
+    currentSchedule[dStr] = { active: true, reason: "", supervisor: selectedSup };
+    document.getElementById('pop-sup-select').parentElement.remove();
+    renderCalendar();
+}
 //////////////////////////
 
     // 도면 및 시간 계산 기타 로직들
