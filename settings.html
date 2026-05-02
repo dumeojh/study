@@ -601,6 +601,39 @@
     <div id="tab-priority" class="card">
         <h3>💺 고정석 운영 및 권한 설정</h3>
 
+        <!-- 🔍 검색 및 반별 필터 도구 모음 -->
+        <div
+            style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
+
+            <!-- 학년/반 선택 (신규 추가) -->
+            <div style="min-width: 120px;">
+                <b style="font-size: 13px; display: block; margin-bottom: 5px;">🏫 학년/반 선택:</b>
+                <select id="class-filter-select"
+                    style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc;"
+                    onchange="filterPriorityTable()">
+                    <option value="">전체 보기</option>
+                    <!-- 자바스크립트가 자동으로 반 목록을 채웁니다 -->
+                </select>
+            </div>
+
+            <!-- 학생 검색 -->
+            <div style="flex: 1; min-width: 200px;">
+                <b style="font-size: 13px; display: block; margin-bottom: 5px;">🔍 학생 검색:</b>
+                <input type="text" id="priority-search-input" placeholder="학번 또는 이름 입력..."
+                    style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box;"
+                    onkeyup="filterPriorityTable()">
+            </div>
+
+            <!-- 버튼 그룹 -->
+            <div style="display: flex; gap: 5px;">
+                <button class="btn" style="background:var(--primary); padding: 8px 12px; font-size: 12px;"
+                    onclick="sortPriorityByClass()">학년/반 정렬</button>
+                <button class="btn" style="background:var(--gray); padding: 8px 12px; font-size: 12px;"
+                    onclick="resetPriorityView()">🔄 초기화</button>
+            </div>
+        </div>
+
+
         <!-- 🔍 검색 및 정렬 도구 모음 -->
         <div
             style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
