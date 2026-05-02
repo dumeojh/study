@@ -691,6 +691,17 @@
 
 
         <h4>📊 학생별 참여 통계 및 권한 부여</h4>
+        <!-- 상위 30명 자동 선택 및 전체 해제 도구 -->
+        <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+            <button onclick="selectTop30()" class="btn"
+                style="background:var(--primary); padding: 8px 15px; font-size: 13px;">
+                🏆 현재 순위 상위 30명 자동 선택
+            </button>
+            <button onclick="clearAllPriority()" class="btn"
+                style="background:var(--danger); padding: 8px 15px; font-size: 13px;">
+                ❌ 모든 선택 해제
+            </button>
+        </div>
         <p style="font-size:12px; color:#666;">* 파란색 월 제목(3월▼)을 클릭하면 해당 월 참여가 많은 순으로 자동 정렬됩니다.</p>
 
         <!-- 🔍 검색 및 반별 필터 도구 모음 -->
@@ -815,6 +826,44 @@
                 alert("로그인 실패! 이메일이나 비밀번호를 다시 확인해주세요.");
                 console.error(error);
             }
+        }
+
+        // ✅ 현재 화면에 보이는(정렬된) 순서대로 상위 30명을 자동 체크하는 기능
+        function selectTop30() {
+            // 1. 모든 체크박스를 먼저 해제 (초기화)
+            clearAllPriority(false);
+
+            // 2. 현재 화면에 표시되고 있는 모든 행(tr)을 가져옴
+            const rows = document.querySelectorAll('#student-list-body tr');
+            let count = 0;
+
+            rows.forEach(row => {
+                // 검색 등으로 숨겨진 행은 제외하고, 상위 30명만 선택
+                if (row.style.display !== "none" && count < 30) {
+                    const checkbox = row.querySelector('.priority-check');
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        // 전역 데이터(allStudentData)에도 반영
+                        updateCheckedStatus(checkbox.value, true);
+                        count++;
+                    }
+                }
+            });
+
+            alert(`현재 정렬 순 상위 ${count}명의 학생을 선택했습니다.\n반드시 하단의 '저장' 버튼을 눌러주세요.`);
+        }
+
+        // ✅ 모든 선택을 해제하는 기능
+        function clearAllPriority(showConfirm = true) {
+            if (showConfirm && !confirm("모든 고정석 권한 선택을 해제하시겠습니까?")) return;
+
+            const checkboxes = document.querySelectorAll('.priority-check');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+                updateCheckedStatus(cb.value, false);
+            });
+
+            if (showConfirm) alert("모든 선택이 해제되었습니다.");
         }
 
         function showTab(tabId, btn) {
