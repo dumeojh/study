@@ -1632,6 +1632,21 @@ async function saveManualEntry() {
     const stu_name = document.getElementById('m-name').value.trim();
     const target_month = document.getElementById('m-month').value;
     const type = document.getElementById('m-type').value;
+
+// 🌟 [추가 위치] 여기서부터 아래 코드를 복사해서 붙여넣으세요.
+    if (!stu_id || !stu_name) {
+        alert("학번과 이름을 모두 입력해주세요.");
+        return; // 입력이 없으면 여기서 실행 중단
+    }
+    
+    if (type === "고정석" && !document.getElementById('m-seatNum').value.trim()) {
+        alert("고정석은 좌석 번호가 필수입니다.");
+        return; // 좌석 번호가 없으면 중단
+    }
+    // 🌟 [추가 끝]
+
+
+
     
     // 요일별 교시 데이터
     const daysData = {
@@ -1705,7 +1720,10 @@ async function saveManualEntry() {
         
         // [중요] renderStatusTable() 함수 내부에서 Supabase 데이터를 
         // 다시 fetch(select) 하고 있는지 꼭 확인해야 합니다.
-        renderStatusTable(); 
+        await renderStatusTable(); 
+
+        // 3. (선택 사항) 사용자의 편의를 위해 '월별 신청 현황' 탭으로 자동 이동
+        switchTab('tab-status', document.querySelector('.tab-btn[onclick*="tab-status"]'));
 
     } catch (err) {
         alert("저장 중 오류 발생: " + err.message);
@@ -1815,6 +1833,9 @@ function toggleAdminSection() {
         icon.style.color = '#999';
     }
 }
+
+
+
 
     async function autoSweepPastAttendance() {
         try {
