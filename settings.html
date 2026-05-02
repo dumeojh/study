@@ -311,26 +311,29 @@
     <!-- 표가 옆으로 길어지므로 가로 스크롤(overflow-x: auto)을 추가했습니다 -->
     <div id="student-priority-table" style="max-height: 400px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;">
         <table style="width:100%; border-collapse: collapse; text-align: center; white-space: nowrap;">
-            <thead>
-                <tr style="background:#f8f9fa; border-bottom: 2px solid #ccc;">
-                    <th style="padding: 10px; position: sticky; left: 0; background: #f8f9fa; z-index: 2;">학번</th>
-                    <th style="padding: 10px; position: sticky; left: 60px; background: #f8f9fa; z-index: 2;">이름</th>
-                    <th style="padding: 10px; color:var(--primary);">권한 체크</th>
-                    <!-- 통계용 월별 헤더 추가 -->
-                    <th style="padding: 10px;">3월</th>
-                    <th style="padding: 10px;">4월</th>
-                    <th style="padding: 10px;">5월</th>
-                    <th style="padding: 10px;">6월</th>
-                    <th style="padding: 10px;">7월</th>
-                    <th style="padding: 10px;">8월</th>
-                    <th style="padding: 10px;">9월</th>
-                    <th style="padding: 10px;">10월</th>
-                    <th style="padding: 10px;">11월</th>
-                    <th style="padding: 10px;">12월</th>
-                    <th style="padding: 10px; color:var(--danger);">총계</th>
-                    <th style="padding: 10px;">일자현황</th>
-                </tr>
-            </thead>
+<!-- tab-priority 카드 내 테이블 헤더 부분 -->
+<thead>
+    <tr style="background:#f8f9fa; border-bottom: 2px solid #ccc;">
+        <th style="padding: 10px; width: 40px;">No.</th> <!-- 순번 추가 -->
+        <th style="padding: 10px; position: sticky; left: 0; background: #f8f9fa; z-index: 2;">학번</th>
+        <th style="padding: 10px; position: sticky; left: 60px; background: #f8f9fa; z-index: 2;">이름</th>
+        <th style="padding: 10px; color:var(--primary);">권한</th>
+        
+        <!-- 각 월 클릭 시 정렬 함수 호출 (3~12월, 총계) -->
+        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m3')">3월▼</th>
+        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m4')">4월▼</th>
+        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m5')">5월▼</th>
+        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m6')">6월▼</th>
+        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m7')">7월▼</th>
+        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m8')">8월▼</th>
+        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m9')">9월▼</th>
+        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m10')">10월▼</th>
+        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m11')">11월▼</th>
+        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m12')">12월▼</th>
+        <th style="padding: 10px; cursor:pointer; color:var(--danger);" onclick="sortPriorityTable('total')">총계▼</th>
+        <th style="padding: 10px;">상세</th>
+    </tr>
+</thead>
             <tbody id="student-list-body">
                 <!-- 자바스크립트에서 데이터가 여기에 들어옵니다 -->
             </tbody>
@@ -925,63 +928,72 @@ async function handleExcelUpload() {
 }
 
 
-// 1. 학생 명단을 불러와서 테이블 생성
+// 전역 변수로 학생 데이터 저장 (정렬 시 매번 서버를 호출하지 않기 위함)
+let allStudentData = []; 
+
 async function loadStudentPriorityList() {
-    // 1-1. 기존에 업로드된 명단(roster) 가져오기
-    const { data } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
-    
-    // ✅ [안전장치 추가] DB에 값이 비어있을 때 프로그램이 멈추는 에러를 방지합니다.
-    const roster = data && data.value ? JSON.parse(data.value.list) : {};
-    
-    // 1-2. 현재 고정석 권한을 가진 학생 명단 가져오기
+    // 1. 데이터 가져오기
+    const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
     const { data: priorityData } = await supabaseClient.from('settings').select('value').eq('key', 'priority_students').maybeSingle();
     
-    // ✅ [안전장치 추가] 우선순위 데이터가 아예 없을 때도 대비했습니다.
+    const roster = rosterData && rosterData.value ? JSON.parse(rosterData.value.list) : {};
     const priorityIds = priorityData && priorityData.value ? priorityData.value.ids : [];
 
+    // 2. 정렬을 위해 데이터를 배열 형태로 변환
+    allStudentData = Object.entries(roster).map(([id, name]) => {
+        // 실제 운영 시에는 여기서 DB의 출결 합계를 가져와 연결합니다.
+        // 현재는 정렬 확인을 위해 임시로 0을 넣습니다.
+        return {
+            id: id,
+            name: name,
+            isChecked: priorityIds.includes(id),
+            m3: 0, m4: 0, m5: 0, m6: 0, m7: 0, m8: 0, m9: 0, m10: 0, m11: 0, m12: 0,
+            total: 0
+        };
+    });
+
+    renderPriorityTable(); // 테이블 그리기 함수 호출
+}
+
+// 테이블을 화면에 그리는 함수
+function renderPriorityTable() {
     const tbody = document.getElementById('student-list-body');
     tbody.innerHTML = "";
 
-    // 1-3. 명단을 반복하면서 표(테이블)에 한 줄씩 그리기
-    for (let id in roster) {
-        // 이 학생이 고정석 명단(priorityIds)에 있다면 체크박스에 'checked' 속성을 줍니다.
-        const isChecked = priorityIds.includes(id) ? 'checked' : '';
-        
-        // ✅ [기능 추가] 학생의 월별 출결 횟수를 담을 임시 데이터입니다.
-        // 나중에 Supabase 출결 테이블에서 진짜 데이터를 가져와 여기에 연결할 예정입니다.
-        const mockStats = { 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0, total:0 };
-
-        // ✅ [화면 추가] 기존 <td>3개만 있던 부분에 통계 <td>들과 모바일 화면을 위한 스타일을 추가했습니다.
+    allStudentData.forEach((stu, index) => {
         tbody.innerHTML += `
             <tr style="border-bottom: 1px solid #eee;">
-                <!-- 학번과 이름은 표를 옆으로 스크롤해도 안 사라지게 고정(sticky) 처리했습니다 -->
-                <td style="padding:8px; position: sticky; left: 0; background: white; z-index: 1;">${id}</td>
-                <td style="padding:8px; position: sticky; left: 60px; background: white; z-index: 1; font-weight: bold;">${roster[id]}</td>
-                
-                <!-- 기존 선생님 코드의 체크박스 부분 -->
-                <td style="padding:8px;"><input type="checkbox" class="priority-check" value="${id}" ${isChecked} style="transform: scale(1.3);"></td>
-                
-                <!-- 추가된 월별 통계 칸 -->
-                <td style="color:#666;">${mockStats[3]}</td>
-                <td style="color:#666;">${mockStats[4]}</td>
-                <td style="color:#666;">${mockStats[5]}</td>
-                <td style="color:#666;">${mockStats[6]}</td>
-                <td style="color:#666;">${mockStats[7]}</td>
-                <td style="color:#666;">${mockStats[8]}</td>
-                <td style="color:#666;">${mockStats[9]}</td>
-                <td style="color:#666;">${mockStats[10]}</td>
-                <td style="color:#666;">${mockStats[11]}</td>
-                <td style="color:#666;">${mockStats[12]}</td>
-                <td style="font-weight:bold; color:#dc3545;">${mockStats.total}</td>
-                
-                <!-- 추가된 상세보기 버튼 (이전 답변에서 만든 showStudentDetail 함수를 실행합니다) -->
+                <td style="padding:8px; color:#999;">${index + 1}</td> <!-- 순번 출력 -->
+                <td style="padding:8px; position: sticky; left: 0; background: white; z-index: 1;">${stu.id}</td>
+                <td style="padding:8px; position: sticky; left: 60px; background: white; z-index: 1; font-weight: bold;">${stu.name}</td>
+                <td style="padding:8px;"><input type="checkbox" class="priority-check" value="${stu.id}" ${stu.isChecked ? 'checked' : ''} style="transform: scale(1.2);"></td>
+                <td style="color:#666;">${stu.m3}</td>
+                <td style="color:#666;">${stu.m4}</td>
+                <td style="color:#666;">${stu.m5}</td>
+                <td style="color:#666;">${stu.m6}</td>
+                <td style="color:#666;">${stu.m7}</td>
+                <td style="color:#666;">${stu.m8}</td>
+                <td style="color:#666;">${stu.m9}</td>
+                <td style="color:#666;">${stu.m10}</td>
+                <td style="color:#666;">${stu.m11}</td>
+                <td style="color:#666;">${stu.m12}</td>
+                <td style="font-weight:bold; color:#dc3545;">${stu.total}</td>
                 <td style="padding:8px;">
-                    <button class="btn" style="background:#17a2b8; color:white; border:none; padding:4px 10px; font-size:11px; border-radius:4px; cursor:pointer;" onclick="showStudentDetail('${id}', '${roster[id]}')">상세보기</button>
+                    <button class="btn" style="background:#17a2b8; color:white; border:none; padding:4px 8px; font-size:11px; border-radius:4px; cursor:pointer;" onclick="showStudentDetail('${stu.id}', '${stu.name}')">상세</button>
                 </td>
             </tr>
         `;
-    }
+    });
 }
+
+// ✅ 월별/총계 클릭 시 정렬하는 핵심 함수
+function sortPriorityTable(key) {
+    // 내림차순 정렬 (참여 횟수가 많은 학생이 위로)
+    allStudentData.sort((a, b) => b[key] - a[key]);
+    renderPriorityTable(); // 정렬 후 다시 그리기
+}
+
+
 
 // ▼ 자바스크립트 맨 아랫부분에 이 새로운 함수를 통째로 추가해 주세요 ▼
 
