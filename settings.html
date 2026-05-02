@@ -832,6 +832,10 @@ if (d.autoCloseTime) {
     } catch (error) {
         console.error("데이터 로딩 중 에러 발생:", error);
     }
+// loadAllSettings() 함수 최하단에 추가
+for(let i=1; i<=3; i++) calculateMinutes(i);
+await loadStudentPriorityList(); // 페이지 로드 시 학생 권한 명단도 함께 불러옴
+
 }
 
 
