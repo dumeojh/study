@@ -668,10 +668,12 @@
                     style="width: 220px; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px;">
             </div>
 
-            <!-- 초기화 버튼 -->
-            <button onclick="resetPriorityView()" class="btn"
-                style="background: var(--gray); padding: 8px 15px; font-size: 13px; margin-left: auto;">🔄 필터
-                초기화</button>
+            <!-- 초기화 버튼을 검색창 옆으로 밀착 -->
+            <button onclick="resetPriorityView()"
+                style="padding: 6px 10px; font-size: 13px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background 0.2s;"
+                onmouseover="this.style.backgroundColor='#5a6268'" onmouseout="this.style.backgroundColor='#6c757d'">
+                🔄 초기화
+            </button>
         </div>
 
 
