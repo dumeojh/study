@@ -125,7 +125,7 @@ async function checkMyStatus() {
         // 2. 학생 이름 가져오기 (데이터 타입 불일치 방지를 위해 변수 사용)
         const { data: userData, error: userError } = await supabaseClient
             .from('applications')
-            .select('name')
+            .select('stu_name') // <--- Supabase에 있는 실제 컬럼명으로 변경하세요!
             .eq('stu_id', stuId) // 숫자로 전달
             .maybeSingle();
 
@@ -136,7 +136,7 @@ async function checkMyStatus() {
 
         // 화면 표시 로직
         document.getElementById('result_area').classList.remove('hidden');
-        document.getElementById('user_name').innerText = `${userData?.name || '학생'}님의 참여 현황`;
+        document.getElementById('user_name').innerText = `${userData?.stu_name || '학생'}님의 참여 현황`;
         document.getElementById('my_rank').innerText = rank;
         document.getElementById('total_count').innerText = myCount;
 
