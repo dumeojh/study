@@ -312,6 +312,19 @@
             margin-bottom: 15px;
             border: 1px solid #d1d9e6;
         }
+
+        /* 정렬된 열에 적용될 파스텔톤 스타일 */
+        .sorted-column {
+            background-color: #e7f1ff !important;
+            /* 파스텔톤 하늘색 */
+        }
+
+        /* 정렬된 열의 숫자 강조 스타일 */
+        .sorted-data {
+            font-size: 16px !important;
+            font-weight: bold !important;
+            color: #007bff !important;
+        }
     </style>
 </head>
 
@@ -1478,20 +1491,52 @@
         }
 
 
-        // ✅ 월별/총계 클릭 시 정렬하는 핵심 함수
-        // 1. [정렬 기능] 학번, 이름, 월별 통계를 기준으로 정렬
         function sortPriorityTable(key) {
-            // 숫자 데이터(학번, 통계)와 문자 데이터(이름)를 구분하여 정렬
+            // 1. 데이터 정렬 실행
             allStudentData.sort((a, b) => {
                 if (key === 'name' || key === 'id') {
-                    // 이름이나 학번은 오름차순 (작은게 위로)
-                    return a[key] > b[key] ? 1 : -1;
+                    return a[key] > b[key] ? 1 : -1; // 학번, 이름은 오름차순
                 } else {
-                    // 월별 통계 및 총계는 내림차순 (큰게 위로)
-                    return b[key] - a[key];
+                    return b[key] - a[key]; // 통계 데이터는 내림차순
                 }
             });
+
+            // 2. 테이블 렌더링
             renderPriorityTable();
+
+            // 3. 정렬된 열 디자인 적용 (지연 처리로 렌더링 후 적용)
+            setTimeout(() => {
+                const table = document.querySelector('#student-priority-table table');
+                const rows = table.querySelectorAll('tbody tr');
+
+                // 기존의 모든 색상 초기화
+                table.querySelectorAll('th, td').forEach(el => {
+                    el.classList.remove('sorted-column', 'sorted-data');
+                });
+
+                // 클릭된 헤더의 인덱스 찾기
+                const headers = Array.from(table.querySelectorAll('thead th'));
+                const colIndex = headers.findIndex(th =>
+                    th.getAttribute('onclick') && th.getAttribute('onclick').includes(`'${key}'`)
+                );
+
+                if (colIndex !== -1) {
+                    // 헤더 색상 변경
+                    headers[colIndex].classList.add('sorted-column');
+
+                    // 데이터 열 색상 및 글자 크기 변경
+                    rows.forEach(row => {
+                        const targetCell = row.cells[colIndex];
+                        if (targetCell) {
+                            targetCell.classList.add('sorted-column');
+                            // 이름/학번이 아닌 숫자 데이터인 경우에만 글자 크기 강조
+                            if (!['name', 'id'].includes(key)) {
+                                targetCell.classList.add('sorted-data');
+                            }
+                        }
+                    });
+                }
+            }, 10);
         }
 
         // 2. [반별 정렬] 학번 앞자리를 기준으로 학년/반 정렬
