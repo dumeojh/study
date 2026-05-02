@@ -941,21 +941,26 @@ async function loadStudentPriorityList() {
     const priorityIds = priorityData?.value ? priorityData.value.ids : [];
 
 
-// loadStudentPriorityList 함수 내부의 필터링 로직 수정
+
+// 기존 filter 로직을 아래와 같이 더 안전하게 변경
 allStudentData = Object.entries(roster).map(([id, name]) => {
-    // id(학번)를 문자열로 변환하여 비교 (3701 vs "3701" 불일치 방지)
+    // String()을 사용하여 양쪽 데이터를 모두 문자열로 강제 변환 후 비교
     const studentLogs = attendanceLogs ? attendanceLogs.filter(log => String(log.stuId) === String(id)) : [];
     
     const counts = { m3:0, m4:0, m5:0, m6:0, m7:0, m8:0, m9:0, m10:0, m11:0, m12:0 };
     
     studentLogs.forEach(log => {
         if (log.date) {
+            // log.date가 문자열인 경우 Date 객체로 변환하여 월 추출
             const month = new Date(log.date).getMonth() + 1; 
             if (counts[`m${month}`] !== undefined) {
                 counts[`m${month}`]++;
             }
         }
     });
+    // ... 이하 동일
+
+
 
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
@@ -970,6 +975,9 @@ allStudentData = Object.entries(roster).map(([id, name]) => {
 
     renderPriorityTable(); // 표 다시 그리기
 }
+
+
+
 
 // 테이블을 화면에 그리는 함수
 function renderPriorityTable() {
