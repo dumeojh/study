@@ -636,6 +636,8 @@
                 <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
                     <tr style="border-bottom: 2px solid #ccc;">
                         <th style="padding: 12px; width: 40px;">No.</th>
+                        <!-- 🌟 학년반 헤더 추가 -->
+                        <th style="padding: 12px;">학년반</th>
                         <th style="padding: 12px; cursor:pointer;" onclick="sortPriorityTable('id')">학번 ↕</th>
                         <th style="padding: 12px; cursor:pointer;" onclick="sortPriorityTable('name')">이름 ↕</th>
                         <th style="padding: 12px; color:var(--primary);">권한</th>
@@ -1365,34 +1367,43 @@
 
 
 
-        // 테이블을 화면에 그리는 함수
         function renderPriorityTable() {
             const tbody = document.getElementById('student-list-body');
             tbody.innerHTML = "";
 
             allStudentData.forEach((stu, index) => {
-                tbody.innerHTML += `
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding:8px; color:#999;">${index + 1}</td> <!-- 순번 출력 -->
-                <td style="padding:8px; position: sticky; left: 0; background: white; z-index: 1;">${stu.id}</td>
-                <td style="padding:8px; position: sticky; left: 60px; background: white; z-index: 1; font-weight: bold;">${stu.name}</td>
-                <td style="padding:8px;"><input type="checkbox" class="priority-check" value="${stu.id}" ${stu.isChecked ? 'checked' : ''} style="transform: scale(1.2);"></td>
-                <td style="color:#666;">${stu.m3}</td>
-                <td style="color:#666;">${stu.m4}</td>
-                <td style="color:#666;">${stu.m5}</td>
-                <td style="color:#666;">${stu.m6}</td>
-                <td style="color:#666;">${stu.m7}</td>
-                <td style="color:#666;">${stu.m8}</td>
-                <td style="color:#666;">${stu.m9}</td>
-                <td style="color:#666;">${stu.m10}</td>
-                <td style="color:#666;">${stu.m11}</td>
-                <td style="color:#666;">${stu.m12}</td>
-                <td style="font-weight:bold; color:#dc3545;">${stu.total}</td>
-                <td style="padding:8px;">
-                    <button class="btn" style="background:#17a2b8; color:white; border:none; padding:4px 8px; font-size:11px; border-radius:4px; cursor:pointer;" onclick="showStudentDetail('${stu.id}', '${stu.name}')">상세</button>
-                </td>
-            </tr>
+                // 🌟 학번(예: 3701)에서 학년(3)과 반(7) 추출
+                const grade = stu.id.substring(0, 1);
+                const ban = parseInt(stu.id.substring(1, 2)); // 두 번째 자리가 반
+                const classInfo = `${grade}학년 ${ban}반`;
+
+                const row = document.createElement('tr');
+                row.style.borderBottom = "1px solid #eee";
+
+                row.innerHTML = `
+            <td style="padding:10px; color:#999;">${index + 1}</td>
+            <td style="padding:10px;">${stu.id}</td>
+            <!-- 🌟 학년반 데이터 셀 추가 -->
+            <td style="padding:10px; color:#555; font-size:12px;">${classInfo}</td>
+            <td style="padding:10px; font-weight: bold;">${stu.name}</td>
+            <td style="padding:10px;">
+                <input type="checkbox" class="priority-check" value="${stu.id}" 
+                ${stu.isChecked ? 'checked' : ''} 
+                onchange="updateCheckedStatus('${stu.id}', this.checked)">
+            </td>
+            <td style="color:#666;">${stu.m3}</td>
+            <td style="color:#666;">${stu.m4}</td>
+            <td style="color:#666;">${stu.m5}</td>
+            <td style="color:#666;">${stu.m6}</td>
+            <td style="color:#666;">${stu.m7}</td>
+            <td style="color:#666;">${stu.m8}</td>
+            <td style="color:#666;">${stu.m9}</td>
+            <td style="color:#666;">${stu.m10}</td>
+            <td style="color:#666;">${stu.m11}</td>
+            <td style="color:#666;">${stu.m12}</td>
+            <td style="font-weight:bold; color:#dc3545;">${stu.total}</td>
         `;
+                tbody.appendChild(row);
             });
         }
 
