@@ -1424,26 +1424,26 @@
             const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
             const { data: priorityData } = await supabaseClient.from('settings').select('value').eq('key', 'priority_students').maybeSingle();
 
-            // 2. 실제 출결 기록(attendance 테이블) 전체 가져오기
+            // 2. 실제 출결 기록(attendance_logs 테이블) 전체 가져오기
             const { data: attendanceLogs } = await supabaseClient
-                .from('attendance')
-                .select('stuId, date');
+                .from('attendance_logs') // 🌟 수정: attendance -> attendance_logs
+                .select('stu_id, date'); // 🌟 수정: stuId -> stu_id
 
             const roster = rosterData?.value ? JSON.parse(rosterData.value.list) : {};
             const priorityIds = priorityData?.value ? priorityData.value.ids : [];
-
-
-
 
             // 2. 고정석 명단 로딩 로직 (데이터 집계 보완 버전)
             allStudentData = Object.entries(roster).map(([id, name]) => {
 
                 const studentLogs = attendanceLogs ? attendanceLogs.filter(log => {
-                    // 💡 주의: DB 컬럼명이 정확히 stuId 가 맞는지 확인하세요. (예: student_id 라면 log.student_id 로 변경)
-                    const dbId = String(log.stuId).trim();
+                    // 🌟 수정: log.stuId -> log.stu_id
+                    const dbId = String(log.stu_id).trim();
                     const rosterId = String(id).trim();
                     return dbId === rosterId;
                 }) : [];
+
+                // 월별 카운트 초기화 (3월~12월)
+                // ... [이하 기존 코드 동일] ...
 
                 // 월별 카운트 초기화 (3월~12월)
                 const counts = { m3: 0, m4: 0, m5: 0, m6: 0, m7: 0, m8: 0, m9: 0, m10: 0, m11: 0, m12: 0 };
