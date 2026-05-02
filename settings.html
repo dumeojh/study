@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,427 +11,749 @@
 
 
     <style>
-        :root { --primary: #007bff; --danger: #dc3545; --success: #28a745; --gray: #6c757d; --warning: #ffc107; }
-        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f7f9; margin: 0; padding: 0; }
-        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; }
-        .auth-box { background: white; padding: 40px; border-radius: 20px; text-align: center; width: 90%; max-width: 380px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
-        .auth-box input { width: 100%; padding: 15px; font-size: 24px; text-align: center; border: 2px solid #ddd; border-radius: 10px; margin: 20px 0; box-sizing: border-box; }
-        #main-content { display: none; padding: 20px; max-width: 1100px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-        .settings-menu { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-        .menu-btn { flex: 1; min-width: 120px; padding: 15px; font-weight: bold; border: none; border-radius: 10px; cursor: pointer; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.3s; }
-        .menu-btn.active { background: var(--primary); color: white; }
-        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #eee; display: none; }
-        .card.active { display: block; animation: fadeIn 0.4s ease; }
-        h3 { margin-top: 0; border-left: 6px solid var(--primary); padding-left: 12px; margin-bottom: 20px; }
-        .calendar-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .calendar-table th { background: #f8f9fa; padding: 10px; border: 1px solid #ddd; font-size: 14px; }
-        .calendar-table td { height: 95px; border: 1px solid #ddd; vertical-align: top; padding: 8px; cursor: pointer; transition: 0.2s; }
-        .calendar-table td:hover { background: #f0f7ff; }
-        .calendar-table td.is-active { background: #e7f1ff; box-shadow: inset 0 0 0 2px var(--primary); }
-        .status-badge { font-size: 11px; margin-top: 8px; padding: 4px; border-radius: 4px; display: block; text-align: center; font-weight: bold; }
-        .status-on { background: var(--primary); color: white; }
-        .status-off { background: #eee; color: #999; }
-        .reason-text { font-size: 10px; color: var(--danger); margin-top: 5px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .seat-grid-container { background: #e9ecef; padding: 20px; border-radius: 10px; overflow-x: auto; margin: 15px 0; border: 1px solid #ccc; }
-        .seat-grid { display: grid; gap: 3px; justify-content: start; }
-        .seat-cell { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 10px; border-radius: 4px; border: 1px solid #bbb; background: white; cursor: pointer; }
-        .tool-bar { display: flex; gap: 5px; margin-bottom: 15px; padding: 10px; background: #fff; border-radius: 8px; border: 1px solid #ddd; }
-        .tool-btn { padding: 8px 12px; font-size: 13px; border-radius: 5px; border: 1px solid #ddd; cursor: pointer; font-weight: bold; }
-        .tool-btn.selected { border: 2px solid #000; box-shadow: 0 0 8px rgba(0,0,0,0.2); }
-        .seat-0 { background: #fff; } .seat-1 { background: #fff3cd; } .seat-2 { background: #d1e7dd; } 
-        .seat-3 { background: #e2e3e5; } .seat-4 { background: #cff4fc; } .seat-5 { background: #f8d7da; }
-        .btn { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; }
-        .btn-save { background: var(--primary); width: 100%; padding: 18px; margin-top: 15px; font-size: 18px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        :root {
+            --primary: #007bff;
+            --danger: #dc3545;
+            --success: #28a745;
+            --gray: #6c757d;
+            --warning: #ffc107;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        #auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .auth-box {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            width: 90%;
+            max-width: 380px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+
+        .auth-box input {
+            width: 100%;
+            padding: 15px;
+            font-size: 24px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-sizing: border-box;
+        }
+
+        #main-content {
+            display: none;
+            padding: 20px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .settings-menu {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .menu-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: 0.3s;
+        }
+
+        .menu-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #eee;
+            display: none;
+        }
+
+        .card.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        h3 {
+            margin-top: 0;
+            border-left: 6px solid var(--primary);
+            padding-left: 12px;
+            margin-bottom: 20px;
+        }
+
+        .calendar-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .calendar-table th {
+            background: #f8f9fa;
+            padding: 10px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        .calendar-table td {
+            height: 95px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+            padding: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .calendar-table td:hover {
+            background: #f0f7ff;
+        }
+
+        .calendar-table td.is-active {
+            background: #e7f1ff;
+            box-shadow: inset 0 0 0 2px var(--primary);
+        }
+
+        .status-badge {
+            font-size: 11px;
+            margin-top: 8px;
+            padding: 4px;
+            border-radius: 4px;
+            display: block;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status-on {
+            background: var(--primary);
+            color: white;
+        }
+
+        .status-off {
+            background: #eee;
+            color: #999;
+        }
+
+        .reason-text {
+            font-size: 10px;
+            color: var(--danger);
+            margin-top: 5px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .seat-grid-container {
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 15px 0;
+            border: 1px solid #ccc;
+        }
+
+        .seat-grid {
+            display: grid;
+            gap: 3px;
+            justify-content: start;
+        }
+
+        .seat-cell {
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            border-radius: 4px;
+            border: 1px solid #bbb;
+            background: white;
+            cursor: pointer;
+        }
+
+        .tool-bar {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .tool-btn {
+            padding: 8px 12px;
+            font-size: 13px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .tool-btn.selected {
+            border: 2px solid #000;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .seat-0 {
+            background: #fff;
+        }
+
+        .seat-1 {
+            background: #fff3cd;
+        }
+
+        .seat-2 {
+            background: #d1e7dd;
+        }
+
+        .seat-3 {
+            background: #e2e3e5;
+        }
+
+        .seat-4 {
+            background: #cff4fc;
+        }
+
+        .seat-5 {
+            background: #f8d7da;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+        }
+
+        .btn-save {
+            background: var(--primary);
+            width: 100%;
+            padding: 18px;
+            margin-top: 15px;
+            font-size: 18px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
+
 <body>
 
-<div id="auth-overlay">
-    <div class="auth-box">
-        <h2>🔒 관리자 인증</h2>
-        <input type="email" id="email-input" placeholder="관리자 이메일">
-        <input type="password" id="pass-input" placeholder="비밀번호" onkeypress="if(event.key === 'Enter') checkPass()">
-        <div style="display: flex; gap: 10px;">
-            <button class="btn" style="background:var(--primary); flex:2;" onclick="checkPass()">확인</button>
-            <button class="btn" style="background:var(--gray); flex:1;" onclick="location.href='split_admin.html'">취소</button>
-        </div>
-    </div>
-</div>
-<div id="main-content">
-    <div class="header">
-        <h1>⚙️ 통합 환경설정</h1>
-        <button class="btn" style="background:var(--gray);" onclick="location.href='split_admin.html'">⬅️ 관리 화면</button>
-    </div>
-
-    <div class="settings-menu">
-        <button class="menu-btn active" onclick="showTab('tab-schedule', this)">📅 야자일정(달력)</button>
-        <button class="menu-btn" onclick="showTab('tab-period', this)">⏰ 신청기간</button>
-        <button class="menu-btn" onclick="showTab('tab-roster', this)">⚙️ 기초명단</button>
-        <button class="menu-btn" onclick="showTab('tab-seats', this)">🪑 도면설계</button>
-        <button class="menu-btn" onclick="showTab('tab-time', this)">⏱️ 운영시간</button>
-        <button class="menu-btn" onclick="showTab('tab-priority', this)">👤 고정석 권한</button>
-
-    </div>
-
-
-<div id="tab-schedule" class="card active">
-    <!-- 📊 통계 확인 버튼: 상단에 배치하여 접근성 강화 -->
-    <button class="btn" style="background:var(--success); width:100%; padding:15px; margin-bottom:15px; font-size:16px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; color:white;" onclick="showSupervisorStats()">
-        📊 감독교사별 누적 배정 통계 확인
-    </button>
-
-    <!-- 🌟 감독교사 환경설정 섹션 -->
-    <div style="background:#fff3cd; padding:18px; border-radius:12px; margin-bottom:20px; border:1px solid #ffeeba; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-        <div style="display:flex; align-items:center; margin-bottom:8px;">
-            <span style="font-size:20px; margin-right:8px;">👨‍🏫</span>
-            <b style="color:#856404; font-size:15px;">감독교사 명단 관리 및 초기 횟수 설정</b>
-        </div>
-        
-        <p style="font-size:12.5px; color:#664d03; margin:0 0 10px 0; line-height:1.5;">
-            감독교사 성함과 <b>3~4월 소급분</b>을 아래 형식으로 입력하세요. <br>
-            <span style="color:#d9534f;">* 입력 후 '달력 및 설정 저장' 버튼을 눌러야 반영됩니다.</span>
-        </p>
-
-        <textarea id="supervisor-list-input" 
-                  style="width:100%; height:100px; padding:12px; border-radius:8px; border:1px solid #decba1; font-family:monospace; font-size:13px; line-height:1.6; resize:vertical;" 
-                  placeholder="이름,3월횟수,4월횟수&#10;예: 오장한,2,3&#10;예: 김철수,0,1"></textarea>
-        
-        <div style="background:rgba(255,255,255,0.5); padding:8px; border-radius:6px; margin-top:10px; font-size:11px; color:#7d661e; border:1px dashed #decba1;">
-            💡 <b>입력 규칙:</b> [성함],[3월숫자],[4월숫자] (엔터로 한 줄씩 구분)
-        </div>
-    </div>
-
-   
-
-
-
-        <h3>📅 야자 운영 달력 및 요일 설정</h3>
-        <p style="font-size:12px; color:#666;">* 기본으로 운영할 요일을 선택하세요. (체크 해제된 요일은 학생 신청 화면에서도 제외됩니다)</p>
-        
-        <div style="background:#f8f9fa; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #ddd; text-align:center;">
-            <b style="margin-right:10px; color:#333;">기본 운영 요일:</b>
-            <label style="margin:0 5px; cursor:pointer;"><input type="checkbox" class="day-toggle" value="1" checked onchange="updateDefaultDays()"> 월</label>
-            <label style="margin:0 5px; cursor:pointer;"><input type="checkbox" class="day-toggle" value="2" checked onchange="updateDefaultDays()"> 화</label>
-            <label style="margin:0 5px; cursor:pointer;"><input type="checkbox" class="day-toggle" value="3" checked onchange="updateDefaultDays()"> 수</label>
-            <label style="margin:0 5px; cursor:pointer;"><input type="checkbox" class="day-toggle" value="4" checked onchange="updateDefaultDays()"> 목</label>
-            <label style="margin:0 5px; cursor:pointer;"><input type="checkbox" class="day-toggle" value="5" checked onchange="updateDefaultDays()"> 금</label>
-            <label style="margin:0 5px; cursor:pointer; color:blue;"><input type="checkbox" class="day-toggle" value="6" onchange="updateDefaultDays()"> 토</label>
-            <label style="margin:0 5px; cursor:pointer; color:red;"><input type="checkbox" class="day-toggle" value="0" onchange="updateDefaultDays()"> 일</label>
-            <br>
-            <button class="btn" style="background:var(--gray); padding:6px 12px; font-size:12px; margin-top:10px;" onclick="applyDefaultToCurrentMonth()">현재 보고 있는 달에 일괄 적용</button>
-        </div>
-
-        <p style="font-size:12px; color:#666;">* 아래 달력의 날짜를 클릭하면 모의고사, 공휴일 등 특정 날짜만 개별적으로 켜고 끌 수 있습니다.</p>
-        <div style="text-align:center; margin-bottom:15px;"><input type="month" id="calendar-month-select" onchange="renderCalendar()" style="font-size:16px; padding:5px;"></div>
-
-
- <!-- ... 달력 렌더링 영역 (기존 코드 유지) ... -->
-    
-    <div id="calendar-container"></div>
-
-    <!-- 저장 버튼 -->
-    <button class="btn btn-save" onclick="saveCalendarSchedule()" style="width:100%; padding:15px; margin-top:10px; font-weight:bold;">
-        💾 달력 및 감독교사 설정 저장
-    </button>
-</div>
-
-
-
-    
-<div id="tab-period" class="card">
-        <h3>⏰ 학생 신청 가능 기간 설정</h3>
-        <div style="display:grid; gap:15px; padding:20px; background:#f8f9fa; border-radius:10px;">
-            <div style="padding-bottom: 10px; border-bottom: 1px dashed #ccc;">
-                <b style="color:var(--primary); font-size: 16px;">📌 신청 대상 월:</b>
-                <select id="apply-target-month" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-weight: bold; margin-left: 10px; font-size: 16px;">
-                    <option value="3월">3월</option>
-                    <option value="4월">4월</option>
-                    <option value="5월" selected>5월</option>
-                    <option value="6월">6월</option>
-                    <option value="7월">7월</option>
-                    <option value="8월">8월</option>
-                    <option value="9월">9월</option>
-                    <option value="10월">10월</option>
-                    <option value="11월">11월</option>
-                    <option value="12월">12월</option>
-                </select>
-                <span style="font-size: 12px; color: #666; margin-left: 10px;">(학생들은 이 월로만 신청할 수 있습니다)</span>
+    <div id="auth-overlay">
+        <div class="auth-box">
+            <h2>🔒 관리자 인증</h2>
+            <input type="email" id="email-input" placeholder="관리자 이메일">
+            <input type="password" id="pass-input" placeholder="비밀번호"
+                onkeypress="if(event.key === 'Enter') checkPass()">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="background:var(--primary); flex:2;" onclick="checkPass()">확인</button>
+                <button class="btn" style="background:var(--gray); flex:1;"
+                    onclick="location.href='split_admin.html'">취소</button>
             </div>
-            <div>시작: <input type="datetime-local" id="apply-start"></div>
-            <div>종료: <input type="datetime-local" id="apply-end"></div>
         </div>
-        <button class="btn btn-save" onclick="saveApplyPeriod()">💾 신청 기간 저장</button>
     </div>
-
-
-    
-    <div id="tab-roster" class="card">
-        <h3>⚙️ 기초 명단 업로드 (엑셀)</h3>
-        
-        <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
-            ※ 엑셀 양식: A열(학번), B열(이름), C열(학생증번호/바코드), D열(전화번호) 순서로 작성하여 업로드하세요.
-        </p>
-
-        <input type="file" id="excel-input" accept=".xlsx, .xls">
-        <button class="btn" style="background:var(--success); margin-top:10px;" onclick="handleExcelUpload()">🚀 명단 서버 전송</button>
-        <hr>
-        <h4>등록 명단 (<span id="roster-count">0</span>명)</h4>
-        <div id="roster-list" style="max-height:200px; overflow-y:auto; font-size:12px; border:1px solid #ddd; padding:10px;"></div>
-    </div>
-
-    <div id="tab-seats" class="card">
-
-
-        
-        <h3>🪑 자율학습실 좌석 도면 설계</h3>
-        <div style="background: #f1f3f5; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-            <div>가로 <input type="number" id="grid-cols" value="30" style="width:45px;"> X 세로 <input type="number" id="grid-rows" value="20" style="width:45px;"> <button class="btn" style="background:var(--gray); padding: 5px 8px; font-size:11px;" onclick="resizeGrid()">리셋</button></div>
-            <div><input type="number" id="target-index" value="1" style="width: 35px;"> 번째: 
-                <button class="btn" style="background:#495057; padding: 5px 6px; font-size:11px;" onclick="modifyGrid('insertRow')">행삽입</button>
-                <button class="btn" style="background:#adb5bd; padding: 5px 6px; font-size:11px; color:#333;" onclick="modifyGrid('deleteRow')">행삭제</button>
-                <button class="btn" style="background:#495057; padding: 5px 6px; font-size:11px;" onclick="modifyGrid('insertCol')">열삽입</button>
-                <button class="btn" style="background:#adb5bd; padding: 5px 6px; font-size:11px; color:#333;" onclick="modifyGrid('deleteCol')">열삭제</button>
-            </div>
-            <button class="btn" style="background:var(--warning); padding: 5px 10px; font-size:11px; color:#000;" onclick="undo()">↩️되돌리기</button>
+    <div id="main-content">
+        <div class="header">
+            <h1>⚙️ 통합 환경설정</h1>
+            <button class="btn" style="background:var(--gray);" onclick="location.href='split_admin.html'">⬅️ 관리
+                화면</button>
         </div>
-        <div class="tool-bar">
-            <button class="tool-btn seat-0 selected" onclick="selectTool(0, this)">⬜통로</button>
-            <button class="tool-btn seat-1" onclick="selectTool(1, this)">🟨고정</button>
-            <button class="tool-btn seat-2" onclick="selectTool(2, this)">🟩자율</button>
-            <button class="tool-btn seat-3" onclick="selectTool(3, this)">⬛벽</button>
-            <button class="tool-btn seat-4" onclick="selectTool(4, this)">🟦문</button>
-            <button class="tool-btn seat-5" onclick="selectTool(5, this)">🟥특수</button>
+
+        <div class="settings-menu">
+            <button class="menu-btn active" onclick="showTab('tab-schedule', this)">📅 야자일정(달력)</button>
+            <button class="menu-btn" onclick="showTab('tab-period', this)">⏰ 신청기간</button>
+            <button class="menu-btn" onclick="showTab('tab-roster', this)">⚙️ 기초명단</button>
+            <button class="menu-btn" onclick="showTab('tab-seats', this)">🪑 도면설계</button>
+            <button class="menu-btn" onclick="showTab('tab-time', this)">⏱️ 운영시간</button>
+            <button class="menu-btn" onclick="showTab('tab-priority', this)">👤 고정석 권한</button>
+
         </div>
-        <div class="seat-grid-container"><div id="seat-grid" class="seat-grid"></div></div>
-        <button class="btn btn-save" onclick="saveSeatLayout()">🌐 도면 서버 배포</button>
-    </div>
 
 
+        <div id="tab-schedule" class="card active">
+            <!-- 📊 통계 확인 버튼: 상단에 배치하여 접근성 강화 -->
+            <button class="btn"
+                style="background:var(--success); width:100%; padding:15px; margin-bottom:15px; font-size:16px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; color:white;"
+                onclick="showSupervisorStats()">
+                📊 감독교사별 누적 배정 통계 확인
+            </button>
 
-<div id="tab-time" class="card">
-
-    //////////////
-    <div style="margin-bottom:15px; background:#eef6ff; padding:15px; border-radius:8px; border:1px solid #b6d4fe;">
-    <b style="color:#052c65;">📐 도면 운영 모드 (사용자 경험 선택)</b><br>
-    <p style="font-size:13px; margin:5px 0;">현재 프로그램 전체에서 사용할 도면 형식을 결정합니다.</p>
-    <label style="display:inline-block; margin-top:8px; margin-right:20px; cursor:pointer;">
-        <input type="radio" name="layout-mode" value="1" checked> <b>[기존] 1개 통합 도면</b>
-    </label>
-    <label style="display:inline-block; margin-top:8px; cursor:pointer;">
-        <input type="radio" name="layout-mode" value="2"> <b>[신규] 다중 구역(A,B,C실) 도면</b>
-    </label>
-</div>
-/////////////////////////
-
-<div style="margin-bottom:15px; background:#fff3cd; padding:15px; border-radius:8px; border:1px solid #ffeeba;">
-    <b style="color:#856404;">🚨 일일 출결 자동 마감 설정</b><br>
-    <p style="font-size:13px; margin:5px 0;">지정된 시간에 미귀가자를 자동으로 '귀가(누락)' 처리하거나 마감 기준 시간으로 사용합니다.</p>
-    
-    <div style="margin-top:10px; display: flex; align-items: center; gap: 10px;">
-        <label style="cursor:pointer;">
-            <input type="checkbox" id="auto-close-enable" checked> <b>자동 마감 기능 켜기</b>
-        </label>
-        <span style="margin-left: 10px;">|</span>
-        <b>강제 마감 시간:</b> 
-        <input type="time" id="auto-close-time" style="padding:5px; border:1px solid #ccc; border-radius:4px;">
-    </div>
-</div>
-
-
-
-
-        <h3>⏱️ 야간 자율학습 운영 시간 및 발권 설정</h3>
-        <div style="display:grid; gap:15px; padding:20px; background:#f8f9fa; border-radius:12px;">
-            
-<div style="padding-bottom:15px; border-bottom:2px dashed #ddd;">
-                <div style="margin-bottom:15px; background:#eef6ff; padding:15px; border-radius:8px; border:1px solid #b6d4fe;">
-                    <b style="color:#052c65;">🔐 키오스크 학생 인증 방식</b><br>
-                    <label style="display:block; margin-top:8px;"><input type="radio" name="auth-mode" value="1" checked> <b>[1단계] 학번만 입력</b> (바코드 스캐너 사용 시 추천)</label>
-                    <label style="display:block; margin-top:5px;"><input type="radio" name="auth-mode" value="2"> <b>[2단계] 학번 입력 후 '이름 확인' 팝업</b> (가장 추천)</label>
-                    <label style="display:block; margin-top:5px;"><input type="radio" name="auth-mode" value="3"> <b>[3단계] 학번 + 이름 모두 입력</b> (보안 최고, 시간 소요)</label>
+            <!-- 🌟 감독교사 환경설정 섹션 -->
+            <div
+                style="background:#fff3cd; padding:18px; border-radius:12px; margin-bottom:20px; border:1px solid #ffeeba; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <div style="display:flex; align-items:center; margin-bottom:8px;">
+                    <span style="font-size:20px; margin-right:8px;">👨‍🏫</span>
+                    <b style="color:#856404; font-size:15px;">감독교사 명단 관리 및 초기 횟수 설정</b>
                 </div>
 
-                <div style="margin-bottom:10px;">
-                    <b>🎟️ 발권 시작 시간:</b> 1타임 시작
-                    <input type="number" id="ticket-lead-time" value="30" style="width:50px; text-align:center;"> 분 전부터 가능
-                </div>
-                <div>
-                    <b>📢 발권기 공지사항:</b><br>
-                    <input type="text" id="ticket-notice" placeholder="첫 화면에 표시될 안내 문구" style="width:100%; margin-top:5px; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                <p style="font-size:12.5px; color:#664d03; margin:0 0 10px 0; line-height:1.5;">
+                    감독교사 성함과 <b>3~4월 소급분</b>을 아래 형식으로 입력하세요. <br>
+                    <span style="color:#d9534f;">* 입력 후 '달력 및 설정 저장' 버튼을 눌러야 반영됩니다.</span>
+                </p>
+
+                <textarea id="supervisor-list-input"
+                    style="width:100%; height:100px; padding:12px; border-radius:8px; border:1px solid #decba1; font-family:monospace; font-size:13px; line-height:1.6; resize:vertical;"
+                    placeholder="이름,3월횟수,4월횟수&#10;예: 오장한,2,3&#10;예: 김철수,0,1"></textarea>
+
+                <div
+                    style="background:rgba(255,255,255,0.5); padding:8px; border-radius:6px; margin-top:10px; font-size:11px; color:#7d661e; border:1px dashed #decba1;">
+                    💡 <b>입력 규칙:</b> [성함],[3월숫자],[4월숫자] (엔터로 한 줄씩 구분)
                 </div>
             </div>
 
 
 
-<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #eee; padding-bottom:10px;">
-                <b style="font-size:16px;">1T:</b> 
-                <input type="time" id="t1-start" onchange="calculateMinutes(1)"> ~ <input type="time" id="t1-end" onchange="calculateMinutes(1)"> 
-                <span style="color:#666; font-size:13px;">(총 <b id="t1-min" style="color:var(--primary);">0분</b>)</span>
-                <div style="margin-left:auto; background:#fff3cd; padding:6px 12px; border-radius:6px; font-size:13px; font-weight:bold; color:#856404;">
-                    최소 인정 기준: <input type="number" id="t1-req-min" value="60" style="width:45px; text-align:center; border:1px solid #ccc; border-radius:4px;"> 분 이상
+
+
+            <h3>📅 야자 운영 달력 및 요일 설정</h3>
+            <p style="font-size:12px; color:#666;">* 기본으로 운영할 요일을 선택하세요. (체크 해제된 요일은 학생 신청 화면에서도 제외됩니다)</p>
+
+            <div
+                style="background:#f8f9fa; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #ddd; text-align:center;">
+                <b style="margin-right:10px; color:#333;">기본 운영 요일:</b>
+                <label style="margin:0 5px; cursor:pointer;"><input type="checkbox" class="day-toggle" value="1" checked
+                        onchange="updateDefaultDays()"> 월</label>
+                <label style="margin:0 5px; cursor:pointer;"><input type="checkbox" class="day-toggle" value="2" checked
+                        onchange="updateDefaultDays()"> 화</label>
+                <label style="margin:0 5px; cursor:pointer;"><input type="checkbox" class="day-toggle" value="3" checked
+                        onchange="updateDefaultDays()"> 수</label>
+                <label style="margin:0 5px; cursor:pointer;"><input type="checkbox" class="day-toggle" value="4" checked
+                        onchange="updateDefaultDays()"> 목</label>
+                <label style="margin:0 5px; cursor:pointer;"><input type="checkbox" class="day-toggle" value="5" checked
+                        onchange="updateDefaultDays()"> 금</label>
+                <label style="margin:0 5px; cursor:pointer; color:blue;"><input type="checkbox" class="day-toggle"
+                        value="6" onchange="updateDefaultDays()"> 토</label>
+                <label style="margin:0 5px; cursor:pointer; color:red;"><input type="checkbox" class="day-toggle"
+                        value="0" onchange="updateDefaultDays()"> 일</label>
+                <br>
+                <button class="btn" style="background:var(--gray); padding:6px 12px; font-size:12px; margin-top:10px;"
+                    onclick="applyDefaultToCurrentMonth()">현재 보고 있는 달에 일괄 적용</button>
+            </div>
+
+            <p style="font-size:12px; color:#666;">* 아래 달력의 날짜를 클릭하면 모의고사, 공휴일 등 특정 날짜만 개별적으로 켜고 끌 수 있습니다.</p>
+            <div style="text-align:center; margin-bottom:15px;"><input type="month" id="calendar-month-select"
+                    onchange="renderCalendar()" style="font-size:16px; padding:5px;"></div>
+
+
+            <!-- ... 달력 렌더링 영역 (기존 코드 유지) ... -->
+
+            <div id="calendar-container"></div>
+
+            <!-- 저장 버튼 -->
+            <button class="btn btn-save" onclick="saveCalendarSchedule()"
+                style="width:100%; padding:15px; margin-top:10px; font-weight:bold;">
+                💾 달력 및 감독교사 설정 저장
+            </button>
+        </div>
+
+
+
+
+        <div id="tab-period" class="card">
+            <h3>⏰ 학생 신청 가능 기간 설정</h3>
+            <div style="display:grid; gap:15px; padding:20px; background:#f8f9fa; border-radius:10px;">
+                <div style="padding-bottom: 10px; border-bottom: 1px dashed #ccc;">
+                    <b style="color:var(--primary); font-size: 16px;">📌 신청 대상 월:</b>
+                    <select id="apply-target-month"
+                        style="padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-weight: bold; margin-left: 10px; font-size: 16px;">
+                        <option value="3월">3월</option>
+                        <option value="4월">4월</option>
+                        <option value="5월" selected>5월</option>
+                        <option value="6월">6월</option>
+                        <option value="7월">7월</option>
+                        <option value="8월">8월</option>
+                        <option value="9월">9월</option>
+                        <option value="10월">10월</option>
+                        <option value="11월">11월</option>
+                        <option value="12월">12월</option>
+                    </select>
+                    <span style="font-size: 12px; color: #666; margin-left: 10px;">(학생들은 이 월로만 신청할 수 있습니다)</span>
+                </div>
+                <div>시작: <input type="datetime-local" id="apply-start"></div>
+                <div>종료: <input type="datetime-local" id="apply-end"></div>
+            </div>
+            <button class="btn btn-save" onclick="saveApplyPeriod()">💾 신청 기간 저장</button>
+        </div>
+
+
+
+        <div id="tab-roster" class="card">
+            <h3>⚙️ 기초 명단 업로드 (엑셀)</h3>
+
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                ※ 엑셀 양식: A열(학번), B열(이름), C열(학생증번호/바코드), D열(전화번호) 순서로 작성하여 업로드하세요.
+            </p>
+
+            <input type="file" id="excel-input" accept=".xlsx, .xls">
+            <button class="btn" style="background:var(--success); margin-top:10px;" onclick="handleExcelUpload()">🚀 명단
+                서버 전송</button>
+            <hr>
+            <h4>등록 명단 (<span id="roster-count">0</span>명)</h4>
+            <div id="roster-list"
+                style="max-height:200px; overflow-y:auto; font-size:12px; border:1px solid #ddd; padding:10px;"></div>
+        </div>
+
+        <div id="tab-seats" class="card">
+
+
+
+            <h3>🪑 자율학습실 좌석 도면 설계</h3>
+            <div
+                style="background: #f1f3f5; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                <div>가로 <input type="number" id="grid-cols" value="30" style="width:45px;"> X 세로 <input type="number"
+                        id="grid-rows" value="20" style="width:45px;"> <button class="btn"
+                        style="background:var(--gray); padding: 5px 8px; font-size:11px;"
+                        onclick="resizeGrid()">리셋</button></div>
+                <div><input type="number" id="target-index" value="1" style="width: 35px;"> 번째:
+                    <button class="btn" style="background:#495057; padding: 5px 6px; font-size:11px;"
+                        onclick="modifyGrid('insertRow')">행삽입</button>
+                    <button class="btn" style="background:#adb5bd; padding: 5px 6px; font-size:11px; color:#333;"
+                        onclick="modifyGrid('deleteRow')">행삭제</button>
+                    <button class="btn" style="background:#495057; padding: 5px 6px; font-size:11px;"
+                        onclick="modifyGrid('insertCol')">열삽입</button>
+                    <button class="btn" style="background:#adb5bd; padding: 5px 6px; font-size:11px; color:#333;"
+                        onclick="modifyGrid('deleteCol')">열삭제</button>
+                </div>
+                <button class="btn" style="background:var(--warning); padding: 5px 10px; font-size:11px; color:#000;"
+                    onclick="undo()">↩️되돌리기</button>
+            </div>
+            <div class="tool-bar">
+                <button class="tool-btn seat-0 selected" onclick="selectTool(0, this)">⬜통로</button>
+                <button class="tool-btn seat-1" onclick="selectTool(1, this)">🟨고정</button>
+                <button class="tool-btn seat-2" onclick="selectTool(2, this)">🟩자율</button>
+                <button class="tool-btn seat-3" onclick="selectTool(3, this)">⬛벽</button>
+                <button class="tool-btn seat-4" onclick="selectTool(4, this)">🟦문</button>
+                <button class="tool-btn seat-5" onclick="selectTool(5, this)">🟥특수</button>
+            </div>
+            <div class="seat-grid-container">
+                <div id="seat-grid" class="seat-grid"></div>
+            </div>
+            <button class="btn btn-save" onclick="saveSeatLayout()">🌐 도면 서버 배포</button>
+        </div>
+
+
+
+        <div id="tab-time" class="card">
+
+            //////////////
+            <div
+                style="margin-bottom:15px; background:#eef6ff; padding:15px; border-radius:8px; border:1px solid #b6d4fe;">
+                <b style="color:#052c65;">📐 도면 운영 모드 (사용자 경험 선택)</b><br>
+                <p style="font-size:13px; margin:5px 0;">현재 프로그램 전체에서 사용할 도면 형식을 결정합니다.</p>
+                <label style="display:inline-block; margin-top:8px; margin-right:20px; cursor:pointer;">
+                    <input type="radio" name="layout-mode" value="1" checked> <b>[기존] 1개 통합 도면</b>
+                </label>
+                <label style="display:inline-block; margin-top:8px; cursor:pointer;">
+                    <input type="radio" name="layout-mode" value="2"> <b>[신규] 다중 구역(A,B,C실) 도면</b>
+                </label>
+            </div>
+            /////////////////////////
+
+            <div
+                style="margin-bottom:15px; background:#fff3cd; padding:15px; border-radius:8px; border:1px solid #ffeeba;">
+                <b style="color:#856404;">🚨 일일 출결 자동 마감 설정</b><br>
+                <p style="font-size:13px; margin:5px 0;">지정된 시간에 미귀가자를 자동으로 '귀가(누락)' 처리하거나 마감 기준 시간으로 사용합니다.</p>
+
+                <div style="margin-top:10px; display: flex; align-items: center; gap: 10px;">
+                    <label style="cursor:pointer;">
+                        <input type="checkbox" id="auto-close-enable" checked> <b>자동 마감 기능 켜기</b>
+                    </label>
+                    <span style="margin-left: 10px;">|</span>
+                    <b>강제 마감 시간:</b>
+                    <input type="time" id="auto-close-time"
+                        style="padding:5px; border:1px solid #ccc; border-radius:4px;">
                 </div>
             </div>
-            
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #eee; padding-bottom:10px;">
-                <b style="font-size:16px;">2T:</b> 
-                <input type="time" id="t2-start" onchange="calculateMinutes(2)"> ~ <input type="time" id="t2-end" onchange="calculateMinutes(2)"> 
-                <span style="color:#666; font-size:13px;">(총 <b id="t2-min" style="color:var(--primary);">0분</b>)</span>
-                <div style="margin-left:auto; background:#fff3cd; padding:6px 12px; border-radius:6px; font-size:13px; font-weight:bold; color:#856404;">
-                    최소 인정 기준: <input type="number" id="t2-req-min" value="60" style="width:45px; text-align:center; border:1px solid #ccc; border-radius:4px;"> 분 이상
+
+
+
+
+            <h3>⏱️ 야간 자율학습 운영 시간 및 발권 설정</h3>
+            <div style="display:grid; gap:15px; padding:20px; background:#f8f9fa; border-radius:12px;">
+
+                <div style="padding-bottom:15px; border-bottom:2px dashed #ddd;">
+                    <div
+                        style="margin-bottom:15px; background:#eef6ff; padding:15px; border-radius:8px; border:1px solid #b6d4fe;">
+                        <b style="color:#052c65;">🔐 키오스크 학생 인증 방식</b><br>
+                        <label style="display:block; margin-top:8px;"><input type="radio" name="auth-mode" value="1"
+                                checked> <b>[1단계] 학번만 입력</b> (바코드 스캐너 사용 시 추천)</label>
+                        <label style="display:block; margin-top:5px;"><input type="radio" name="auth-mode" value="2">
+                            <b>[2단계] 학번 입력 후 '이름 확인' 팝업</b> (가장 추천)</label>
+                        <label style="display:block; margin-top:5px;"><input type="radio" name="auth-mode" value="3">
+                            <b>[3단계] 학번 + 이름 모두 입력</b> (보안 최고, 시간 소요)</label>
+                    </div>
+
+                    <div style="margin-bottom:10px;">
+                        <b>🎟️ 발권 시작 시간:</b> 1타임 시작
+                        <input type="number" id="ticket-lead-time" value="30" style="width:50px; text-align:center;"> 분
+                        전부터 가능
+                    </div>
+                    <div>
+                        <b>📢 발권기 공지사항:</b><br>
+                        <input type="text" id="ticket-notice" placeholder="첫 화면에 표시될 안내 문구"
+                            style="width:100%; margin-top:5px; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                    </div>
+                </div>
+
+
+
+                <div
+                    style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #eee; padding-bottom:10px;">
+                    <b style="font-size:16px;">1T:</b>
+                    <input type="time" id="t1-start" onchange="calculateMinutes(1)"> ~ <input type="time" id="t1-end"
+                        onchange="calculateMinutes(1)">
+                    <span style="color:#666; font-size:13px;">(총 <b id="t1-min"
+                            style="color:var(--primary);">0분</b>)</span>
+                    <div
+                        style="margin-left:auto; background:#fff3cd; padding:6px 12px; border-radius:6px; font-size:13px; font-weight:bold; color:#856404;">
+                        최소 인정 기준: <input type="number" id="t1-req-min" value="60"
+                            style="width:45px; text-align:center; border:1px solid #ccc; border-radius:4px;"> 분 이상
+                    </div>
+                </div>
+
+                <div
+                    style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #eee; padding-bottom:10px;">
+                    <b style="font-size:16px;">2T:</b>
+                    <input type="time" id="t2-start" onchange="calculateMinutes(2)"> ~ <input type="time" id="t2-end"
+                        onchange="calculateMinutes(2)">
+                    <span style="color:#666; font-size:13px;">(총 <b id="t2-min"
+                            style="color:var(--primary);">0분</b>)</span>
+                    <div
+                        style="margin-left:auto; background:#fff3cd; padding:6px 12px; border-radius:6px; font-size:13px; font-weight:bold; color:#856404;">
+                        최소 인정 기준: <input type="number" id="t2-req-min" value="60"
+                            style="width:45px; text-align:center; border:1px solid #ccc; border-radius:4px;"> 분 이상
+                    </div>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <b style="font-size:16px;">3T:</b>
+                    <input type="time" id="t3-start" onchange="calculateMinutes(3)"> ~ <input type="time" id="t3-end"
+                        onchange="calculateMinutes(3)">
+                    <span style="color:#666; font-size:13px;">(총 <b id="t3-min"
+                            style="color:var(--primary);">0분</b>)</span>
+                    <div
+                        style="margin-left:auto; background:#fff3cd; padding:6px 12px; border-radius:6px; font-size:13px; font-weight:bold; color:#856404;">
+                        최소 인정 기준: <input type="number" id="t3-req-min" value="60"
+                            style="width:45px; text-align:center; border:1px solid #ccc; border-radius:4px;"> 분 이상
+                    </div>
                 </div>
             </div>
-            
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                <b style="font-size:16px;">3T:</b> 
-                <input type="time" id="t3-start" onchange="calculateMinutes(3)"> ~ <input type="time" id="t3-end" onchange="calculateMinutes(3)"> 
-                <span style="color:#666; font-size:13px;">(총 <b id="t3-min" style="color:var(--primary);">0분</b>)</span>
-                <div style="margin-left:auto; background:#fff3cd; padding:6px 12px; border-radius:6px; font-size:13px; font-weight:bold; color:#856404;">
-                    최소 인정 기준: <input type="number" id="t3-req-min" value="60" style="width:45px; text-align:center; border:1px solid #ccc; border-radius:4px;"> 분 이상
-                </div>
+            <button class="btn btn-save" onclick="saveTimeSettings()">💾 설정 저장</button>
+        </div>
+    </div>
+
+
+
+    <!-- ▼ tab-priority 카드 내부를 이 코드로 교체하세요 ▼ -->
+    <div id="tab-priority" class="card">
+        <h3>💺 고정석 운영 및 권한 설정</h3>
+
+        <!-- 🔍 검색 및 정렬 도구 모음 -->
+        <div
+            style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+            <div style="flex: 1; min-width: 200px;">
+                <b style="font-size: 13px;">🔍 학생 검색:</b>
+                <input type="text" id="priority-search-input" placeholder="학번 또는 이름 입력..."
+                    style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc; margin-top: 5px;"
+                    onkeyup="filterPriorityTable()">
+            </div>
+            <div style="display: flex; gap: 5px; align-items: flex-end;">
+                <button class="btn" style="background:var(--primary); padding: 8px 12px; font-size: 12px;"
+                    onclick="sortPriorityByClass()">학년/반 정렬</button>
+                <button class="btn" style="background:var(--gray); padding: 8px 12px; font-size: 12px;"
+                    onclick="loadStudentPriorityList()">🔄 초기화</button>
             </div>
         </div>
-        <button class="btn btn-save" onclick="saveTimeSettings()">💾 설정 저장</button>
-    </div>
-</div>
 
-
-
-<!-- ▼ tab-priority 카드 내부를 이 코드로 교체하세요 ▼ -->
-<div id="tab-priority" class="card">
-    <h3>💺 고정석 운영 및 권한 설정</h3>
-    
-    <!-- 🔍 검색 및 정렬 도구 모음 -->
-    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-        <div style="flex: 1; min-width: 200px;">
-            <b style="font-size: 13px;">🔍 학생 검색:</b>
-            <input type="text" id="priority-search-input" placeholder="학번 또는 이름 입력..." 
-                   style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc; margin-top: 5px;"
-                   onkeyup="filterPriorityTable()">
+        <div
+            style="margin-bottom: 20px; padding: 15px; background: #eef2f7; border-radius: 10px; border-left: 5px solid var(--primary);">
+            <p style="margin-top:0;"><strong>⚙️ 운영 모드 설정</strong></p>
+            <label><input type="radio" name="opMode" value="manual" checked> <b>수동 지정</b> (체크한 학생만 고정석 신청
+                가능)</label><br>
+            <label style="margin-top:5px; display:inline-block;"><input type="radio" name="opMode" value="auto"> <b>자동
+                    분석</b> (전월 참여율 상위 30명 자동 부여)</label>
+            <button onclick="saveOpMode()" class="btn"
+                style="background:var(--primary); margin-top:10px; padding:5px 15px; font-size:12px;">모드 저장</button>
         </div>
-        <div style="display: flex; gap: 5px; align-items: flex-end;">
-            <button class="btn" style="background:var(--primary); padding: 8px 12px; font-size: 12px;" onclick="sortPriorityByClass()">학년/반 정렬</button>
-            <button class="btn" style="background:var(--gray); padding: 8px 12px; font-size: 12px;" onclick="loadStudentPriorityList()">🔄 초기화</button>
+
+        <h4>📊 학생별 참여 통계 및 권한 부여</h4>
+        <p style="font-size:12px; color:#666;">* 파란색 월 제목(3월▼)을 클릭하면 해당 월 참여가 많은 순으로 자동 정렬됩니다.</p>
+
+        <div id="student-priority-table"
+            style="max-height: 500px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px;">
+            <table
+                style="width:100%; border-collapse: collapse; text-align: center; white-space: nowrap; font-size: 13px;">
+                <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
+                    <tr style="border-bottom: 2px solid #ccc;">
+                        <th style="padding: 12px; width: 40px;">No.</th>
+                        <th style="padding: 12px; cursor:pointer;" onclick="sortPriorityTable('id')">학번 ↕</th>
+                        <th style="padding: 12px; cursor:pointer;" onclick="sortPriorityTable('name')">이름 ↕</th>
+                        <th style="padding: 12px; color:var(--primary);">권한</th>
+                        <!-- 월별 정렬 클릭 이벤트 -->
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m3')">3월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m4')">4월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m5')">5월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m6')">6월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m7')">7월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m8')">8월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m9')">9월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m10')">10월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m11')">11월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m12')">12월▼
+                        </th>
+                        <th style="padding: 12px; cursor:pointer; color:var(--danger); font-weight:bold;"
+                            onclick="sortPriorityTable('total')">총계▼</th>
+                    </tr>
+                </thead>
+                <tbody id="student-list-body">
+                    <!-- 자바스크립트로 데이터 로드 -->
+                </tbody>
+            </table>
         </div>
+        <button onclick="savePriorityList()" class="btn btn-success"
+            style="width:100%; margin-top:15px; padding: 18px; font-size: 16px; background:var(--success);">💾 고정석 권한 설정
+            저장</button>
     </div>
 
-    <div style="margin-bottom: 20px; padding: 15px; background: #eef2f7; border-radius: 10px; border-left: 5px solid var(--primary);">
-        <p style="margin-top:0;"><strong>⚙️ 운영 모드 설정</strong></p>
-        <label><input type="radio" name="opMode" value="manual" checked> <b>수동 지정</b> (체크한 학생만 고정석 신청 가능)</label><br>
-        <label style="margin-top:5px; display:inline-block;"><input type="radio" name="opMode" value="auto"> <b>자동 분석</b> (전월 참여율 상위 30명 자동 부여)</label>
-        <button onclick="saveOpMode()" class="btn" style="background:var(--primary); margin-top:10px; padding:5px 15px; font-size:12px;">모드 저장</button>
-    </div>
-
-    <h4>📊 학생별 참여 통계 및 권한 부여</h4>
-    <p style="font-size:12px; color:#666;">* 파란색 월 제목(3월▼)을 클릭하면 해당 월 참여가 많은 순으로 자동 정렬됩니다.</p>
-
-    <div id="student-priority-table" style="max-height: 500px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px;">
-        <table style="width:100%; border-collapse: collapse; text-align: center; white-space: nowrap; font-size: 13px;">
-            <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
-                <tr style="border-bottom: 2px solid #ccc;">
-                    <th style="padding: 12px; width: 40px;">No.</th>
-                    <th style="padding: 12px; cursor:pointer;" onclick="sortPriorityTable('id')">학번 ↕</th>
-                    <th style="padding: 12px; cursor:pointer;" onclick="sortPriorityTable('name')">이름 ↕</th>
-                    <th style="padding: 12px; color:var(--primary);">권한</th>
-                    <!-- 월별 정렬 클릭 이벤트 -->
-                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m3')">3월▼</th>
-                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m4')">4월▼</th>
-                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m5')">5월▼</th>
-                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m6')">6월▼</th>
-                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m7')">7월▼</th>
-                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m8')">8월▼</th>
-                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m9')">9월▼</th>
-                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m10')">10월▼</th>
-                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m11')">11월▼</th>
-                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m12')">12월▼</th>
-                    <th style="padding: 12px; cursor:pointer; color:var(--danger); font-weight:bold;" onclick="sortPriorityTable('total')">총계▼</th>
-                </tr>
-            </thead>
-            <tbody id="student-list-body">
-                <!-- 자바스크립트로 데이터 로드 -->
-            </tbody>
-        </table>
-    </div>
-    <button onclick="savePriorityList()" class="btn btn-success" style="width:100%; margin-top:15px; padding: 18px; font-size: 16px; background:var(--success);">💾 고정석 권한 설정 저장</button>
-</div>
-
-<script>
-    const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <script>
+        let allStudentData = [];
+        const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 
-    // 전역 변수들
-    let currentTool = 0, seatMapData = [], rows = 20, cols = 30, currentSchedule = {}, historyStack = [];
-    let defaultOperatingDays = [1, 2, 3, 4, 5]; 
+        // 전역 변수들
+        let currentTool = 0, seatMapData = [], rows = 20, cols = 30, currentSchedule = {}, historyStack = [];
+        let defaultOperatingDays = [1, 2, 3, 4, 5];
 
 
-async function checkPass() {
-    const email = document.getElementById('email-input').value.trim();
-    const pass = document.getElementById('pass-input').value.trim();
-    
-    if (!email || !pass) {
-        alert("이메일과 비밀번호를 모두 입력해주세요.");
-        return;
-    }
-    
-    try {
-        // supabaseClient 로 변경
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-            email: email,
-            password: pass,
-        });
-        
-        if (error) throw error; 
-        
-        document.getElementById('auth-overlay').style.display = 'none';
-        document.getElementById('main-content').style.display = 'block';
-        loadAllSettings();
-    } catch (error) {
-        alert("로그인 실패! 이메일이나 비밀번호를 다시 확인해주세요.");
-        console.error(error);
-    }
-}
+        async function checkPass() {
+            const email = document.getElementById('email-input').value.trim();
+            const pass = document.getElementById('pass-input').value.trim();
 
-    function showTab(tabId, btn) {
-        document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        if(btn) btn.classList.add('active');
-    }
+            if (!email || !pass) {
+                alert("이메일과 비밀번호를 모두 입력해주세요.");
+                return;
+            }
 
-    // 요일 및 달력 관련 함수들
-    function updateDefaultDays() {
-        defaultOperatingDays = Array.from(document.querySelectorAll('.day-toggle:checked')).map(cb => parseInt(cb.value));
-    }
+            try {
+                // supabaseClient 로 변경
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: pass,
+                });
 
-    function applyDefaultToCurrentMonth() {
-        if(!confirm("현재 달력의 개별 설정(공휴일 등)이 초기화되고, 위에서 설정한 요일에 맞춰 다시 그려집니다.\n진행하시겠습니까?")) return;
-        const monthInput = document.getElementById('calendar-month-select').value;
-        Object.keys(currentSchedule).forEach(k => { if(k.startsWith(monthInput)) delete currentSchedule[k]; });
-        renderCalendar();
-    }
+                if (error) throw error;
+
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                loadAllSettings();
+            } catch (error) {
+                alert("로그인 실패! 이메일이나 비밀번호를 다시 확인해주세요.");
+                console.error(error);
+            }
+        }
+
+        function showTab(tabId, btn) {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (btn) btn.classList.add('active');
+        }
+
+        // 요일 및 달력 관련 함수들
+        function updateDefaultDays() {
+            defaultOperatingDays = Array.from(document.querySelectorAll('.day-toggle:checked')).map(cb => parseInt(cb.value));
+        }
+
+        function applyDefaultToCurrentMonth() {
+            if (!confirm("현재 달력의 개별 설정(공휴일 등)이 초기화되고, 위에서 설정한 요일에 맞춰 다시 그려집니다.\n진행하시겠습니까?")) return;
+            const monthInput = document.getElementById('calendar-month-select').value;
+            Object.keys(currentSchedule).forEach(k => { if (k.startsWith(monthInput)) delete currentSchedule[k]; });
+            renderCalendar();
+        }
 
 
-    //////////////////////////////
-function renderCalendar() {
-    const monthInput = document.getElementById('calendar-month-select');
-    if(!monthInput.value) {
-        const now = new Date();
-        monthInput.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}`;
-    }
-    const [year, month] = monthInput.value.split('-').map(Number);
-    
-    // 🌟 상단 월 표시 업데이트 (4월, 5월... 기재)
-    const monthDisplay = document.getElementById('current-month-display');
-    if (monthDisplay) monthDisplay.innerText = `${month}월 배정 현황`;
+        //////////////////////////////
+        function renderCalendar() {
+            const monthInput = document.getElementById('calendar-month-select');
+            if (!monthInput.value) {
+                const now = new Date();
+                monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            }
+            const [year, month] = monthInput.value.split('-').map(Number);
 
-    const firstDay = new Date(year, month-1, 1).getDay();
-    const lastDate = new Date(year, month, 0).getDate();
+            // 🌟 상단 월 표시 업데이트 (4월, 5월... 기재)
+            const monthDisplay = document.getElementById('current-month-display');
+            if (monthDisplay) monthDisplay.innerText = `${month}월 배정 현황`;
 
-    // 헤더 생성 (일~토)
-    let html = `<table class="calendar-table">
+            const firstDay = new Date(year, month - 1, 1).getDay();
+            const lastDate = new Date(year, month, 0).getDate();
+
+            // 헤더 생성 (일~토)
+            let html = `<table class="calendar-table">
         <thead>
             <tr>
                 <th style="color:red">일</th>
@@ -444,27 +767,27 @@ function renderCalendar() {
         </thead>
         <tbody><tr>`;
 
-    // 1일 시작 전 빈칸 채우기
-    for(let i=0; i<firstDay; i++) html += `<td></td>`;
+            // 1일 시작 전 빈칸 채우기
+            for (let i = 0; i < firstDay; i++) html += `<td></td>`;
 
-    for(let date=1; date<=lastDate; date++) {
-        const dStr = `${year}-${String(month).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
-        const dayIdx = new Date(year, month-1, date).getDay(); // 0:일, 6:토
-        
-        // 데이터가 없는 경우 기본값 생성
-        if(currentSchedule[dStr] === undefined) {
-            const isOperating = defaultOperatingDays.includes(dayIdx);
-            currentSchedule[dStr] = { active: isOperating, reason: isOperating ? "" : "정규휴무", supervisor: "" };
-        }
-        
-        const data = currentSchedule[dStr];
-        
-        // 🌟 날짜 색상 결정 (일요일: 레드, 토요일: 블루)
-        let dateColor = "inherit";
-        if (dayIdx === 0) dateColor = "red";
-        else if (dayIdx === 6) dateColor = "blue";
+            for (let date = 1; date <= lastDate; date++) {
+                const dStr = `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+                const dayIdx = new Date(year, month - 1, date).getDay(); // 0:일, 6:토
 
-        html += `
+                // 데이터가 없는 경우 기본값 생성
+                if (currentSchedule[dStr] === undefined) {
+                    const isOperating = defaultOperatingDays.includes(dayIdx);
+                    currentSchedule[dStr] = { active: isOperating, reason: isOperating ? "" : "정규휴무", supervisor: "" };
+                }
+
+                const data = currentSchedule[dStr];
+
+                // 🌟 날짜 색상 결정 (일요일: 레드, 토요일: 블루)
+                let dateColor = "inherit";
+                if (dayIdx === 0) dateColor = "red";
+                else if (dayIdx === 6) dateColor = "blue";
+
+                html += `
             <td class="${data.active ? 'is-active' : ''}" onclick="toggleDate('${dStr}')" style="position:relative;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                     <b style="color:${dateColor}; font-size:14px;">${date}</b>
@@ -475,54 +798,54 @@ function renderCalendar() {
                     ${data.active ? '야자운영' : '야자없음'}
                 </span>
 
-                ${data.active && data.supervisor ? 
-                    `<div style="font-size:11px; color:var(--primary); margin-top:6px; font-weight:bold; text-align:center; background:#f0f7ff; border-radius:4px; padding:2px 0;">
+                ${data.active && data.supervisor ?
+                        `<div style="font-size:11px; color:var(--primary); margin-top:6px; font-weight:bold; text-align:center; background:#f0f7ff; border-radius:4px; padding:2px 0;">
                         👨‍🏫 ${data.supervisor}
-                    </div>` : 
-                    `<div style="height:21px;"></div>` // 레이아웃 유지를 위한 빈 공간
-                }
+                    </div>` :
+                        `<div style="height:21px;"></div>` // 레이아웃 유지를 위한 빈 공간
+                    }
             </td>`;
 
-        if((firstDay+date)%7 === 0) html += `</tr><tr>`;
-    }
-    
-    document.getElementById('calendar-container').innerHTML = html + `</tr></tbody></table>`;
-}
+                if ((firstDay + date) % 7 === 0) html += `</tr><tr>`;
+            }
 
-
-
-function toggleDate(dStr) {
-    const data = currentSchedule[dStr] || { active: false };
-    
-    // 감독교사 명단 가져오기
-    const listRaw = document.getElementById('supervisor-list-input').value.trim();
-    const supervisors = listRaw.split('\n').map(line => line.split(',')[0].trim()).filter(n => n);
-
-    if (data.active) {
-        const action = confirm(`[${dStr}] 현재 야자 운영일입니다.\n\n[확인]: 미운영(휴무)으로 변경\n[취소]: 감독교사 변경/통계 확인`);
-        if (action) {
-            const reason = prompt("야자 미운영 사유:", "공휴일");
-            if(reason !== null) currentSchedule[dStr] = { active: false, reason: reason, supervisor: "" };
-            renderCalendar();
-        } else {
-            showSupervisorSelector(dStr, data.supervisor, supervisors);
+            document.getElementById('calendar-container').innerHTML = html + `</tr></tbody></table>`;
         }
-    } else {
-        showSupervisorSelector(dStr, "", supervisors);
-    }
-}
 
-// 🌟 드롭다운 선택 팝업창 함수
-function showSupervisorSelector(dStr, currentSup, supervisors) {
-    let options = `<option value="">-- 선택 없음 --</option>`;
-    supervisors.forEach(s => {
-        options += `<option value="${s}" ${s === currentSup ? 'selected' : ''}>${s}</option>`;
-    });
 
-    // 간단한 커스텀 모달 또는 prompt 대신 사용 가능한 UI 구성
-    const div = document.createElement('div');
-    div.style = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:25px; border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.3); z-index:10000; text-align:center;";
-    div.innerHTML = `
+
+        function toggleDate(dStr) {
+            const data = currentSchedule[dStr] || { active: false };
+
+            // 감독교사 명단 가져오기
+            const listRaw = document.getElementById('supervisor-list-input').value.trim();
+            const supervisors = listRaw.split('\n').map(line => line.split(',')[0].trim()).filter(n => n);
+
+            if (data.active) {
+                const action = confirm(`[${dStr}] 현재 야자 운영일입니다.\n\n[확인]: 미운영(휴무)으로 변경\n[취소]: 감독교사 변경/통계 확인`);
+                if (action) {
+                    const reason = prompt("야자 미운영 사유:", "공휴일");
+                    if (reason !== null) currentSchedule[dStr] = { active: false, reason: reason, supervisor: "" };
+                    renderCalendar();
+                } else {
+                    showSupervisorSelector(dStr, data.supervisor, supervisors);
+                }
+            } else {
+                showSupervisorSelector(dStr, "", supervisors);
+            }
+        }
+
+        // 🌟 드롭다운 선택 팝업창 함수
+        function showSupervisorSelector(dStr, currentSup, supervisors) {
+            let options = `<option value="">-- 선택 없음 --</option>`;
+            supervisors.forEach(s => {
+                options += `<option value="${s}" ${s === currentSup ? 'selected' : ''}>${s}</option>`;
+            });
+
+            // 간단한 커스텀 모달 또는 prompt 대신 사용 가능한 UI 구성
+            const div = document.createElement('div');
+            div.style = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:25px; border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.3); z-index:10000; text-align:center;";
+            div.innerHTML = `
         <h3>[${dStr}] 감독교사 선택</h3>
         <select id="pop-sup-select" style="font-size:18px; padding:10px; width:200px;">${options}</select>
         <div style="margin-top:20px; display:flex; gap:10px;">
@@ -530,124 +853,124 @@ function showSupervisorSelector(dStr, currentSup, supervisors) {
             <button class="btn" style="background:var(--gray); flex:1;" onclick="this.parentElement.parentElement.remove()">취소</button>
         </div>
     `;
-    document.body.appendChild(div);
-}
+            document.body.appendChild(div);
+        }
 
-function applySupSelection(dStr) {
-    const selectedSup = document.getElementById('pop-sup-select').value;
-    currentSchedule[dStr] = { active: true, reason: "", supervisor: selectedSup };
-    document.getElementById('pop-sup-select').parentElement.remove();
-    renderCalendar();
-}
-//////////////////////////
+        function applySupSelection(dStr) {
+            const selectedSup = document.getElementById('pop-sup-select').value;
+            currentSchedule[dStr] = { active: true, reason: "", supervisor: selectedSup };
+            document.getElementById('pop-sup-select').parentElement.remove();
+            renderCalendar();
+        }
+        //////////////////////////
 
-    // 도면 및 시간 계산 기타 로직들
-    function saveHistory() { if (historyStack.length >= 20) historyStack.shift(); historyStack.push(JSON.stringify({rows, cols, grid: seatMapData})); }
-    function undo() { if (historyStack.length === 0) return; const p = JSON.parse(historyStack.pop()); rows = p.rows; cols = p.cols; seatMapData = p.grid; drawEditGrid(); }
-    function calculateMinutes(n) { const s = document.getElementById(`t${n}-start`).value, e = document.getElementById(`t${n}-end`).value; if(s&&e){ let d = (new Date(`1970-01-01T${e}`)-new Date(`1970-01-01T${s}`))/60000; if(d<0)d+=1440; document.getElementById(`t${n}-min`).innerText=d+"분";} }
-    function selectTool(t, b) { currentTool = t; document.querySelectorAll('.tool-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); }
-    
-    function resizeGrid() { if(!confirm("도면을 리셋하면 기존의 모든 좌석 배치가 삭제됩니다. 진행하시겠습니까?")) return;saveHistory(); rows = parseInt(document.getElementById('grid-rows').value); cols = parseInt(document.getElementById('grid-cols').value); seatMapData = Array.from({length:rows}, ()=>Array.from({length:cols}, ()=>({type:0, label:""}))); drawEditGrid(); }
-    
-    function modifyGrid(a) { saveHistory(); const i = parseInt(document.getElementById('target-index').value)-1; if(i<0)return; if(a==='insertRow'){seatMapData.splice(i,0,Array.from({length:cols},()=>({type:0,label:""}))); rows++;} else if(a==='deleteRow'){seatMapData.splice(i,1); rows--;} else if(a==='insertCol'){seatMapData.forEach(r=>r.splice(i,0,{type:0,label:""})); cols++;} else if(a==='deleteCol'){seatMapData.forEach(r=>r.splice(i,1)); cols--;} drawEditGrid(); }
- 
-function drawEditGrid() {
-    const g = document.getElementById('seat-grid');
-    g.innerHTML = '';
-    g.style.gridTemplateColumns = `repeat(${cols}, 42px)`;
+        // 도면 및 시간 계산 기타 로직들
+        function saveHistory() { if (historyStack.length >= 20) historyStack.shift(); historyStack.push(JSON.stringify({ rows, cols, grid: seatMapData })); }
+        function undo() { if (historyStack.length === 0) return; const p = JSON.parse(historyStack.pop()); rows = p.rows; cols = p.cols; seatMapData = p.grid; drawEditGrid(); }
+        function calculateMinutes(n) { const s = document.getElementById(`t${n}-start`).value, e = document.getElementById(`t${n}-end`).value; if (s && e) { let d = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 60000; if (d < 0) d += 1440; document.getElementById(`t${n}-min`).innerText = d + "분"; } }
+        function selectTool(t, b) { currentTool = t; document.querySelectorAll('.tool-btn').forEach(x => x.classList.remove('selected')); b.classList.add('selected'); }
 
-    seatMapData.forEach(row => row.forEach(cell => {
-        const d = document.createElement('div');
-        d.className = `seat-cell seat-${cell.type}`;
-        d.innerText = cell.label;
+        function resizeGrid() { if (!confirm("도면을 리셋하면 기존의 모든 좌석 배치가 삭제됩니다. 진행하시겠습니까?")) return; saveHistory(); rows = parseInt(document.getElementById('grid-rows').value); cols = parseInt(document.getElementById('grid-cols').value); seatMapData = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ type: 0, label: "" }))); drawEditGrid(); }
 
-        d.onclick = () => {
-            saveHistory();
+        function modifyGrid(a) { saveHistory(); const i = parseInt(document.getElementById('target-index').value) - 1; if (i < 0) return; if (a === 'insertRow') { seatMapData.splice(i, 0, Array.from({ length: cols }, () => ({ type: 0, label: "" }))); rows++; } else if (a === 'deleteRow') { seatMapData.splice(i, 1); rows--; } else if (a === 'insertCol') { seatMapData.forEach(r => r.splice(i, 0, { type: 0, label: "" })); cols++; } else if (a === 'deleteCol') { seatMapData.forEach(r => r.splice(i, 1)); cols--; } drawEditGrid(); }
 
-            // 1. 라벨 입력이 필요한 도구(고정, 자율, 특수)인 경우
-            if ([1, 2, 5].includes(currentTool)) {
-                const newLabel = prompt("좌석 번호(라벨)를 입력하세요:", cell.label);
-                
-                // 취소를 누르지 않았을 때(null이 아닐 때)만 라벨을 업데이트합니다.
-                if (newLabel !== null) {
-                    cell.label = newLabel;
-                } else {
-                    // 취소를 눌렀다면 함수를 종료하여 타입 변경도 방지하거나, 
-                    // 혹은 타입만 바꾸고 싶다면 이 else 문을 비워두면 됩니다.
-                    return; 
+        function drawEditGrid() {
+            const g = document.getElementById('seat-grid');
+            g.innerHTML = '';
+            g.style.gridTemplateColumns = `repeat(${cols}, 42px)`;
+
+            seatMapData.forEach(row => row.forEach(cell => {
+                const d = document.createElement('div');
+                d.className = `seat-cell seat-${cell.type}`;
+                d.innerText = cell.label;
+
+                d.onclick = () => {
+                    saveHistory();
+
+                    // 1. 라벨 입력이 필요한 도구(고정, 자율, 특수)인 경우
+                    if ([1, 2, 5].includes(currentTool)) {
+                        const newLabel = prompt("좌석 번호(라벨)를 입력하세요:", cell.label);
+
+                        // 취소를 누르지 않았을 때(null이 아닐 때)만 라벨을 업데이트합니다.
+                        if (newLabel !== null) {
+                            cell.label = newLabel;
+                        } else {
+                            // 취소를 눌렀다면 함수를 종료하여 타입 변경도 방지하거나, 
+                            // 혹은 타입만 바꾸고 싶다면 이 else 문을 비워두면 됩니다.
+                            return;
+                        }
+                    }
+
+                    // 2. 선택한 도구로 타입 변경 및 화면 갱신
+                    cell.type = currentTool;
+                    drawEditGrid();
+                };
+                g.appendChild(d);
+            }));
+        }
+
+
+        // 1. 달력 저장
+        async function saveCalendarSchedule() {
+            updateDefaultDays();
+            // textarea에서 현재 입력된 명단을 직접 가져와야 합니다.
+            const supervisorList = document.getElementById('supervisor-list-input').value;
+            const { error } = await supabaseClient.from('settings').upsert({
+                key: 'calendarSchedule',
+                value: {
+                    data: JSON.stringify(currentSchedule),
+                    defaultDays: defaultOperatingDays, // 쉼표 추가
+                    supervisorList: supervisorList    // 변수명 확인 및 쉼표 추가
                 }
-            }
-
-            // 2. 선택한 도구로 타입 변경 및 화면 갱신
-            cell.type = currentTool;
-            drawEditGrid();
-        };
-        g.appendChild(d);
-    }));
-}
-
-
-// 1. 달력 저장
-async function saveCalendarSchedule() { 
-    updateDefaultDays();
-    // textarea에서 현재 입력된 명단을 직접 가져와야 합니다.
-    const supervisorList = document.getElementById('supervisor-list-input').value; 
-    const { error } = await supabaseClient.from('settings').upsert({
-        key: 'calendarSchedule',
-        value: {
-            data: JSON.stringify(currentSchedule),
-            defaultDays: defaultOperatingDays, // 쉼표 추가
-            supervisorList: supervisorList    // 변수명 확인 및 쉼표 추가
-        }
-    });
-    if(error) alert("오류: " + error.message);
-    else alert("달력 및 감독교사 명단 저장완료");
-}
-
-
-// 📊 감독교사 통계 계산 및 화면 표시 함수 (3월~12월 전체 표시 및 0회 처리 버전)
-function showSupervisorStats() {
-    // 1. 기초 데이터 파싱 (소급 데이터)
-    const listRaw = document.getElementById('supervisor-list-input').value.trim();
-    const statsArray = []; 
-
-    listRaw.split('\n').forEach(line => {
-        // 이름, 3월횟수, 4월횟수 파싱
-        const [name, march, april] = line.split(',').map(s => s.trim());
-        if (name) {
-            statsArray.push({
-                name: name,
-                // 3, 4월 소급분 합계
-                prev: (parseInt(march) || 0) + (parseInt(april) || 0),
-                monthly: {}, // 실시간 달력 배정 기록
-                currentTotal: 0,
-                total: 0
             });
+            if (error) alert("오류: " + error.message);
+            else alert("달력 및 감독교사 명단 저장완료");
         }
-    });
 
-    // 2. 현재 달력 데이터(currentSchedule) 분석
-    Object.entries(currentSchedule).forEach(([dateStr, day]) => {
-        if (day.active && day.supervisor) {
-            const teacher = statsArray.find(t => t.name === day.supervisor);
-            if (teacher) {
-                const monthLabel = parseInt(dateStr.split('-')[1]) + "월";
-                if (!teacher.monthly[monthLabel]) teacher.monthly[monthLabel] = 0;
-                teacher.monthly[monthLabel] += 1;
-                teacher.currentTotal += 1;
-            }
-        }
-    });
 
-    // 3. 총계 계산 및 정렬
-    statsArray.forEach(t => t.total = t.prev + t.currentTotal);
-    statsArray.sort((a, b) => b.total - a.total);
+        // 📊 감독교사 통계 계산 및 화면 표시 함수 (3월~12월 전체 표시 및 0회 처리 버전)
+        function showSupervisorStats() {
+            // 1. 기초 데이터 파싱 (소급 데이터)
+            const listRaw = document.getElementById('supervisor-list-input').value.trim();
+            const statsArray = [];
 
-    // 4. 표시할 월 설정 (3월 ~ 12월)
-    const displayMonths = ["3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
+            listRaw.split('\n').forEach(line => {
+                // 이름, 3월횟수, 4월횟수 파싱
+                const [name, march, april] = line.split(',').map(s => s.trim());
+                if (name) {
+                    statsArray.push({
+                        name: name,
+                        // 3, 4월 소급분 합계
+                        prev: (parseInt(march) || 0) + (parseInt(april) || 0),
+                        monthly: {}, // 실시간 달력 배정 기록
+                        currentTotal: 0,
+                        total: 0
+                    });
+                }
+            });
 
-    // 5. 결과 HTML 생성
-    let html = `
+            // 2. 현재 달력 데이터(currentSchedule) 분석
+            Object.entries(currentSchedule).forEach(([dateStr, day]) => {
+                if (day.active && day.supervisor) {
+                    const teacher = statsArray.find(t => t.name === day.supervisor);
+                    if (teacher) {
+                        const monthLabel = parseInt(dateStr.split('-')[1]) + "월";
+                        if (!teacher.monthly[monthLabel]) teacher.monthly[monthLabel] = 0;
+                        teacher.monthly[monthLabel] += 1;
+                        teacher.currentTotal += 1;
+                    }
+                }
+            });
+
+            // 3. 총계 계산 및 정렬
+            statsArray.forEach(t => t.total = t.prev + t.currentTotal);
+            statsArray.sort((a, b) => b.total - a.total);
+
+            // 4. 표시할 월 설정 (3월 ~ 12월)
+            const displayMonths = ["3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
+
+            // 5. 결과 HTML 생성
+            let html = `
         <div id="stats-modal" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:30px; border-radius:20px; box-shadow:0 0 35px rgba(0,0,0,0.6); z-index:10001; width:95%; max-width:800px; max-height:85vh; overflow-y:auto;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <h3 style="margin:0;">📊 감독교사 누적 통계 (3월~12월 전체)</h3>
@@ -667,10 +990,10 @@ function showSupervisorStats() {
                     </thead>
                     <tbody>`;
 
-    statsArray.forEach(t => {
-        const isHighLoad = t.total >= 10;
-        
-        html += `
+            statsArray.forEach(t => {
+                const isHighLoad = t.total >= 10;
+
+                html += `
             <tr style="border-bottom:1px solid #eee; ${isHighLoad ? 'background:#fff5f5;' : ''}">
                 <td style="padding:10px; font-weight:bold; ${isHighLoad ? 'color:var(--danger);' : ''}">${t.name} ${isHighLoad ? '⚠️' : ''}</td>
                 <td style="padding:10px; text-align:center; color:#666;">${t.prev}회</td>
@@ -680,9 +1003,9 @@ function showSupervisorStats() {
                 }).join('')}
                 <td style="padding:10px; text-align:center; font-weight:bold; font-size:14px; ${isHighLoad ? 'color:var(--danger);' : 'color:var(--primary);'}">${t.total}회</td>
             </tr>`;
-    });
+            });
 
-    html += `
+            html += `
                     </tbody>
                 </table>
             </div>
@@ -690,314 +1013,308 @@ function showSupervisorStats() {
         </div>
     `;
 
-    const oldModal = document.getElementById('stats-modal');
-    if(oldModal) oldModal.remove();
-    document.body.insertAdjacentHTML('beforeend', html);
-}
-
-
-
-
-
-// 2. 신청 기간 저장
-async function saveApplyPeriod() { 
-    const { error } = await supabaseClient.from('settings').upsert({
-        key: 'applyPeriod',
-        value: {
-            targetMonth: document.getElementById('apply-target-month').value,
-            start: document.getElementById('apply-start').value, 
-            end: document.getElementById('apply-end').value
+            const oldModal = document.getElementById('stats-modal');
+            if (oldModal) oldModal.remove();
+            document.body.insertAdjacentHTML('beforeend', html);
         }
-    });
-    if(error) alert("오류: " + error.message);
-    else alert("신청 대상 월 및 기간 저장완료"); 
-}
-
-// 3. 도면 배포 저장
-async function saveSeatLayout() { 
-    const { error } = await supabaseClient.from('settings').upsert({
-        key: 'seatLayout',
-        value: { rows, cols, grid: JSON.stringify(seatMapData) }
-    });
-    if(error) alert("오류: " + error.message);
-    else alert("도면 배포완료"); 
-}
 
 
-// 4. 운영 시간 저장
-async function saveTimeSettings() { 
-    const { error } = await supabaseClient.from('settings').upsert({
-        key: 'schedule',
-        value: {
-            authMode: document.querySelector('input[name="auth-mode"]:checked').value,
- // 🌟 추가할 부분: 도면 운영 모드(1개 vs 다중) 저장
-            layoutMode: document.querySelector('input[name="layout-mode"]:checked').value,           
-            ticket_lead_time: document.getElementById('ticket-lead-time').value, 
-            ticket_notice: document.getElementById('ticket-notice').value,       
-            ticket_end: document.getElementById('t3-end').value,                
-            t1: document.getElementById('t1-start').value, t1_end: document.getElementById('t1-end').value, 
-            t2: document.getElementById('t2-start').value, t2_end: document.getElementById('t2-end').value, 
-            t3: document.getElementById('t3-start').value, t3_end: document.getElementById('t3-end').value,
-            t1_req: document.getElementById('t1-req-min').value,
-            t2_req: document.getElementById('t2-req-min').value,
-            t3_req: document.getElementById('t3-req-min').value,
-            autoClose: document.getElementById('auto-close-enable').checked,
-            autoCloseTime: document.getElementById('auto-close-time').value // 추가
+
+
+
+        // 2. 신청 기간 저장
+        async function saveApplyPeriod() {
+            const { error } = await supabaseClient.from('settings').upsert({
+                key: 'applyPeriod',
+                value: {
+                    targetMonth: document.getElementById('apply-target-month').value,
+                    start: document.getElementById('apply-start').value,
+                    end: document.getElementById('apply-end').value
+                }
+            });
+            if (error) alert("오류: " + error.message);
+            else alert("신청 대상 월 및 기간 저장완료");
         }
-    });
-    if(error) alert("오류: " + error.message);
-    else alert("설정이 저장되었습니다."); 
-}
 
-// 5. 서버에서 데이터 불러오기
-async function loadAllSettings() {
-    try {
-        // 1. 달력 일정
-        const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
-        if(cal && cal.value) {
-            const calData = cal.value;
-            if (calData.data) currentSchedule = JSON.parse(calData.data); 
-            if (calData.defaultDays) {
-                defaultOperatingDays = calData.defaultDays;
-                document.querySelectorAll('.day-toggle').forEach(cb => {
-                    cb.checked = defaultOperatingDays.includes(parseInt(cb.value));
+        // 3. 도면 배포 저장
+        async function saveSeatLayout() {
+            const { error } = await supabaseClient.from('settings').upsert({
+                key: 'seatLayout',
+                value: { rows, cols, grid: JSON.stringify(seatMapData) }
+            });
+            if (error) alert("오류: " + error.message);
+            else alert("도면 배포완료");
+        }
+
+
+        // 4. 운영 시간 저장
+        async function saveTimeSettings() {
+            const { error } = await supabaseClient.from('settings').upsert({
+                key: 'schedule',
+                value: {
+                    authMode: document.querySelector('input[name="auth-mode"]:checked').value,
+                    // 🌟 추가할 부분: 도면 운영 모드(1개 vs 다중) 저장
+                    layoutMode: document.querySelector('input[name="layout-mode"]:checked').value,
+                    ticket_lead_time: document.getElementById('ticket-lead-time').value,
+                    ticket_notice: document.getElementById('ticket-notice').value,
+                    ticket_end: document.getElementById('t3-end').value,
+                    t1: document.getElementById('t1-start').value, t1_end: document.getElementById('t1-end').value,
+                    t2: document.getElementById('t2-start').value, t2_end: document.getElementById('t2-end').value,
+                    t3: document.getElementById('t3-start').value, t3_end: document.getElementById('t3-end').value,
+                    t1_req: document.getElementById('t1-req-min').value,
+                    t2_req: document.getElementById('t2-req-min').value,
+                    t3_req: document.getElementById('t3-req-min').value,
+                    autoClose: document.getElementById('auto-close-enable').checked,
+                    autoCloseTime: document.getElementById('auto-close-time').value // 추가
+                }
+            });
+            if (error) alert("오류: " + error.message);
+            else alert("설정이 저장되었습니다.");
+        }
+
+        // 5. 서버에서 데이터 불러오기
+        async function loadAllSettings() {
+            try {
+                // 1. 달력 일정
+                const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
+                if (cal && cal.value) {
+                    const calData = cal.value;
+                    if (calData.data) currentSchedule = JSON.parse(calData.data);
+                    if (calData.defaultDays) {
+                        defaultOperatingDays = calData.defaultDays;
+                        document.querySelectorAll('.day-toggle').forEach(cb => {
+                            cb.checked = defaultOperatingDays.includes(parseInt(cb.value));
+                        });
+                    }
+                    if (calData.supervisorList) {
+                        document.getElementById('supervisor-list-input').value = calData.supervisorList;
+                    }
+                }
+                renderCalendar();
+
+                // 2. 신청 기간
+                const { data: p } = await supabaseClient.from('settings').select('value').eq('key', 'applyPeriod').maybeSingle();
+                if (p && p.value) {
+                    document.getElementById('apply-start').value = p.value.start || "";
+                    document.getElementById('apply-end').value = p.value.end || "";
+                    if (p.value.targetMonth) {
+                        document.getElementById('apply-target-month').value = p.value.targetMonth;
+                    }
+                }
+
+                // 3. 기초 명단
+                const { data: r } = await supabaseClient.from('settings').select('value').eq('key', 'roster').maybeSingle();
+                if (r && r.value) {
+                    if (r.value.list) {
+                        const list = JSON.parse(r.value.list);
+                        document.getElementById('roster-count').innerText = Object.keys(list).length;
+                        document.getElementById('roster-list').innerText = Object.entries(list).map(([id, n]) => `${id}(${n})`).join(', ');
+                    }
+                }
+
+                // 4. 좌석 도면
+                const { data: s } = await supabaseClient.from('settings').select('value').eq('key', 'seatLayout').maybeSingle();
+                if (s && s.value) {
+                    rows = s.value.rows || 20;
+                    cols = s.value.cols || 30;
+                    if (s.value.grid) {
+                        seatMapData = JSON.parse(s.value.grid).map(row => row.map(c => typeof c === 'number' ? { type: c, label: "" } : c));
+                        drawEditGrid();
+                    }
+                }
+
+                // 5. 운영 시간 및 설정
+                const { data: t } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+                if (t && t.value) {
+                    const d = t.value;
+                    if (d.authMode) {
+                        const radioBtn = document.querySelector(`input[name="auth-mode"][value="${d.authMode}"]`);
+                        if (radioBtn) radioBtn.checked = true;
+                    }
+                    // 👇👇 여기에 이 4줄을 추가해 주세요! 👇👇
+                    if (d.layoutMode) {
+                        const layoutRadio = document.querySelector(`input[name="layout-mode"][value="${d.layoutMode}"]`);
+                        if (layoutRadio) layoutRadio.checked = true;
+                    }
+                    // 👆👆 여기까지 추가 👆👆
+
+
+                    document.getElementById('ticket-lead-time').value = d.ticket_lead_time || "30";
+                    document.getElementById('ticket-notice').value = d.ticket_notice || "자율석 신청 학생만 이용 가능합니다.";
+                    document.getElementById('t1-start').value = d.t1 || "16:00";
+                    document.getElementById('t1-end').value = d.t1_end || "18:10";
+                    document.getElementById('t2-start').value = d.t2 || "18:50";
+                    document.getElementById('t2-end').value = d.t2_end || "20:10";
+                    document.getElementById('t3-start').value = d.t3 || "20:10";
+                    document.getElementById('t3-end').value = d.t3_end || "21:30";
+                    document.getElementById('t1-req-min').value = d.t1_req || "60";
+                    document.getElementById('t2-req-min').value = d.t2_req || "60";
+                    document.getElementById('t3-req-min').value = d.t3_req || "60";
+                    // [기존 코드 유지] 체크박스 ON/OFF 설정
+                    if (d.autoClose !== undefined) {
+                        document.getElementById('auto-close-enable').checked = d.autoClose;
+                    } else {
+                        document.getElementById('auto-close-enable').checked = true; // 기본값
+                    }
+
+                    // [새로 추가하는 부분] 강제 마감 시간 설정 (위의 if~else가 끝난 바로 아래에 추가)
+                    if (d.autoCloseTime) {
+                        // DB에 이미 저장된 마감 시간이 있다면 화면에 표시
+                        document.getElementById('auto-close-time').value = d.autoCloseTime;
+                    } else if (d.t3_end) {
+                        // 저장된 시간이 없다면 3T 종료 시간 기준으로 30분 더해서 기본값 생성
+                        document.getElementById('auto-close-time').value = addMinutesToTime(d.t3_end, 30);
+                    }
+
+                } else {
+                    // 데이터가 아예 없을 때의 기본값
+                    document.getElementById('ticket-lead-time').value = "30";
+                    document.getElementById('ticket-notice').value = "자율석 신청 학생만 이용할 수 있습니다.";
+                    document.getElementById('t1-start').value = "16:00";
+                    document.getElementById('t1-end').value = "18:10";
+                    document.getElementById('t2-start').value = "18:50";
+                    document.getElementById('t2-end').value = "20:10";
+                    document.getElementById('t3-start').value = "20:10";
+                    document.getElementById('t3-end').value = "21:30";
+                    document.getElementById('t1-req-min').value = "60";
+                    document.getElementById('t2-req-min').value = "60";
+                    document.getElementById('t3-req-min').value = "60";
+
+                    // 👇 새로 추가할 부분
+                    document.getElementById('auto-close-enable').checked = true;
+                    document.getElementById('auto-close-time').value = "22:00"; // 🌟 이 줄을 추가해 주세요!          
+                }
+
+                for (let i = 1; i <= 3; i++) calculateMinutes(i);
+
+            } catch (error) {
+                console.error("데이터 로딩 중 에러 발생:", error);
+            }
+            // loadAllSettings() 함수 최하단에 추가
+            for (let i = 1; i <= 3; i++) calculateMinutes(i);
+            await loadStudentPriorityList(); // 페이지 로드 시 학생 권한 명단도 함께 불러옴
+
+        }
+
+
+        //////////
+        // 시간을 계산해주는 유틸리티 함수
+        function addMinutesToTime(timeStr, minsToAdd) {
+            if (!timeStr) return "22:00"; // 기본값
+
+            // "21:30" 형태의 문자열을 시(hh)와 분(mm)으로 분리
+            const [hh, mm] = timeStr.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hh);
+            date.setMinutes(mm + minsToAdd);
+
+            // 다시 "HH:mm" 형태로 변환하여 반환
+            const resH = String(date.getHours()).padStart(2, '0');
+            const resM = String(date.getMinutes()).padStart(2, '0');
+            return `${resH}:${resM}`;
+        }
+
+        //////////////////////////////
+        // 6. 엑셀 업로드 처리
+        async function handleExcelUpload() {
+            const file = document.getElementById('excel-input').files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const data = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(e.target.result), { type: 'array' }).Sheets[XLSX.read(new Uint8Array(e.target.result), { type: 'array' }).SheetNames[0]], { header: 1 });
+
+                let roster = {};
+                let phones = {};
+                let barcodes = {};
+
+                data.forEach((r, index) => {
+                    if (index === 0 && isNaN(parseInt(r[0]))) return;
+                    if (!r[0] || !r[1]) return;
+
+                    let stuId = String(r[0]).trim();
+                    let name = String(r[1]).trim();
+                    let barcode = r[2] ? String(r[2]).trim().toUpperCase() : "";
+                    let phoneNum = r[3] ? String(r[3]).trim() : "";
+
+                    roster[stuId] = name;
+                    if (phoneNum) phones[stuId] = phoneNum;
+                    if (barcode) barcodes[barcode] = stuId;
                 });
-            }
-            if (calData.supervisorList) {
-    document.getElementById('supervisor-list-input').value = calData.supervisorList;
-}
-        }
-        renderCalendar();
 
-        // 2. 신청 기간
-        const { data: p } = await supabaseClient.from('settings').select('value').eq('key', 'applyPeriod').maybeSingle();
-        if(p && p.value) { 
-            document.getElementById('apply-start').value = p.value.start || ""; 
-            document.getElementById('apply-end').value = p.value.end || ""; 
-            if(p.value.targetMonth) {
-                document.getElementById('apply-target-month').value = p.value.targetMonth;
-            }
-        }
+                // 수파베이스에 엑셀 명단 저장
+                const { error } = await supabaseClient.from('settings').upsert({
+                    key: 'roster',
+                    value: {
+                        list: JSON.stringify(roster),
+                        phoneList: JSON.stringify(phones),
+                        barcodeList: JSON.stringify(barcodes)
+                    }
+                });
 
-        // 3. 기초 명단
-        const { data: r } = await supabaseClient.from('settings').select('value').eq('key', 'roster').maybeSingle();
-        if(r && r.value) { 
-            if(r.value.list) {
-                const list = JSON.parse(r.value.list); 
-                document.getElementById('roster-count').innerText = Object.keys(list).length; 
-                document.getElementById('roster-list').innerText = Object.entries(list).map(([id, n]) => `${id}(${n})`).join(', '); 
-            }
+                if (error) {
+                    alert("명단 업로드 실패: " + error.message);
+                } else {
+                    alert(`명단 업데이트 완료 (총 ${Object.keys(roster).length}명)`);
+                    loadAllSettings();
+                }
+            };
+            reader.readAsArrayBuffer(file);
         }
 
-        // 4. 좌석 도면
-        const { data: s } = await supabaseClient.from('settings').select('value').eq('key', 'seatLayout').maybeSingle();
-        if(s && s.value) { 
-            rows = s.value.rows || 20; 
-            cols = s.value.cols || 30; 
-            if(s.value.grid) {
-                seatMapData = JSON.parse(s.value.grid).map(row => row.map(c => typeof c === 'number' ? {type:c, label:""} : c)); 
-                drawEditGrid(); 
-            }
+        async function loadStudentPriorityList() {
+            // 1. 기초 설정 데이터 및 기존 고정석 명단 가져오기
+            const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
+            const { data: priorityData } = await supabaseClient.from('settings').select('value').eq('key', 'priority_students').maybeSingle();
+
+            // 2. 실제 출결 기록(attendance 테이블) 전체 가져오기
+            const { data: attendanceLogs } = await supabaseClient
+                .from('attendance')
+                .select('stuId, date');
+
+            const roster = rosterData?.value ? JSON.parse(rosterData.value.list) : {};
+            const priorityIds = priorityData?.value ? priorityData.value.ids : [];
+
+
+
+            // 2. 고정석 명단 로딩 로직 보완 (attendanceLogs 필터링 부분)
+            allStudentData = Object.entries(roster).map(([id, name]) => {
+                // 학번을 문자열로 일치시켜 비교 (데이터 타입 불일치 에러 방지)
+                const studentLogs = attendanceLogs ? attendanceLogs.filter(log => String(log.stuId) === String(id)) : [];
+
+                const counts = { m3: 0, m4: 0, m5: 0, m6: 0, m7: 0, m8: 0, m9: 0, m10: 0, m11: 0, m12: 0 };
+                studentLogs.forEach(log => {
+                    if (log.date) {
+                        const month = new Date(log.date).getMonth() + 1;
+                        if (counts[`m${month}`] !== undefined) counts[`m${month}`]++;
+                    }
+                });
+
+                const total = Object.values(counts).reduce((a, b) => a + b, 0);
+                return {
+                    id: id, name: name,
+                    isChecked: priorityIds.includes(id),
+                    ...counts,
+                    total: total
+                };
+            });
+
+
+
+
+            renderPriorityTable(); // 표 다시 그리기
         }
 
-        // 5. 운영 시간 및 설정
-        const { data: t } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
-        if(t && t.value) { 
-            const d = t.value; 
-            if (d.authMode) {
-                const radioBtn = document.querySelector(`input[name="auth-mode"][value="${d.authMode}"]`);
-                if(radioBtn) radioBtn.checked = true;
-            }
-// 👇👇 여기에 이 4줄을 추가해 주세요! 👇👇
-            if (d.layoutMode) {
-                const layoutRadio = document.querySelector(`input[name="layout-mode"][value="${d.layoutMode}"]`);
-                if(layoutRadio) layoutRadio.checked = true;
-            }
-            // 👆👆 여기까지 추가 👆👆
-
-
-            document.getElementById('ticket-lead-time').value = d.ticket_lead_time || "30";
-            document.getElementById('ticket-notice').value = d.ticket_notice || "자율석 신청 학생만 이용 가능합니다.";
-            document.getElementById('t1-start').value = d.t1 || "16:00"; 
-            document.getElementById('t1-end').value = d.t1_end || "18:10"; 
-            document.getElementById('t2-start').value = d.t2 || "18:50"; 
-            document.getElementById('t2-end').value = d.t2_end || "20:10"; 
-            document.getElementById('t3-start').value = d.t3 || "20:10"; 
-            document.getElementById('t3-end').value = d.t3_end || "21:30"; 
-            document.getElementById('t1-req-min').value = d.t1_req || "60";
-            document.getElementById('t2-req-min').value = d.t2_req || "60";
-            document.getElementById('t3-req-min').value = d.t3_req || "60";
-// [기존 코드 유지] 체크박스 ON/OFF 설정
-if (d.autoClose !== undefined) {
-    document.getElementById('auto-close-enable').checked = d.autoClose;
-} else {
-    document.getElementById('auto-close-enable').checked = true; // 기본값
-}
-
-// [새로 추가하는 부분] 강제 마감 시간 설정 (위의 if~else가 끝난 바로 아래에 추가)
-if (d.autoCloseTime) {
-    // DB에 이미 저장된 마감 시간이 있다면 화면에 표시
-    document.getElementById('auto-close-time').value = d.autoCloseTime;
-} else if (d.t3_end) {
-    // 저장된 시간이 없다면 3T 종료 시간 기준으로 30분 더해서 기본값 생성
-    document.getElementById('auto-close-time').value = addMinutesToTime(d.t3_end, 30);
-}
-
-        } else { 
-            // 데이터가 아예 없을 때의 기본값
-            document.getElementById('ticket-lead-time').value = "30";
-            document.getElementById('ticket-notice').value = "자율석 신청 학생만 이용할 수 있습니다.";
-            document.getElementById('t1-start').value = "16:00"; 
-            document.getElementById('t1-end').value = "18:10"; 
-            document.getElementById('t2-start').value = "18:50"; 
-            document.getElementById('t2-end').value = "20:10"; 
-            document.getElementById('t3-start').value = "20:10"; 
-            document.getElementById('t3-end').value = "21:30"; 
-            document.getElementById('t1-req-min').value = "60";
-            document.getElementById('t2-req-min').value = "60";
-            document.getElementById('t3-req-min').value = "60";
-
-            // 👇 새로 추가할 부분
-            document.getElementById('auto-close-enable').checked = true;
-            document.getElementById('auto-close-time').value = "22:00"; // 🌟 이 줄을 추가해 주세요!          
-        }
-
-        for(let i=1; i<=3; i++) calculateMinutes(i);
-
-    } catch (error) {
-        console.error("데이터 로딩 중 에러 발생:", error);
-    }
-// loadAllSettings() 함수 최하단에 추가
-for(let i=1; i<=3; i++) calculateMinutes(i);
-await loadStudentPriorityList(); // 페이지 로드 시 학생 권한 명단도 함께 불러옴
-
-}
-
-
-//////////
-// 시간을 계산해주는 유틸리티 함수
-function addMinutesToTime(timeStr, minsToAdd) {
-    if (!timeStr) return "22:00"; // 기본값
-    
-    // "21:30" 형태의 문자열을 시(hh)와 분(mm)으로 분리
-    const [hh, mm] = timeStr.split(':').map(Number);
-    const date = new Date();
-    date.setHours(hh);
-    date.setMinutes(mm + minsToAdd);
-    
-    // 다시 "HH:mm" 형태로 변환하여 반환
-    const resH = String(date.getHours()).padStart(2, '0');
-    const resM = String(date.getMinutes()).padStart(2, '0');
-    return `${resH}:${resM}`;
-}
-
-//////////////////////////////
-// 6. 엑셀 업로드 처리
-async function handleExcelUpload() {
-    const file = document.getElementById('excel-input').files[0]; 
-    if(!file) return;
-
-    const reader = new FileReader(); 
-    reader.onload = async (e) => {
-        const data = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(e.target.result), {type:'array'}).Sheets[XLSX.read(new Uint8Array(e.target.result), {type:'array'}).SheetNames[0]], {header:1});
-        
-        let roster = {}; 
-        let phones = {}; 
-        let barcodes = {}; 
-        
-        data.forEach((r, index) => {
-            if (index === 0 && isNaN(parseInt(r[0]))) return; 
-            if (!r[0] || !r[1]) return; 
-
-            let stuId = String(r[0]).trim();            
-            let name = String(r[1]).trim();             
-            let barcode = r[2] ? String(r[2]).trim().toUpperCase() : ""; 
-            let phoneNum = r[3] ? String(r[3]).trim() : ""; 
-
-            roster[stuId] = name; 
-            if (phoneNum) phones[stuId] = phoneNum; 
-            if (barcode) barcodes[barcode] = stuId; 
-        });
-        
-        // 수파베이스에 엑셀 명단 저장
-        const { error } = await supabaseClient.from('settings').upsert({
-            key: 'roster',
-            value: {
-                list: JSON.stringify(roster),
-                phoneList: JSON.stringify(phones), 
-                barcodeList: JSON.stringify(barcodes)
-            }
-        });
-        
-        if (error) {
-            alert("명단 업로드 실패: " + error.message);
-        } else {
-            alert(`명단 업데이트 완료 (총 ${Object.keys(roster).length}명)`); 
-            loadAllSettings();
-        }
-    }; 
-    reader.readAsArrayBuffer(file);
-}
-
-async function loadStudentPriorityList() {
-    // 1. 기초 설정 데이터 및 기존 고정석 명단 가져오기
-    const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
-    const { data: priorityData } = await supabaseClient.from('settings').select('value').eq('key', 'priority_students').maybeSingle();
-    
-    // 2. 실제 출결 기록(attendance 테이블) 전체 가져오기
-    const { data: attendanceLogs } = await supabaseClient
-        .from('attendance') 
-        .select('stuId, date'); 
-
-    const roster = rosterData?.value ? JSON.parse(rosterData.value.list) : {};
-    const priorityIds = priorityData?.value ? priorityData.value.ids : [];
 
 
 
-// 기존 filter 로직을 아래와 같이 더 안전하게 변경
-allStudentData = Object.entries(roster).map(([id, name]) => {
-    // String()을 사용하여 양쪽 데이터를 모두 문자열로 강제 변환 후 비교
-    const studentLogs = attendanceLogs ? attendanceLogs.filter(log => String(log.stuId) === String(id)) : [];
-    
-    const counts = { m3:0, m4:0, m5:0, m6:0, m7:0, m8:0, m9:0, m10:0, m11:0, m12:0 };
-    
-    studentLogs.forEach(log => {
-        if (log.date) {
-            // log.date가 문자열인 경우 Date 객체로 변환하여 월 추출
-            const month = new Date(log.date).getMonth() + 1; 
-            if (counts[`m${month}`] !== undefined) {
-                counts[`m${month}`]++;
-            }
-        }
-    });
-    // ... 이하 동일
+        // 테이블을 화면에 그리는 함수
+        function renderPriorityTable() {
+            const tbody = document.getElementById('student-list-body');
+            tbody.innerHTML = "";
 
-
-
-    const total = Object.values(counts).reduce((a, b) => a + b, 0);
-
-    return {
-        id: id,
-        name: name,
-        isChecked: priorityIds.includes(id),
-        ...counts,
-        total: total
-    };
-});
-
-    renderPriorityTable(); // 표 다시 그리기
-}
-
-
-
-
-// 테이블을 화면에 그리는 함수
-function renderPriorityTable() {
-    const tbody = document.getElementById('student-list-body');
-    tbody.innerHTML = "";
-
-    allStudentData.forEach((stu, index) => {
-        tbody.innerHTML += `
+            allStudentData.forEach((stu, index) => {
+                tbody.innerHTML += `
             <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding:8px; color:#999;">${index + 1}</td> <!-- 순번 출력 -->
                 <td style="padding:8px; position: sticky; left: 0; background: white; z-index: 1;">${stu.id}</td>
@@ -1019,58 +1336,58 @@ function renderPriorityTable() {
                 </td>
             </tr>
         `;
-    });
-}
-
-// ✅ 월별/총계 클릭 시 정렬하는 핵심 함수
-// 1. [정렬 기능] 학번, 이름, 월별 통계를 기준으로 정렬
-function sortPriorityTable(key) {
-    // 숫자 데이터(학번, 통계)와 문자 데이터(이름)를 구분하여 정렬
-    allStudentData.sort((a, b) => {
-        if (key === 'name' || key === 'id') {
-            // 이름이나 학번은 오름차순 (작은게 위로)
-            return a[key] > b[key] ? 1 : -1;
-        } else {
-            // 월별 통계 및 총계는 내림차순 (큰게 위로)
-            return b[key] - a[key];
+            });
         }
-    });
-    renderPriorityTable();
-}
 
-// 2. [반별 정렬] 학번 앞자리를 기준으로 학년/반 정렬
-function sortPriorityByClass() {
-    allStudentData.sort((a, b) => {
-        // 학번(예: 3101, 3205)에서 앞 2자리만 추출하여 비교
-        const classA = parseInt(String(a.id).substring(0, 2));
-        const classB = parseInt(String(b.id).substring(0, 2));
-        return classA - classB;
-    });
-    renderPriorityTable();
-}
+        // ✅ 월별/총계 클릭 시 정렬하는 핵심 함수
+        // 1. [정렬 기능] 학번, 이름, 월별 통계를 기준으로 정렬
+        function sortPriorityTable(key) {
+            // 숫자 데이터(학번, 통계)와 문자 데이터(이름)를 구분하여 정렬
+            allStudentData.sort((a, b) => {
+                if (key === 'name' || key === 'id') {
+                    // 이름이나 학번은 오름차순 (작은게 위로)
+                    return a[key] > b[key] ? 1 : -1;
+                } else {
+                    // 월별 통계 및 총계는 내림차순 (큰게 위로)
+                    return b[key] - a[key];
+                }
+            });
+            renderPriorityTable();
+        }
 
-// 3. [검색 기능] 입력값에 따라 테이블 실시간 필터링
-function filterPriorityTable() {
-    const searchTerm = document.getElementById('priority-search-input').value.toLowerCase();
-    const rows = document.querySelectorAll('#student-list-body tr');
+        // 2. [반별 정렬] 학번 앞자리를 기준으로 학년/반 정렬
+        function sortPriorityByClass() {
+            allStudentData.sort((a, b) => {
+                // 학번(예: 3101, 3205)에서 앞 2자리만 추출하여 비교
+                const classA = parseInt(String(a.id).substring(0, 2));
+                const classB = parseInt(String(b.id).substring(0, 2));
+                return classA - classB;
+            });
+            renderPriorityTable();
+        }
 
-    rows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        // 검색어가 포함되어 있으면 보여주고, 없으면 숨김
-        row.style.display = text.includes(searchTerm) ? "" : "none";
-    });
-}
+        // 3. [검색 기능] 입력값에 따라 테이블 실시간 필터링
+        function filterPriorityTable() {
+            const searchTerm = document.getElementById('priority-search-input').value.toLowerCase();
+            const rows = document.querySelectorAll('#student-list-body tr');
 
-// 4. [테이블 렌더링 수정] 체크박스 상태가 유지되도록 업데이트
-function renderPriorityTable() {
-    const tbody = document.getElementById('student-list-body');
-    tbody.innerHTML = "";
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                // 검색어가 포함되어 있으면 보여주고, 없으면 숨김
+                row.style.display = text.includes(searchTerm) ? "" : "none";
+            });
+        }
 
-    allStudentData.forEach((stu, index) => {
-        const row = document.createElement('tr');
-        row.style.borderBottom = "1px solid #eee";
-        
-        row.innerHTML = `
+        // 4. [테이블 렌더링 수정] 체크박스 상태가 유지되도록 업데이트
+        function renderPriorityTable() {
+            const tbody = document.getElementById('student-list-body');
+            tbody.innerHTML = "";
+
+            allStudentData.forEach((stu, index) => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = "1px solid #eee";
+
+                row.innerHTML = `
             <td style="padding:10px; color:#999;">${index + 1}</td>
             <td style="padding:10px;">${stu.id}</td>
             <td style="padding:10px; font-weight: bold;">${stu.name}</td>
@@ -1087,26 +1404,26 @@ function renderPriorityTable() {
             <td style="color:#666;">${stu.m12}</td>
             <td style="font-weight:bold; color:#dc3545;">${stu.total}</td>
         `;
-        tbody.appendChild(row);
-    });
-}
+                tbody.appendChild(row);
+            });
+        }
 
-// 5. [상태 관리] 정렬이나 검색 후에도 체크박스 선택값이 날아가지 않게 데이터 구조 업데이트
-function updateCheckedStatus(id, checked) {
-    const student = allStudentData.find(s => s.id === id);
-    if (student) student.isChecked = checked;
-}
+        // 5. [상태 관리] 정렬이나 검색 후에도 체크박스 선택값이 날아가지 않게 데이터 구조 업데이트
+        function updateCheckedStatus(id, checked) {
+            const student = allStudentData.find(s => s.id === id);
+            if (student) student.isChecked = checked;
+        }
 
 
-// ▼ 자바스크립트 맨 아랫부분에 이 새로운 함수를 통째로 추가해 주세요 ▼
+        // ▼ 자바스크립트 맨 아랫부분에 이 새로운 함수를 통째로 추가해 주세요 ▼
 
-// ✅ [초보자용 주석] 상세보기 버튼을 눌렀을 때 학생의 일자별 현황을 보여주는 팝업창(모달) 함수입니다.
-async function showStudentDetail(stuId, name) {
-    
-    // ✅ 추후 이 안에서 Supabase에 "select * from 출결테이블 where 학번 = stuId"를 날려서
-    // 실제 데이터를 가져오게 됩니다. 지금은 레이아웃(디자인)만 먼저 만들어 둔 상태입니다.
+        // ✅ [초보자용 주석] 상세보기 버튼을 눌렀을 때 학생의 일자별 현황을 보여주는 팝업창(모달) 함수입니다.
+        async function showStudentDetail(stuId, name) {
 
-    let html = `
+            // ✅ 추후 이 안에서 Supabase에 "select * from 출결테이블 where 학번 = stuId"를 날려서
+            // 실제 데이터를 가져오게 됩니다. 지금은 레이아웃(디자인)만 먼저 만들어 둔 상태입니다.
+
+            let html = `
         <div id="student-detail-modal" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:30px; border-radius:20px; box-shadow:0 0 35px rgba(0,0,0,0.6); z-index:10001; width:90%; max-width:500px; max-height:80vh; overflow-y:auto;">
             
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 2px solid #333; padding-bottom: 10px;">
@@ -1144,24 +1461,25 @@ async function showStudentDetail(stuId, name) {
         </div>
     `;
 
-    // 혹시 이전에 열려있던 창이 있으면 지우고 새로운 창을 띄웁니다.
-    const oldModal = document.getElementById('student-detail-modal');
-    if(oldModal) oldModal.remove();
-    document.body.insertAdjacentHTML('beforeend', html);
-}
+            // 혹시 이전에 열려있던 창이 있으면 지우고 새로운 창을 띄웁니다.
+            const oldModal = document.getElementById('student-detail-modal');
+            if (oldModal) oldModal.remove();
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
 
 
-// 2. 체크된 학생들만 모아서 저장
-async function savePriorityList() {
-    const checkedIds = Array.from(document.querySelectorAll('.priority-check:checked')).map(el => el.value);
-    
-    const { error } = await supabaseClient.from('settings').upsert({
-        key: 'priority_students',
-        value: { ids: checkedIds }
-    });
+        // 2. 체크된 학생들만 모아서 저장
+        async function savePriorityList() {
+            const checkedIds = Array.from(document.querySelectorAll('.priority-check:checked')).map(el => el.value);
 
-    if (!error) alert("고정석 권한 명단이 저장되었습니다.");
-}
-</script>
+            const { error } = await supabaseClient.from('settings').upsert({
+                key: 'priority_students',
+                value: { ids: checkedIds }
+            });
+
+            if (!error) alert("고정석 권한 명단이 저장되었습니다.");
+        }
+    </script>
 </body>
+
 </html>
