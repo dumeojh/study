@@ -72,20 +72,44 @@
         <button class="menu-btn" onclick="showTab('tab-time', this)">⏱️ 운영시간</button>
     </div>
 
+
+
 <div id="tab-schedule" class="card active">
     <!-- 버튼 추가 위치 예시: 💾 달력 및 요일 설정 저장 버튼 바로 위 -->
 <button class="btn" style="background:var(--success); width:100%; padding:15px; margin-top:10px; font-size:16px;" onclick="showSupervisorStats()">
     📊 감독교사별 누적 배정 통계 확인
 </button>
 
-<!-- 🌟 감독교사 환경설정 추가 -->
-<div style="background:#fff3cd; padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid #ffeeba;">
-    <b style="color:#856404;">👨‍🏫 감독교사 명단 관리 및 소급 입력</b>
-    <p style="font-size:12px; margin:5px 0;">감독교사 성함과 3~4월의 기존 감독 횟수를 입력하세요. (엔터로 구분)</p>
-    <textarea id="supervisor-list-input" style="width:100%; height:80px; padding:10px; border-radius:5px; border:1px solid #ccc;" 
-              placeholder="이름,3월횟수,4월횟수 (예: 오장한,2,3)"></textarea>
-    <div style="font-size:11px; color:#666; margin-top:5px;">* 입력 형식: 이름,3월개수,4월개수 (한 줄에 한 명씩)</div>
-</div>
+<div id="tab-schedule" class="card active">
+    <!-- 📊 통계 확인 버튼: 상단에 배치하여 접근성 강화 -->
+    <button class="btn" style="background:var(--success); width:100%; padding:15px; margin-bottom:15px; font-size:16px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; color:white;" onclick="showSupervisorStats()">
+        📊 감독교사별 누적 배정 통계 확인
+    </button>
+
+    <!-- 🌟 감독교사 환경설정 섹션 -->
+    <div style="background:#fff3cd; padding:18px; border-radius:12px; margin-bottom:20px; border:1px solid #ffeeba; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <div style="display:flex; align-items:center; margin-bottom:8px;">
+            <span style="font-size:20px; margin-right:8px;">👨‍🏫</span>
+            <b style="color:#856404; font-size:15px;">감독교사 명단 관리 및 초기 횟수 설정</b>
+        </div>
+        
+        <p style="font-size:12.5px; color:#664d03; margin:0 0 10px 0; line-height:1.5;">
+            감독교사 성함과 <b>3~4월 소급분</b>을 아래 형식으로 입력하세요. <br>
+            <span style="color:#d9534f;">* 입력 후 '달력 및 설정 저장' 버튼을 눌러야 반영됩니다.</span>
+        </p>
+
+        <textarea id="supervisor-list-input" 
+                  style="width:100%; height:100px; padding:12px; border-radius:8px; border:1px solid #decba1; font-family:monospace; font-size:13px; line-height:1.6; resize:vertical;" 
+                  placeholder="이름,3월횟수,4월횟수&#10;예: 오장한,2,3&#10;예: 김철수,0,1"></textarea>
+        
+        <div style="background:rgba(255,255,255,0.5); padding:8px; border-radius:6px; margin-top:10px; font-size:11px; color:#7d661e; border:1px dashed #decba1;">
+            💡 <b>입력 규칙:</b> [성함],[3월숫자],[4월숫자] (엔터로 한 줄씩 구분)
+        </div>
+    </div>
+
+   
+
+
 
         <h3>📅 야자 운영 달력 및 요일 설정</h3>
         <p style="font-size:12px; color:#666;">* 기본으로 운영할 요일을 선택하세요. (체크 해제된 요일은 학생 신청 화면에서도 제외됩니다)</p>
@@ -105,11 +129,17 @@
 
         <p style="font-size:12px; color:#666;">* 아래 달력의 날짜를 클릭하면 모의고사, 공휴일 등 특정 날짜만 개별적으로 켜고 끌 수 있습니다.</p>
         <div style="text-align:center; margin-bottom:15px;"><input type="month" id="calendar-month-select" onchange="renderCalendar()" style="font-size:16px; padding:5px;"></div>
-        <div id="calendar-container"></div>
-        <button class="btn btn-save" onclick="saveCalendarSchedule()">💾 달력 및 요일 설정 저장</button>
-    </div>
 
 
+ <!-- ... 달력 렌더링 영역 (기존 코드 유지) ... -->
+    
+    <div id="calendar-container"></div>
+
+    <!-- 저장 버튼 -->
+    <button class="btn btn-save" onclick="saveCalendarSchedule()" style="width:100%; padding:15px; margin-top:10px; font-weight:bold;">
+        💾 달력 및 감독교사 설정 저장
+    </button>
+</div>
 
 
 
@@ -330,38 +360,79 @@ async function checkPass() {
 
     //////////////////////////////
 function renderCalendar() {
-        const monthInput = document.getElementById('calendar-month-select');
-        if(!monthInput.value) {
-            const now = new Date();
-            monthInput.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}`;
-        }
-        const [year, month] = monthInput.value.split('-').map(Number);
-        const firstDay = new Date(year, month-1, 1).getDay();
-        const lastDate = new Date(year, month, 0).getDate();
-        let html = `<table class="calendar-table"><thead><tr><th style="color:red">일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th style="color:blue">토</th></tr></thead><tbody><tr>`;
-        for(let i=0; i<firstDay; i++) html += `<td></td>`;
-        for(let date=1; date<=lastDate; date++) {
-            const dStr = `${year}-${String(month).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
-            const dayIdx = new Date(year, month-1, date).getDay();
-            
-            if(currentSchedule[dStr] === undefined) {
-                const isOperating = defaultOperatingDays.includes(dayIdx);
-                currentSchedule[dStr] = { active: isOperating, reason: isOperating ? "" : "정규휴무", supervisor: "" };
-            }
-            
-            const data = currentSchedule[dStr];
-            // 🌟 달력 칸에 감독교사 이름 표시 추가
-            html += `<td class="${data.active?'is-active':''}" onclick="toggleDate('${dStr}')">
-                <b>${date}</b>
-                <span class="status-badge ${data.active?'status-on':'status-off'}">${data.active?'야자운영':'야자없음'}</span>
-                ${!data.active && data.reason ? `<div class="reason-text">[${data.reason}]</div>` : ''}
-                ${data.active && data.supervisor ? `<div style="font-size:11px; color:var(--primary); margin-top:5px; font-weight:bold; text-align:center;">👨‍🏫 ${data.supervisor}</div>` : ''}
-            </td>`;
-            if((firstDay+date)%7 === 0) html += `</tr><tr>`;
-        }
-        document.getElementById('calendar-container').innerHTML = html + `</tr></tbody></table>`;
+    const monthInput = document.getElementById('calendar-month-select');
+    if(!monthInput.value) {
+        const now = new Date();
+        monthInput.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}`;
     }
+    const [year, month] = monthInput.value.split('-').map(Number);
+    
+    // 🌟 상단 월 표시 업데이트 (4월, 5월... 기재)
+    const monthDisplay = document.getElementById('current-month-display');
+    if (monthDisplay) monthDisplay.innerText = `${month}월 배정 현황`;
 
+    const firstDay = new Date(year, month-1, 1).getDay();
+    const lastDate = new Date(year, month, 0).getDate();
+
+    // 헤더 생성 (일~토)
+    let html = `<table class="calendar-table">
+        <thead>
+            <tr>
+                <th style="color:red">일</th>
+                <th>월</th>
+                <th>화</th>
+                <th>수</th>
+                <th>목</th>
+                <th>금</th>
+                <th style="color:blue">토</th>
+            </tr>
+        </thead>
+        <tbody><tr>`;
+
+    // 1일 시작 전 빈칸 채우기
+    for(let i=0; i<firstDay; i++) html += `<td></td>`;
+
+    for(let date=1; date<=lastDate; date++) {
+        const dStr = `${year}-${String(month).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
+        const dayIdx = new Date(year, month-1, date).getDay(); // 0:일, 6:토
+        
+        // 데이터가 없는 경우 기본값 생성
+        if(currentSchedule[dStr] === undefined) {
+            const isOperating = defaultOperatingDays.includes(dayIdx);
+            currentSchedule[dStr] = { active: isOperating, reason: isOperating ? "" : "정규휴무", supervisor: "" };
+        }
+        
+        const data = currentSchedule[dStr];
+        
+        // 🌟 날짜 색상 결정 (일요일: 레드, 토요일: 블루)
+        let dateColor = "inherit";
+        if (dayIdx === 0) dateColor = "red";
+        else if (dayIdx === 6) dateColor = "blue";
+
+        html += `
+            <td class="${data.active ? 'is-active' : ''}" onclick="toggleDate('${dStr}')" style="position:relative;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <b style="color:${dateColor}; font-size:14px;">${date}</b>
+                    ${!data.active && data.reason ? `<span style="font-size:9px; color:var(--danger); background:#ffe8e8; padding:1px 3px; border-radius:3px;">${data.reason}</span>` : ''}
+                </div>
+                
+                <span class="status-badge ${data.active ? 'status-on' : 'status-off'}">
+                    ${data.active ? '야자운영' : '야자없음'}
+                </span>
+
+                ${data.active && data.supervisor ? 
+                    `<div style="font-size:11px; color:var(--primary); margin-top:6px; font-weight:bold; text-align:center; background:#f0f7ff; border-radius:4px; padding:2px 0;">
+                        👨‍🏫 ${data.supervisor}
+                    </div>` : 
+                    `<div style="height:21px;"></div>` // 레이아웃 유지를 위한 빈 공간
+                }
+            </td>`;
+
+        if((firstDay+date)%7 === 0) html += `</tr><tr>`;
+    }
+    
+    document.getElementById('calendar-container').innerHTML = html + `</tr></tbody></table>`;
+}
 
 
 
