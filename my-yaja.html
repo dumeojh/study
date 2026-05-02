@@ -1,3 +1,4 @@
+<!-- [수정본] my-yaja.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -9,22 +10,24 @@
     <style>
         .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
         .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-    <!-- 헤더 -->
     <div class="gradient-bg text-white p-6 text-center shadow-lg">
         <h1 class="text-2xl font-bold">안성여고 야간 자기주도학습</h1>
         <p class="text-sm opacity-80 mt-1">나의 야자 참여율 및 고정석 랭킹 확인</p>
     </div>
 
     <div class="max-w-md mx-auto p-4">
-        <!-- 조회 섹션 -->
         <div class="card p-6 mb-6">
             <label class="block text-gray-700 text-sm font-bold mb-2">학번 입력</label>
             <div class="flex gap-2">
+                <!-- 🌟 onkeyup 이벤트를 추가하여 엔터 키 감지 -->
                 <input type="number" id="stu_id" placeholder="예: 30101" 
+                    onkeyup="if(window.event.keyCode==13){checkMyStatus()}"
                     class="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
                 <button onclick="checkMyStatus()" 
                     class="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-purple-700 transition">
@@ -34,12 +37,9 @@
             <p id="msg" class="text-red-500 text-xs mt-2 hidden">학번을 확인해주세요.</p>
         </div>
 
-        <!-- 결과 표시 섹션 (기본 숨김) -->
         <div id="result_area" class="hidden animate-fade-in">
-            <!-- 요약 카드 -->
             <div class="card p-6 mb-4 text-center">
-                <h2 id="user_name" class="text-xl font-bold text-gray-800 mb-4">OOO 학생의 참여 현황</h2>
-                
+                <h2 id="user_name" class="text-xl font-bold text-gray-800 mb-4">학생 참여 현황</h2>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="bg-purple-50 p-4 rounded-xl">
                         <p class="text-gray-500 text-xs uppercase">현재 등수</p>
@@ -52,140 +52,106 @@
                 </div>
             </div>
 
-            <!-- 고정석 안내 -->
-            <div id="fixed_seat_alert" class="card p-4 mb-4 border-l-4 border-green-500 bg-green-50">
-                <p class="text-sm text-green-800 font-medium leading-relaxed">
-                    🎉 현재 <strong>고정석 안정권</strong>입니다!<br>
-                    이 페이스를 유지하여 자리를 확보하세요.
-                </p>
+            <div id="fixed_seat_alert" class="card p-4 mb-4 border-l-4">
+                <!-- 알림 메시지 영역 -->
             </div>
 
-            <!-- 상세 리스트 -->
             <div class="card p-4">
-                <h3 class="text-sm font-bold text-gray-700 mb-3 border-b pb-2">최근 참여 기록</h3>
-                <ul id="log_list" class="text-sm text-gray-600 divide-y">
-                    <!-- 로그가 여기에 삽입됨 -->
-                </ul>
+                <h3 class="text-sm font-bold text-gray-700 mb-3 border-b pb-2">최근 참여 기록 (최근 10회)</h3>
+                <ul id="log_list" class="text-sm text-gray-600 divide-y"></ul>
             </div>
         </div>
     </div>
 
 <script>
-    // 1. 변수명을 supabaseClient로 변경하여 충돌 방지
-    const supabaseUrl =  'https://hqiijssfdullpfpfidbz.supabase.co';
-
-    const supabaseKey =  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
-
-    // 라이브러리 로딩 확인 후 클라이언트 초기화
+    const supabaseUrl = 'https://hqiijssfdullpfpfidbz.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-
-
-////////////////////////////////////////////////
-async function checkMyStatus() {
-    const stuIdInput = document.getElementById('stu_id');
-    const msgElement = document.getElementById('msg');
-    
-    // 1. 입력값을 숫자로 변환 (데이터베이스 타입과 맞춤)
-    const stuId = parseInt(stuIdInput.value.trim());
-
-    if(!stuId || isNaN(stuId)) {
-        alert("올바른 학번을 숫자로 입력해주세요.");
-        return;
-    }
-
-    try {
-        msgElement.classList.add('hidden');
-
-        // 1. 전체 랭킹 데이터 가져오기
-        const { data: allData, error: rankError } = await supabaseClient
-            .from('attendance_logs') 
-            .select('stu_id');
-
-        if(rankError) throw rankError;
-
-        // 집계 시 학번을 모두 숫자로 처리하여 비교
-        const counts = allData.reduce((acc, curr) => {
-            const id = parseInt(curr.stu_id);
-            acc[id] = (acc[id] || 0) + 1;
-            return acc;
-        }, {});
-
-        const sortedIds = Object.keys(counts).map(Number).sort((a, b) => counts[b] - counts[a]);
-        const rank = sortedIds.indexOf(stuId) + 1;
-        const myCount = counts[stuId] || 0;
-
-        if(myCount === 0) {
-            msgElement.innerText = "해당 학번의 참여 기록이 없습니다.";
-            msgElement.classList.remove('hidden');
-            document.getElementById('result_area').classList.add('hidden');
+    async function checkMyStatus() {
+        const stuIdInput = document.getElementById('stu_id');
+        const msgElement = document.getElementById('msg');
+        const stuIdRaw = stuIdInput.value.trim();
+        
+        if(!stuIdRaw) {
+            alert("학번을 입력해주세요.");
             return;
         }
 
-        // 2. 학생 이름 가져오기 (데이터 타입 불일치 방지를 위해 변수 사용)
-        const { data: userData, error: userError } = await supabaseClient
-            .from('applications')
-            .select('stu_name') // <--- Supabase에 있는 실제 컬럼명으로 변경하세요!
-            .eq('stu_id', stuId) // 숫자로 전달
-            .maybeSingle();
+        try {
+            msgElement.classList.add('hidden');
 
-        if (userError) {
-            console.warn("학생 명단 조회 실패:", userError);
-            // 이름 조회 실패해도 랭킹은 보여주기 위해 에러를 던지지 않음
-        }
+            // 1. 전체 출결 데이터를 가져와 랭킹 계산
+            const { data: allData, error: rankError } = await supabaseClient
+                .from('attendance_logs') 
+                .select('stu_id');
 
-        // 화면 표시 로직
-        document.getElementById('result_area').classList.remove('hidden');
-        document.getElementById('user_name').innerText = `${userData?.stu_name || '학생'}님의 참여 현황`;
+            if(rankError) throw rankError;
 
-        
-        // 🌟 [추가] 3. 상세 참여 기록 가져오기 (날짜 역순)
-        const { data: logs, error: logError } = await supabaseClient
-            .from('attendance_logs')
-            .select('date, status')
-            .eq('stu_id', String(stuId)) // 문자열로 비교
-            .order('date', { ascending: false })
-            .limit(10); // 최근 10개만
+            // 학번별 출석 횟수 집계
+            const counts = allData.reduce((acc, curr) => {
+                const id = curr.stu_id;
+                acc[id] = (acc[id] || 0) + 1;
+                return acc;
+            }, {});
 
-        const logListElement = document.getElementById('log_list');
-        logListElement.innerHTML = ''; // 기존 내용 초기화
+            // 내림차순 정렬하여 순위 도출
+            const sortedIds = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+            const rank = sortedIds.indexOf(stuIdRaw) + 1;
+            const myCount = counts[stuIdRaw] || 0;
 
-        if (logs && logs.length > 0) {
-            logs.forEach(log => {
-                const li = document.createElement('li');
-                li.className = "flex justify-between items-center py-3";
-                li.innerHTML = `
+            if(myCount === 0) {
+                msgElement.innerText = "참여 기록이 없습니다.";
+                msgElement.classList.remove('hidden');
+                document.getElementById('result_area').classList.add('hidden');
+                return;
+            }
+
+            // 2. 학생 이름 정보 가져오기
+            const { data: userData } = await supabaseClient
+                .from('applications')
+                .select('stu_name')
+                .eq('stu_id', stuIdRaw)
+                .maybeSingle();
+
+            // 3. 최근 상세 로그 가져오기[cite: 19]
+            const { data: logs } = await supabaseClient
+                .from('attendance_logs')
+                .select('date, status')
+                .eq('stu_id', stuIdRaw)
+                .order('date', { ascending: false })
+                .limit(10);
+
+            // 화면 데이터 업데이트[cite: 19]
+            document.getElementById('result_area').classList.remove('hidden');
+            document.getElementById('user_name').innerText = `${userData?.stu_name || '학생'}님의 참여 현황`;
+            document.getElementById('my_rank').innerText = rank;
+            document.getElementById('total_count').innerText = myCount;
+
+            // 로그 리스트 생성[cite: 19]
+            const logList = document.getElementById('log_list');
+            logList.innerHTML = logs.map(log => `
+                <li class="flex justify-between items-center py-3">
                     <span class="font-medium text-gray-700">${log.date}</span>
-                    <span class="px-2 py-1 rounded text-xs font-bold ${
-                        log.status === '출석' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                    }">${log.status}</span>
-                `;
-                logListElement.appendChild(li);
-            });
-        } else {
-            logListElement.innerHTML = '<li class="py-4 text-center text-gray-400">참여 기록이 없습니다.</li>';
+                    <span class="px-2 py-1 rounded text-xs font-bold ${log.status === '출석' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">${log.status}</span>
+                </li>
+            `).join('') || '<li class="py-4 text-center text-gray-400">기록이 없습니다.</li>';
+
+            // 고정석 안내 메시지 업데이트[cite: 19]
+            const alertBox = document.getElementById('fixed_seat_alert');
+            if(rank <= 40) {
+                alertBox.className = "card p-4 mb-4 border-l-4 border-green-500 bg-green-50";
+                alertBox.innerHTML = `<p class="text-sm text-green-800 font-medium">🎉 현재 <strong>고정석 안정권</strong>(${rank}위)입니다!</p>`;
+            } else {
+                alertBox.className = "card p-4 mb-4 border-l-4 border-orange-500 bg-orange-50";
+                alertBox.innerHTML = `<p class="text-sm text-orange-800 font-medium">💪 고정석(40위)까지 조금만 더! (현재 ${rank}위)</p>`;
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert("조회 중 오류가 발생했습니다.");
         }
-        // ... (이하 등수 안내 로직)
-
-
-        document.getElementById('my_rank').innerText = rank;
-        document.getElementById('total_count').innerText = myCount;
-
-        const alertBox = document.getElementById('fixed_seat_alert');
-        if(rank > 0 && rank <= 40) {
-            alertBox.className = "card p-4 mb-4 border-l-4 border-green-500 bg-green-50";
-            alertBox.innerHTML = `<p class="text-sm text-green-800 font-medium">🎉 현재 <strong>고정석 안정권</strong>(${rank}위)입니다!</p>`;
-        } else {
-            alertBox.className = "card p-4 mb-4 border-l-4 border-orange-500 bg-orange-50";
-            alertBox.innerHTML = `<p class="text-sm text-orange-800 font-medium">💪 고정석(40위)까지 조금 더 힘내세요! (현재 ${rank}위)</p>`;
-        }
-
-    } catch (error) {
-        console.error("상세 에러 내용:", error);
-        alert("데이터 조회 중 오류가 발생했습니다. 브라우저 콘솔(F12)을 확인해주세요.");
     }
-}
-
 </script>
 </body>
 </html>
