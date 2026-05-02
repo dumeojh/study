@@ -382,11 +382,7 @@
     
 
 
-    <div id="counsel-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px;">
-                <h3 id="counsel-title" style="margin:0;">🧑‍🎓 상담 리포트</h3>
-                <button class="btn btn-gray" onclick="document.getElementById('counsel-modal').style.display='none'">닫기</button>
+
             </div>
             <div id="counsel-calendar-area"></div>
             <div style="background:#f8f9fa; padding:15px; border-radius:10px; margin-top:15px; display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; font-size:13px; text-align:center;">
@@ -400,6 +396,16 @@
     </div>
 
 </div>
+
+
+    <div id="counsel-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px;">
+                <h3 id="counsel-title" style="margin:0;">🧑‍🎓 상담 리포트</h3>
+                <button class="btn btn-gray" onclick="document.getElementById('counsel-modal').style.display='none'">닫기</button>
+</div> <!-- 모달 하단 버튼 영역(footer) div 닫기 -->
+    </div> <!-- 모달 내부 컨텐츠(content) div 닫기 -->
+</div> <!-- 모달 전체 배경(wrapper) div 닫기 -->
 
 <script>
     // =========================================================
