@@ -89,14 +89,6 @@ async function checkMyStatus() {
     // 1. 입력값을 숫자로 변환 (데이터베이스 타입과 맞춤)
     const stuId = parseInt(stuIdInput.value.trim());
 
-
-
-
-
-
-
-
-
     if(!stuId || isNaN(stuId)) {
         alert("올바른 학번을 숫자로 입력해주세요.");
         return;
@@ -145,6 +137,37 @@ async function checkMyStatus() {
         // 화면 표시 로직
         document.getElementById('result_area').classList.remove('hidden');
         document.getElementById('user_name').innerText = `${userData?.stu_name || '학생'}님의 참여 현황`;
+
+        
+        // 🌟 [추가] 3. 상세 참여 기록 가져오기 (날짜 역순)
+        const { data: logs, error: logError } = await supabaseClient
+            .from('attendance_logs')
+            .select('date, status')
+            .eq('stu_id', String(stuId)) // 문자열로 비교
+            .order('date', { ascending: false })
+            .limit(10); // 최근 10개만
+
+        const logListElement = document.getElementById('log_list');
+        logListElement.innerHTML = ''; // 기존 내용 초기화
+
+        if (logs && logs.length > 0) {
+            logs.forEach(log => {
+                const li = document.createElement('li');
+                li.className = "flex justify-between items-center py-3";
+                li.innerHTML = `
+                    <span class="font-medium text-gray-700">${log.date}</span>
+                    <span class="px-2 py-1 rounded text-xs font-bold ${
+                        log.status === '출석' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                    }">${log.status}</span>
+                `;
+                logListElement.appendChild(li);
+            });
+        } else {
+            logListElement.innerHTML = '<li class="py-4 text-center text-gray-400">참여 기록이 없습니다.</li>';
+        }
+        // ... (이하 등수 안내 로직)
+
+
         document.getElementById('my_rank').innerText = rank;
         document.getElementById('total_count').innerText = myCount;
 
