@@ -10,6 +10,7 @@
             --primary-color: #2c3e50;
             --accent-color: #3498db;
             --bg-color: #f8f9fa;
+            --highlight-color: #e74c3c; /* 고정석 관련 강조 색상 */
         }
 
         body {
@@ -46,7 +47,7 @@
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
             width: 90%;
-            max-width: 1000px;
+            max-width: 1200px; /* 카드가 늘어남에 따라 폭 확장 */
             padding-bottom: 50px;
         }
 
@@ -71,6 +72,12 @@
             transform: translateY(-10px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             border-color: var(--accent-color);
+        }
+
+        /* 학생 전용 강조 카드 스타일 (선택사항) */
+        .card-student {
+            border: 1px solid #d5dbdb;
+            background: #ffffff;
         }
 
         .icon {
@@ -112,16 +119,11 @@
 
 
    <div class="container">
-    <a href="settings.html" class="card">
-        <div class="icon">⚙️</div>
-        <div class="card-title">환경설정</div>
-        <div class="card-desc">운영 일정, 명단 및 도면 관리<br>(관리자 전용)</div>
-    </a>
-
-    <a href="seat_designer.html" class="card">
-        <div class="icon">🎨</div>
-        <div class="card-title">도면 설계 샌드박스</div>
-        <div class="card-desc">다중 구역(A실, B실 등) 도면을<br>안전하게 설계하고 배포하기</div>
+    <!-- 학생용 정보 조회 카드 추가 -->
+    <a href="my-yaja.html" class="card card-student">
+        <div class="icon">🏆</div>
+        <div class="card-title">나의 야자 정보</div>
+        <div class="card-desc">개인별 참여율 및 랭킹 확인<br>고정석 선정 순위 체크하기</div>
     </a>
 
     <a href="sign_up.html" class="card">
@@ -142,6 +144,7 @@
         <div class="card-desc">학생증 바코드 스캔을 통한<br>실시간 입실 및 퇴실 체크</div>
     </a>
 
+    <!-- 관리자용 메뉴 구분 -->
     <a href="split_admin.html" class="card"> 
         <div class="icon">📊</div>
         <div class="card-title">야자 통합 관리</div>
@@ -152,6 +155,18 @@
         <div class="icon">📈</div>
         <div class="card-title">월간 통계 분석</div>
         <div class="card-desc">월별 달력 기반 신청 인원 및<br>일일 출결 결과 통합 통계</div>
+    </a>
+
+    <a href="settings.html" class="card">
+        <div class="icon">⚙️</div>
+        <div class="card-title">환경설정</div>
+        <div class="card-desc">운영 일정, 명단 및 도면 관리<br>(관리자 전용)</div>
+    </a>
+
+    <a href="seat_designer.html" class="card">
+        <div class="icon">🎨</div>
+        <div class="card-title">도면 설계 샌드박스</div>
+        <div class="card-desc">다중 구역(A실, B실 등) 도면을<br>안전하게 설계하고 배포하기</div>
     </a>
 
     <a href="help.html" class="card card-help">
