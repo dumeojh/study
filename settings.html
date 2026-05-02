@@ -1434,22 +1434,27 @@
 
 
 
+
             // 2. 고정석 명단 로딩 로직 (데이터 집계 보완 버전)
             allStudentData = Object.entries(roster).map(([id, name]) => {
-                // 해당 학생의 모든 출결 기록 필터링 (학번 타입을 문자열로 통일하여 비교)
-                // 학번 비교 시 혹시 모를 공백을 제거하고(trim) 확실하게 문자로 변환하여 비교합니다.
+
                 const studentLogs = attendanceLogs ? attendanceLogs.filter(log => {
+                    // 💡 주의: DB 컬럼명이 정확히 stuId 가 맞는지 확인하세요. (예: student_id 라면 log.student_id 로 변경)
                     const dbId = String(log.stuId).trim();
                     const rosterId = String(id).trim();
                     return dbId === rosterId;
                 }) : [];
+
                 // 월별 카운트 초기화 (3월~12월)
                 const counts = { m3: 0, m4: 0, m5: 0, m6: 0, m7: 0, m8: 0, m9: 0, m10: 0, m11: 0, m12: 0 };
 
-                // counts[`m${month}`]++ 대신 문자열 파싱 사용
                 studentLogs.forEach(log => {
-                    if (log.date && typeof log.date === 'string') {
-                        const month = parseInt(log.date.split('-')[1]); // "05" -> 5
+                    // 💡 주의: DB 컬럼명이 정확히 date 가 맞는지 확인하세요. (예: created_at 이라면 log.created_at 으로 변경)
+                    if (log.date) {
+                        // split('-') 대신 표준 Date 객체를 사용하여 어떤 형식의 날짜든 안전하게 파싱
+                        const dateObj = new Date(log.date);
+                        const month = dateObj.getMonth() + 1; // getMonth()는 0부터 시작하므로 +1 처리
+
                         const key = `m${month}`;
                         if (counts[key] !== undefined) {
                             counts[key]++;
@@ -1466,8 +1471,6 @@
                     total: total
                 };
             });
-
-
 
             // 🌟 이 부분에 아래 코드를 추가하거나 확인하세요!
             renderPriorityTable();        // 테이블을 먼저 그리고
