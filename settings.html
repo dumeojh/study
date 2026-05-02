@@ -420,21 +420,61 @@ function applySupSelection(dStr) {
     function resizeGrid() { if(!confirm("도면을 리셋하면 기존의 모든 좌석 배치가 삭제됩니다. 진행하시겠습니까?")) return;saveHistory(); rows = parseInt(document.getElementById('grid-rows').value); cols = parseInt(document.getElementById('grid-cols').value); seatMapData = Array.from({length:rows}, ()=>Array.from({length:cols}, ()=>({type:0, label:""}))); drawEditGrid(); }
     
     function modifyGrid(a) { saveHistory(); const i = parseInt(document.getElementById('target-index').value)-1; if(i<0)return; if(a==='insertRow'){seatMapData.splice(i,0,Array.from({length:cols},()=>({type:0,label:""}))); rows++;} else if(a==='deleteRow'){seatMapData.splice(i,1); rows--;} else if(a==='insertCol'){seatMapData.forEach(r=>r.splice(i,0,{type:0,label:""})); cols++;} else if(a==='deleteCol'){seatMapData.forEach(r=>r.splice(i,1)); cols--;} drawEditGrid(); }
-    function drawEditGrid() { const g = document.getElementById('seat-grid'); g.innerHTML = ''; g.style.gridTemplateColumns = `repeat(${cols}, 42px)`; seatMapData.forEach(row => row.forEach(cell => { const d = document.createElement('div'); d.className = `seat-cell seat-${cell.type}`; d.innerText = cell.label; d.onclick = () => { saveHistory(); if([1,2,5].includes(currentTool)) cell.label = prompt("라벨:", cell.label)||cell.label; cell.type = currentTool; drawEditGrid(); }; g.appendChild(d); })); }
+ 
+function drawEditGrid() {
+    const g = document.getElementById('seat-grid');
+    g.innerHTML = '';
+    g.style.gridTemplateColumns = `repeat(${cols}, 42px)`;
+
+    seatMapData.forEach(row => row.forEach(cell => {
+        const d = document.createElement('div');
+        d.className = `seat-cell seat-${cell.type}`;
+        d.innerText = cell.label;
+
+        d.onclick = () => {
+            saveHistory();
+
+            // 1. 라벨 입력이 필요한 도구(고정, 자율, 특수)인 경우
+            if ([1, 2, 5].includes(currentTool)) {
+                const newLabel = prompt("좌석 번호(라벨)를 입력하세요:", cell.label);
+                
+                // 취소를 누르지 않았을 때(null이 아닐 때)만 라벨을 업데이트합니다.
+                if (newLabel !== null) {
+                    cell.label = newLabel;
+                } else {
+                    // 취소를 눌렀다면 함수를 종료하여 타입 변경도 방지하거나, 
+                    // 혹은 타입만 바꾸고 싶다면 이 else 문을 비워두면 됩니다.
+                    return; 
+                }
+            }
+
+            // 2. 선택한 도구로 타입 변경 및 화면 갱신
+            cell.type = currentTool;
+            drawEditGrid();
+        };
+        g.appendChild(d);
+    }));
+}
+
 
 // 1. 달력 저장
 async function saveCalendarSchedule() { 
     updateDefaultDays();
+    // textarea에서 현재 입력된 명단을 직접 가져와야 합니다.
+    const supervisorList = document.getElementById('supervisor-list-input').value; 
     const { error } = await supabaseClient.from('settings').upsert({
         key: 'calendarSchedule',
         value: {
             data: JSON.stringify(currentSchedule),
-            defaultDays: defaultOperatingDays
+            defaultDays: defaultOperatingDays, // 쉼표 추가
+            supervisorList: supervisorList    // 변수명 확인 및 쉼표 추가
         }
     });
     if(error) alert("오류: " + error.message);
-    else alert("달력 및 요일 설정 저장완료"); 
+    else alert("달력 및 감독교사 명단 저장완료");
 }
+
+
 
 // 2. 신청 기간 저장
 async function saveApplyPeriod() { 
@@ -500,6 +540,9 @@ async function loadAllSettings() {
                     cb.checked = defaultOperatingDays.includes(parseInt(cb.value));
                 });
             }
+            if (calData.supervisorList) {
+    document.getElementById('supervisor-list-input').value = calData.supervisorList;
+}
         }
         renderCalendar();
 
