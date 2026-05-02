@@ -605,6 +605,21 @@
         <div
             style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
 
+
+
+
+            <div
+                style="margin-bottom: 20px; padding: 15px; background: #eef2f7; border-radius: 10px; border-left: 5px solid var(--primary);">
+                <p style="margin-top:0;"><strong>⚙️ 운영 모드 설정</strong></p>
+                <label><input type="radio" name="opMode" value="manual" checked> <b>수동 지정</b> (체크한 학생만 고정석 신청
+                    가능)</label><br>
+                <label style="margin-top:5px; display:inline-block;"><input type="radio" name="opMode" value="auto">
+                    <b>자동
+                        분석</b> (전월 참여율 상위 30명 자동 부여)</label>
+                <button onclick="saveOpMode()" class="btn"
+                    style="background:var(--primary); margin-top:10px; padding:5px 15px; font-size:12px;">모드 저장</button>
+            </div>
+
             <!-- 학년/반 선택 (신규 추가) -->
             <div style="min-width: 120px;">
                 <b style="font-size: 13px; display: block; margin-bottom: 5px;">🏫 학년/반 선택:</b>
@@ -626,17 +641,6 @@
             </div>
         </div>
 
-
-        <div
-            style="margin-bottom: 20px; padding: 15px; background: #eef2f7; border-radius: 10px; border-left: 5px solid var(--primary);">
-            <p style="margin-top:0;"><strong>⚙️ 운영 모드 설정</strong></p>
-            <label><input type="radio" name="opMode" value="manual" checked> <b>수동 지정</b> (체크한 학생만 고정석 신청
-                가능)</label><br>
-            <label style="margin-top:5px; display:inline-block;"><input type="radio" name="opMode" value="auto"> <b>자동
-                    분석</b> (전월 참여율 상위 30명 자동 부여)</label>
-            <button onclick="saveOpMode()" class="btn"
-                style="background:var(--primary); margin-top:10px; padding:5px 15px; font-size:12px;">모드 저장</button>
-        </div>
 
         <h4>📊 학생별 참여 통계 및 권한 부여</h4>
         <p style="font-size:12px; color:#666;">* 파란색 월 제목(3월▼)을 클릭하면 해당 월 참여가 많은 순으로 자동 정렬됩니다.</p>
