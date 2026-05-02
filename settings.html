@@ -1363,23 +1363,30 @@
             });
         }
 
-        // 2. [수정] 검색과 반별 필터를 동시에 적용하는 함수
         function filterPriorityTable() {
-            const classTerm = document.getElementById('class-filter-select').value; // 선택된 반
-            const searchTerm = document.getElementById('priority-search-input').value.toLowerCase(); // 검색어
+            const selectElement = document.getElementById('class-filter-select');
+            const classTerm = selectElement ? selectElement.value : ""; // 선택된 반 (예: "37")
+            const searchTerm = document.getElementById('priority-search-input').value.toLowerCase();
             const rows = document.querySelectorAll('#student-list-body tr');
 
             rows.forEach(row => {
-                // 행에서 학번과 이름 텍스트 추출
-                const stuId = row.cells[1].innerText;
-                const stuName = row.cells[2].innerText.toLowerCase();
+                // 셀 인덱스가 정확한지 다시 한번 확인하세요! 
+                // 0: 순번, 1: 학번, 2: 이름 일 경우 아래 인덱스가 맞습니다.
+                const stuId = row.cells[1].innerText.trim();
+                const stuName = row.cells[2].innerText.toLowerCase().trim();
 
-                // 필터 조건 확인
-                const matchClass = classTerm === "" || stuId.startsWith(classTerm);
-                const matchSearch = stuId.includes(searchTerm) || stuName.includes(searchTerm);
+                // 1. 반 필터링: 선택 안 함("")이거나 학번의 앞부분이 일치할 때
+                const matchClass = (classTerm === "" || stuId.startsWith(classTerm));
 
-                // 두 조건이 모두 맞을 때만 표시
-                row.style.display = (matchClass && matchSearch) ? "" : "none";
+                // 2. 검색어 필터링: 학번이나 이름에 검색어가 포함될 때
+                const matchSearch = (stuId.includes(searchTerm) || stuName.includes(searchTerm));
+
+                // 두 조건을 모두 만족해야 출력
+                if (matchClass && matchSearch) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
             });
         }
 
