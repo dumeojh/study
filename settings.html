@@ -626,27 +626,27 @@
         <div
             style="background: #eef2f7; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #d1d9e6; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
 
-            <!-- 학년반 필터 (드롭다운) -->
+            <!-- 학년반 필터 -->
             <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-weight: bold; font-size: 14px; color: #444;">반별 필터:</span>
                 <select id="class-filter-select" onchange="filterPriorityTable()"
                     style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px;">
                     <option value="">전체 보기</option>
-                    <!-- 자바스크립트에서 자동으로 옵션이 생성됩니다 -->
                 </select>
             </div>
 
-            <!-- 학번/이름 검색 (텍스트 입력) -->
-            <div style="display: flex; align-items: center; gap: 8px; flex-grow: 1;">
+            <!-- 학생 검색 (너비 제한 적용) -->
+            <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-weight: bold; font-size: 14px; color: #444;">학생 검색:</span>
                 <input type="text" id="priority-search-input" onkeyup="filterPriorityTable()"
                     placeholder="학번 또는 이름 입력..."
-                    style="flex-grow: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px;">
+                    style="width: 220px; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px;">
             </div>
 
             <!-- 초기화 버튼 -->
             <button onclick="resetPriorityView()" class="btn"
-                style="background: var(--gray); padding: 8px 15px; font-size: 13px;">🔄 필터 초기화</button>
+                style="background: var(--gray); padding: 8px 15px; font-size: 13px; margin-left: auto;">🔄 필터
+                초기화</button>
         </div>
 
 
