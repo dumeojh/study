@@ -295,53 +295,65 @@
     </div>
 </div>
 
-<!-- ▼ 여기서부터 복사하세요 ▼ -->
+
+
+<!-- ▼ tab-priority 카드 내부를 이 코드로 교체하세요 ▼ -->
 <div id="tab-priority" class="card">
-    <h3>💺 고정석 운영 설정</h3>
-    <div style="margin-bottom: 20px; padding: 15px; background: #eef2f7; border-radius: 10px;">
-        <p><strong>운영 모드 선택:</strong></p>
-        <label><input type="radio" name="opMode" value="manual" checked> 수동 지정 (관리자가 선택한 학생만)</label><br>
-        <label><input type="radio" name="opMode" value="auto"> 자동 분석 (전월 참여율 상위 30명)</label>
-        <button onclick="saveOpMode()" class="btn btn-primary" style="margin-top:10px;">모드 저장</button>
+    <h3>💺 고정석 운영 및 권한 설정</h3>
+    
+    <!-- 🔍 검색 및 정렬 도구 모음 -->
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+        <div style="flex: 1; min-width: 200px;">
+            <b style="font-size: 13px;">🔍 학생 검색:</b>
+            <input type="text" id="priority-search-input" placeholder="학번 또는 이름 입력..." 
+                   style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc; margin-top: 5px;"
+                   onkeyup="filterPriorityTable()">
+        </div>
+        <div style="display: flex; gap: 5px; align-items: flex-end;">
+            <button class="btn" style="background:var(--primary); padding: 8px 12px; font-size: 12px;" onclick="sortPriorityByClass()">학년/반 정렬</button>
+            <button class="btn" style="background:var(--gray); padding: 8px 12px; font-size: 12px;" onclick="loadStudentPriorityList()">🔄 초기화</button>
+        </div>
     </div>
 
-    <h4>학생별 고정석 권한 및 월별 참여 통계</h4>
-    <p style="font-size:12px; color:#666;">* 3월~12월 참여 횟수를 기반으로 수동/자동 지정 여부를 결정하세요. [상세보기]를 누르면 일자별 현황을 봅니다.</p>
+    <div style="margin-bottom: 20px; padding: 15px; background: #eef2f7; border-radius: 10px; border-left: 5px solid var(--primary);">
+        <p style="margin-top:0;"><strong>⚙️ 운영 모드 설정</strong></p>
+        <label><input type="radio" name="opMode" value="manual" checked> <b>수동 지정</b> (체크한 학생만 고정석 신청 가능)</label><br>
+        <label style="margin-top:5px; display:inline-block;"><input type="radio" name="opMode" value="auto"> <b>자동 분석</b> (전월 참여율 상위 30명 자동 부여)</label>
+        <button onclick="saveOpMode()" class="btn" style="background:var(--primary); margin-top:10px; padding:5px 15px; font-size:12px;">모드 저장</button>
+    </div>
 
-    <!-- 표가 옆으로 길어지므로 가로 스크롤(overflow-x: auto)을 추가했습니다 -->
-    <div id="student-priority-table" style="max-height: 400px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;">
-        <table style="width:100%; border-collapse: collapse; text-align: center; white-space: nowrap;">
-<!-- tab-priority 카드 내 테이블 헤더 부분 -->
-<thead>
-    <tr style="background:#f8f9fa; border-bottom: 2px solid #ccc;">
-        <th style="padding: 10px; width: 40px;">No.</th> <!-- 순번 추가 -->
-        <th style="padding: 10px; position: sticky; left: 0; background: #f8f9fa; z-index: 2;">학번</th>
-        <th style="padding: 10px; position: sticky; left: 60px; background: #f8f9fa; z-index: 2;">이름</th>
-        <th style="padding: 10px; color:var(--primary);">권한</th>
-        
-        <!-- 각 월 클릭 시 정렬 함수 호출 (3~12월, 총계) -->
-        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m3')">3월▼</th>
-        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m4')">4월▼</th>
-        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m5')">5월▼</th>
-        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m6')">6월▼</th>
-        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m7')">7월▼</th>
-        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m8')">8월▼</th>
-        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m9')">9월▼</th>
-        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m10')">10월▼</th>
-        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m11')">11월▼</th>
-        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m12')">12월▼</th>
-        <th style="padding: 10px; cursor:pointer; color:var(--danger);" onclick="sortPriorityTable('total')">총계▼</th>
-        <th style="padding: 10px;">상세</th>
-    </tr>
-</thead>
+    <h4>📊 학생별 참여 통계 및 권한 부여</h4>
+    <p style="font-size:12px; color:#666;">* 파란색 월 제목(3월▼)을 클릭하면 해당 월 참여가 많은 순으로 자동 정렬됩니다.</p>
+
+    <div id="student-priority-table" style="max-height: 500px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px;">
+        <table style="width:100%; border-collapse: collapse; text-align: center; white-space: nowrap; font-size: 13px;">
+            <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
+                <tr style="border-bottom: 2px solid #ccc;">
+                    <th style="padding: 12px; width: 40px;">No.</th>
+                    <th style="padding: 12px; cursor:pointer;" onclick="sortPriorityTable('id')">학번 ↕</th>
+                    <th style="padding: 12px; cursor:pointer;" onclick="sortPriorityTable('name')">이름 ↕</th>
+                    <th style="padding: 12px; color:var(--primary);">권한</th>
+                    <!-- 월별 정렬 클릭 이벤트 -->
+                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m3')">3월▼</th>
+                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m4')">4월▼</th>
+                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m5')">5월▼</th>
+                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m6')">6월▼</th>
+                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m7')">7월▼</th>
+                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m8')">8월▼</th>
+                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m9')">9월▼</th>
+                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m10')">10월▼</th>
+                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m11')">11월▼</th>
+                    <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m12')">12월▼</th>
+                    <th style="padding: 12px; cursor:pointer; color:var(--danger); font-weight:bold;" onclick="sortPriorityTable('total')">총계▼</th>
+                </tr>
+            </thead>
             <tbody id="student-list-body">
-                <!-- 자바스크립트에서 데이터가 여기에 들어옵니다 -->
+                <!-- 자바스크립트로 데이터 로드 -->
             </tbody>
         </table>
     </div>
-    <button onclick="savePriorityList()" class="btn btn-success" style="width:100%; margin-top:15px; padding: 15px; font-size: 16px;">권한 설정 저장</button>
+    <button onclick="savePriorityList()" class="btn btn-success" style="width:100%; margin-top:15px; padding: 18px; font-size: 16px; background:var(--success);">💾 고정석 권한 설정 저장</button>
 </div>
-<!-- ▲ 여기까지 복사하세요 ▲ -->
 
 <script>
     const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
@@ -1011,12 +1023,79 @@ function renderPriorityTable() {
 }
 
 // ✅ 월별/총계 클릭 시 정렬하는 핵심 함수
+// 1. [정렬 기능] 학번, 이름, 월별 통계를 기준으로 정렬
 function sortPriorityTable(key) {
-    // 내림차순 정렬 (참여 횟수가 많은 학생이 위로)
-    allStudentData.sort((a, b) => b[key] - a[key]);
-    renderPriorityTable(); // 정렬 후 다시 그리기
+    // 숫자 데이터(학번, 통계)와 문자 데이터(이름)를 구분하여 정렬
+    allStudentData.sort((a, b) => {
+        if (key === 'name' || key === 'id') {
+            // 이름이나 학번은 오름차순 (작은게 위로)
+            return a[key] > b[key] ? 1 : -1;
+        } else {
+            // 월별 통계 및 총계는 내림차순 (큰게 위로)
+            return b[key] - a[key];
+        }
+    });
+    renderPriorityTable();
 }
 
+// 2. [반별 정렬] 학번 앞자리를 기준으로 학년/반 정렬
+function sortPriorityByClass() {
+    allStudentData.sort((a, b) => {
+        // 학번(예: 3101, 3205)에서 앞 2자리만 추출하여 비교
+        const classA = parseInt(String(a.id).substring(0, 2));
+        const classB = parseInt(String(b.id).substring(0, 2));
+        return classA - classB;
+    });
+    renderPriorityTable();
+}
+
+// 3. [검색 기능] 입력값에 따라 테이블 실시간 필터링
+function filterPriorityTable() {
+    const searchTerm = document.getElementById('priority-search-input').value.toLowerCase();
+    const rows = document.querySelectorAll('#student-list-body tr');
+
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        // 검색어가 포함되어 있으면 보여주고, 없으면 숨김
+        row.style.display = text.includes(searchTerm) ? "" : "none";
+    });
+}
+
+// 4. [테이블 렌더링 수정] 체크박스 상태가 유지되도록 업데이트
+function renderPriorityTable() {
+    const tbody = document.getElementById('student-list-body');
+    tbody.innerHTML = "";
+
+    allStudentData.forEach((stu, index) => {
+        const row = document.createElement('tr');
+        row.style.borderBottom = "1px solid #eee";
+        
+        row.innerHTML = `
+            <td style="padding:10px; color:#999;">${index + 1}</td>
+            <td style="padding:10px;">${stu.id}</td>
+            <td style="padding:10px; font-weight: bold;">${stu.name}</td>
+            <td style="padding:10px;"><input type="checkbox" class="priority-check" value="${stu.id}" ${stu.isChecked ? 'checked' : ''} onchange="updateCheckedStatus('${stu.id}', this.checked)"></td>
+            <td style="color:#666;">${stu.m3}</td>
+            <td style="color:#666;">${stu.m4}</td>
+            <td style="color:#666;">${stu.m5}</td>
+            <td style="color:#666;">${stu.m6}</td>
+            <td style="color:#666;">${stu.m7}</td>
+            <td style="color:#666;">${stu.m8}</td>
+            <td style="color:#666;">${stu.m9}</td>
+            <td style="color:#666;">${stu.m10}</td>
+            <td style="color:#666;">${stu.m11}</td>
+            <td style="color:#666;">${stu.m12}</td>
+            <td style="font-weight:bold; color:#dc3545;">${stu.total}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// 5. [상태 관리] 정렬이나 검색 후에도 체크박스 선택값이 날아가지 않게 데이터 구조 업데이트
+function updateCheckedStatus(id, checked) {
+    const student = allStudentData.find(s => s.id === id);
+    if (student) student.isChecked = checked;
+}
 
 
 // ▼ 자바스크립트 맨 아랫부분에 이 새로운 함수를 통째로 추가해 주세요 ▼
