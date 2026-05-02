@@ -616,13 +616,6 @@
                 </select>
             </div>
 
-            <!-- 학생 검색 -->
-            <div style="flex: 1; min-width: 200px;">
-                <b style="font-size: 13px; display: block; margin-bottom: 5px;">🔍 학생 검색:</b>
-                <input type="text" id="priority-search-input" placeholder="학번 또는 이름 입력..."
-                    style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box;"
-                    onkeyup="filterPriorityTable()">
-            </div>
 
             <!-- 버튼 그룹 -->
             <div style="display: flex; gap: 5px;">
@@ -633,23 +626,6 @@
             </div>
         </div>
 
-
-        <!-- 🔍 검색 및 정렬 도구 모음 -->
-        <div
-            style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-            <div style="flex: 1; min-width: 200px;">
-                <b style="font-size: 13px;">🔍 학생 검색:</b>
-                <input type="text" id="priority-search-input" placeholder="학번 또는 이름 입력..."
-                    style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc; margin-top: 5px;"
-                    onkeyup="filterPriorityTable()">
-            </div>
-            <div style="display: flex; gap: 5px; align-items: flex-end;">
-                <button class="btn" style="background:var(--primary); padding: 8px 12px; font-size: 12px;"
-                    onclick="sortPriorityByClass()">학년/반 정렬</button>
-                <button class="btn" style="background:var(--gray); padding: 8px 12px; font-size: 12px;"
-                    onclick="loadStudentPriorityList()">🔄 초기화</button>
-            </div>
-        </div>
 
         <div
             style="margin-bottom: 20px; padding: 15px; background: #eef2f7; border-radius: 10px; border-left: 5px solid var(--primary);">
