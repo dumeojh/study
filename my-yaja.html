@@ -72,9 +72,10 @@
 
 <script>
     // 1. 변수명을 supabaseClient로 변경하여 충돌 방지
-    const supabaseUrl = 'YOUR_SUPABASE_URL';
-    const supabaseKey = 'YOUR_SUPABASE_KEY';
-    
+    const supabaseUrl =  'https://hqiijssfdullpfpfidbz.supabase.co';
+
+    const supabaseKey =  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
+
     // 라이브러리 로딩 확인 후 클라이언트 초기화
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
