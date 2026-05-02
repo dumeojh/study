@@ -927,51 +927,50 @@ async function handleExcelUpload() {
     reader.readAsArrayBuffer(file);
 }
 
-
-// 전역 변수로 학생 데이터 저장 (정렬 시 매번 서버를 호출하지 않기 위함)
 async function loadStudentPriorityList() {
-    // 1. 설정 데이터(명단 및 기존 고정석) 가져오기
+    // 1. 기초 설정 데이터 및 기존 고정석 명단 가져오기
     const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
     const { data: priorityData } = await supabaseClient.from('settings').select('value').eq('key', 'priority_students').maybeSingle();
     
-    // 2. ⭐ 실제 출결 기록(attendance 테이블) 가져오기
-    // 학생별로 월별 참여 횟수를 계산하기 위해 전체 로그를 불러옵니다.
+    // 2. 실제 출결 기록(attendance 테이블) 전체 가져오기
     const { data: attendanceLogs } = await supabaseClient
         .from('attendance') 
-        .select('stuId, date'); // 학번과 날짜 정보만 필요
+        .select('stuId, date'); 
 
     const roster = rosterData?.value ? JSON.parse(rosterData.value.list) : {};
     const priorityIds = priorityData?.value ? priorityData.value.ids : [];
 
-    // 3. 데이터를 배열로 변환하며 실제 통계 계산
+    // 3. 학생별 월별 통계 계산
     allStudentData = Object.entries(roster).map(([id, name]) => {
-        // 이 학생의 출결 기록만 필터링[cite: 9]
+        // 해당 학생의 로그만 필터링
         const studentLogs = attendanceLogs ? attendanceLogs.filter(log => log.stuId === id) : [];
         
-        // 월별 카운트 초기화 (3월~12월)[cite: 9]
+        // 월별 횟수 초기화 (m3: 3월, m4: 4월 ...)
         const counts = { m3:0, m4:0, m5:0, m6:0, m7:0, m8:0, m9:0, m10:0, m11:0, m12:0 };
         
-        // 날짜를 분석하여 해당 월의 카운트 증가[cite: 9]
         studentLogs.forEach(log => {
-            const month = new Date(log.date).getMonth() + 1; 
-            if (counts[`m${month}`] !== undefined) {
-                counts[`m${month}`]++;
+            if (log.date) {
+                // 날짜 문자열에서 월 정보를 추출 (예: "2026-05-01" -> 5)
+                const month = new Date(log.date).getMonth() + 1; 
+                if (counts[`m${month}`] !== undefined) {
+                    counts[`m${month}`]++;
+                }
             }
         });
 
-        // 월별 합계를 모두 더해 total 계산[cite: 9]
+        // 전체 합계 계산[cite: 9]
         const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
         return {
             id: id,
             name: name,
             isChecked: priorityIds.includes(id),
-            ...counts, // m3: x, m4: y ... 데이터가 펼쳐져서 들어감[cite: 9]
+            ...counts, // m3, m4 등 계산된 값이 객체에 포함됨[cite: 9]
             total: total
         };
     });
 
-    renderPriorityTable(); 
+    renderPriorityTable(); // 표 다시 그리기
 }
 
 // 테이블을 화면에 그리는 함수
