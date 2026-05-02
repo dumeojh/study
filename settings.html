@@ -1446,20 +1446,30 @@
             });
         }
 
-        // 4. [테이블 렌더링 수정] 체크박스 상태가 유지되도록 업데이트
         function renderPriorityTable() {
             const tbody = document.getElementById('student-list-body');
             tbody.innerHTML = "";
 
             allStudentData.forEach((stu, index) => {
+                // 🌟 학번(예: 3701)에서 학년(첫 글자)과 반(두 번째 글자)을 추출합니다.
+                // 안성여고 학번 체계에 맞춰 substring으로 자릅니다.
+                const grade = stu.id.substring(0, 1); // 첫 번째 글자: 학년
+                const ban = parseInt(stu.id.substring(1, 2)); // 두 번째 글자: 반
+                const classInfo = `${grade}학년 ${ban}반`;
+
                 const row = document.createElement('tr');
                 row.style.borderBottom = "1px solid #eee";
 
                 row.innerHTML = `
             <td style="padding:10px; color:#999;">${index + 1}</td>
+            <td style="padding:10px;">${classInfo}</td> <!-- 🌟 학년반 데이터 출력 -->
             <td style="padding:10px;">${stu.id}</td>
             <td style="padding:10px; font-weight: bold;">${stu.name}</td>
-            <td style="padding:10px;"><input type="checkbox" class="priority-check" value="${stu.id}" ${stu.isChecked ? 'checked' : ''} onchange="updateCheckedStatus('${stu.id}', this.checked)"></td>
+            <td style="padding:10px;">
+                <input type="checkbox" class="priority-check" value="${stu.id}" 
+                ${stu.isChecked ? 'checked' : ''} 
+                onchange="updateCheckedStatus('${stu.id}', this.checked)">
+            </td>
             <td style="color:#666;">${stu.m3}</td>
             <td style="color:#666;">${stu.m4}</td>
             <td style="color:#666;">${stu.m5}</td>
@@ -1475,6 +1485,7 @@
                 tbody.appendChild(row);
             });
         }
+
 
         // 5. [상태 관리] 정렬이나 검색 후에도 체크박스 선택값이 날아가지 않게 데이터 구조 업데이트
         function updateCheckedStatus(id, checked) {
