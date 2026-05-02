@@ -287,6 +287,31 @@
                 transform: translateY(0);
             }
         }
+
+        /* 학생 검색 입력창 스타일 수정 */
+        #priority-search-input {
+            width: 200px;
+            /* 기본 너비를 200px로 고정 */
+            flex-grow: 0 !important;
+            /* 공간을 다 채우지 않도록 설정 */
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        /* 검색 도구 컨테이너 레이아웃 최적화 */
+        .search-tool-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            background: #eef2f7;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #d1d9e6;
+        }
     </style>
 </head>
 
