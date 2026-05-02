@@ -622,6 +622,34 @@
 
         </div>
 
+        <!-- 🔍 검색 및 반별 필터 도구 모음 -->
+        <div
+            style="background: #eef2f7; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #d1d9e6; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+
+            <!-- 학년반 필터 (드롭다운) -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: bold; font-size: 14px; color: #444;">반별 필터:</span>
+                <select id="class-filter-select" onchange="filterPriorityTable()"
+                    style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px;">
+                    <option value="">전체 보기</option>
+                    <!-- 자바스크립트에서 자동으로 옵션이 생성됩니다 -->
+                </select>
+            </div>
+
+            <!-- 학번/이름 검색 (텍스트 입력) -->
+            <div style="display: flex; align-items: center; gap: 8px; flex-grow: 1;">
+                <span style="font-weight: bold; font-size: 14px; color: #444;">학생 검색:</span>
+                <input type="text" id="priority-search-input" onkeyup="filterPriorityTable()"
+                    placeholder="학번 또는 이름 입력..."
+                    style="flex-grow: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px;">
+            </div>
+
+            <!-- 초기화 버튼 -->
+            <button onclick="resetPriorityView()" class="btn"
+                style="background: var(--gray); padding: 8px 15px; font-size: 13px;">🔄 필터 초기화</button>
+        </div>
+
+
         <h4>📊 학생별 참여 통계 및 권한 부여</h4>
         <p style="font-size:12px; color:#666;">* 파란색 월 제목(3월▼)을 클릭하면 해당 월 참여가 많은 순으로 자동 정렬됩니다.</p>
 
@@ -686,6 +714,55 @@
         // 전역 변수들
         let currentTool = 0, seatMapData = [], rows = 20, cols = 30, currentSchedule = {}, historyStack = [];
         let defaultOperatingDays = [1, 2, 3, 4, 5];
+
+        // 1. [신규] 명단에서 존재하는 학년/반을 추출하여 드롭다운 목록을 만드는 함수
+        function updateClassFilterOptions() {
+            const select = document.getElementById('class-filter-select');
+            const classes = new Set();
+
+            // 학번 앞 2자리(학년+반) 추출 (예: 3701 -> 37)
+            allStudentData.forEach(stu => {
+                if (stu.id && stu.id.length >= 2) {
+                    classes.add(String(stu.id).substring(0, 2));
+                }
+            });
+
+            // 정렬 후 옵션 추가
+            const sortedClasses = Array.from(classes).sort();
+            select.innerHTML = '<option value="">전체 보기</option>';
+            sortedClasses.forEach(cls => {
+                const grade = cls.substring(0, 1);
+                const ban = parseInt(cls.substring(1));
+                select.innerHTML += `<option value="${cls}">${grade}학년 ${ban}반</option>`;
+            });
+        }
+
+        // 2. [신규] 검색어와 반 필터를 동시에 적용하여 테이블을 필터링하는 함수
+        function filterPriorityTable() {
+            const classTerm = document.getElementById('class-filter-select').value; // 선택된 반 (예: "37")
+            const searchTerm = document.getElementById('priority-search-input').value.toLowerCase(); // 입력 검색어
+            const rows = document.querySelectorAll('#student-list-body tr');
+
+            rows.forEach(row => {
+                // 행에서 학번(2번째 셀)과 이름(4번째 셀) 텍스트 추출
+                const stuId = row.cells[2].innerText;
+                const stuName = row.cells[3].innerText.toLowerCase();
+
+                // 필터 조건 확인 (반 일치 여부 && 검색어 포함 여부)
+                const matchClass = (classTerm === "" || stuId.startsWith(classTerm));
+                const matchSearch = (stuId.includes(searchTerm) || stuName.includes(searchTerm));
+
+                // 두 조건이 모두 맞을 때만 행을 보여줌
+                row.style.display = (matchClass && matchSearch) ? "" : "none";
+            });
+        }
+
+        // 3. [신규] 모든 필터를 풀고 초기 상태로 되돌리는 함수
+        function resetPriorityView() {
+            document.getElementById('class-filter-select').value = "";
+            document.getElementById('priority-search-input').value = "";
+            sortPriorityTable('id'); // 학번순 정렬
+        }
 
 
         async function checkPass() {
@@ -1309,7 +1386,7 @@
 
             // 데이터 로드 완료 후 테이블 렌더링 및 반 목록 갱신
             renderPriorityTable();
-            updateClassFilterOptions(); // 이 줄을 추가하세요!
+            updateClassFilterOptions(); // 🌟 이 줄을 추가하여 드롭다운 메뉴를 생성합니다.
         }
 
         // 4. [신규] 뷰 초기화
