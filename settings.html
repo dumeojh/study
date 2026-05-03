@@ -646,17 +646,32 @@
 
 
 
+            <!-- ▼ tab-priority 카드 내부의 운영 모드 설정 섹션 수정본 ▼ -->
             <div
                 style="margin-bottom: 20px; padding: 15px; background: #eef2f7; border-radius: 10px; border-left: 5px solid var(--primary);">
                 <p style="margin-top:0;"><strong>⚙️ 운영 모드 설정</strong></p>
-                <label><input type="radio" name="opMode" value="manual" checked> <b>수동 지정</b> (체크한 학생만 고정석 신청
-                    가능)</label><br>
-                <label style="margin-top:5px; display:inline-block;"><input type="radio" name="opMode" value="auto">
-                    <b>자동
-                        분석</b> (전월 참여율 상위 30명 자동 부여)</label>
+
+                <!-- 수동 지정: 정상 유지 -->
+                <label>
+                    <input type="radio" name="opMode" value="manual" checked>
+                    <b>수동 지정</b> (체크한 학생만 고정석 신청 가능)
+                </label><br>
+
+                <!-- 자동 분석: disabled 속성 추가 및 스타일 수정 -->
+                <label style="margin-top:5px; display:inline-block; color: #adb5bd; cursor: not-allowed;">
+                    <input type="radio" name="opMode" value="auto" disabled>
+                    <span style="text-decoration: line-through;"><b>자동 분석</b> (전월 참여율 상위 30명 자동 부여)</span>
+                    <small style="color: #dc3545; font-weight: bold; margin-left: 5px;">[기능 개선 중 - 사용 불가]</small>
+                </label><br>
+
+                <!-- 모드 저장 버튼: disabled 속성 추가 및 색상 변경 -->
                 <button onclick="saveOpMode()" class="btn"
-                    style="background:var(--primary); margin-top:10px; padding:5px 15px; font-size:12px;">모드 저장</button>
+                    style="background: #ccc; margin-top:10px; padding:5px 15px; font-size:12px; cursor: not-allowed;"
+                    disabled>
+                    기능 잠김 (수동 모드 고정)
+                </button>
             </div>
+
 
         </div>
 
