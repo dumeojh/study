@@ -1585,7 +1585,7 @@
                 onchange="updateCheckedStatus('${stu.id}', this.checked)">
             </td>
             ${[3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => `<td style="color:#666;">${stu['m' + m]}T</td>`).join('')}
-            <td style="font-weight:bold; color:#dc3545; font-size:15px;">${stu.total}T</td>
+            <td style="font-weight:bold; color:#dc3545; font-size:15px;">${stu.total}</td>
         `;
                 tbody.appendChild(row);
             });
