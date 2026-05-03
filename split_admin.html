@@ -2147,31 +2147,18 @@
         }
 
 
-        // --- 수정된 데이터 저장 로직 시작 ---
+        // --- 수정된 데이터 저장 로직 ---
         async function saveManualEntry() {
             // 1. 입력 필드에서 데이터 가져오기
-            const id = document.getElementById('edit-doc-id').value;
-            const stu_id = parseInt(document.getElementById('m-id').value);
-            const stu_name = document.getElementById('m-name').value.trim();
+            // 화면의 입력창(input, select)에 입력된 값들을 변수에 담습니다.
+            const id = document.getElementById('edit-doc-id').value; // 수정 시에만 값이 있음
+            const stu_id = parseInt(document.getElementById('m-id').value); // 학번은 숫자로 변환
+            const stu_name = document.getElementById('m-name').value.trim(); // 이름 양끝 공백 제거
             const target_month = document.getElementById('m-month').value;
             const type = document.getElementById('m-type').value;
+            const seat_num_val = document.getElementById('m-seatNum').value.trim();
 
-            // 🌟 [추가 위치] 여기서부터 아래 코드를 복사해서 붙여넣으세요.
-            if (!stu_id || !stu_name) {
-                alert("학번과 이름을 모두 입력해주세요.");
-                return; // 입력이 없으면 여기서 실행 중단
-            }
-
-            if (type === "고정석" && !document.getElementById('m-seatNum').value.trim()) {
-                alert("고정석은 좌석 번호가 필수입니다.");
-                return; // 좌석 번호가 없으면 중단
-            }
-            // 🌟 [추가 끝]
-
-
-
-
-            // 요일별 교시 데이터
+            // 요일별 교시 데이터를 객체로 묶음
             const daysData = {
                 mon: document.getElementById('m-mon').value.trim(),
                 tue: document.getElementById('m-tue').value.trim(),
@@ -2182,14 +2169,22 @@
                 sun: document.getElementById('m-sun').value.trim()
             };
 
-            // [체크 1] 필수 정보 입력 확인
+            // 2. 유효성 검사 (입력 오류 방지)
+            // 필수 정보가 빠졌는지 확인합니다.
             if (!stu_id || !stu_name) {
-                alert("학번과 이름을 모두 입력해야 합니다.");
-                return;
+                alert("학번과 이름을 모두 입력해주세요.");
+                return; // 실행 중단
+            }
+
+            // 고정석인데 좌석 번호를 안 썼는지 확인합니다.
+            if (type === "고정석" && !seat_num_val) {
+                alert("고정석은 좌석 번호가 필수입니다.");
+                return; // 실행 중단
             }
 
             try {
-                // [체크 2] 보안: 기존 데이터와 이름 일치 여부 확인 (실수 방지)
+                // 3. 보안 체크: 기존 데이터와 이름 일치 여부 확인 (실수 방지)
+                // DB에서 해당 학번의 이름을 미리 가져와서 비교합니다.
                 const { data: existingStudent, error: fetchError } = await supabaseClient
                     .from('applications')
                     .select('stu_name')
@@ -2199,38 +2194,35 @@
 
                 if (fetchError) throw fetchError;
 
-                // 학번은 같으나 이름이 다를 경우 저장 차단
+                // 학번은 같은데 저장된 이름과 입력한 이름이 다르면 경고!
                 if (existingStudent && existingStudent.stu_name !== stu_name) {
-                    alert(`보안 알림: 학번(${stu_id})에 등록된 기존 이름과 다릅니다. 학번을 다시 확인해주세요.`);
+                    alert(`보안 알림: 학번(${stu_id})에 등록된 기존 이름(${existingStudent.stu_name})과 다릅니다. 학번을 다시 확인해주세요.`);
                     return;
                 }
 
-
-
-                // 2. Supabase 저장 실행 (upsert 대신 update/insert 명확히 분리)
-
-                // 데이터베이스에 전송할 객체 구성
+                // 4. 저장할 데이터 보따리(payload) 만들기
                 const payload = {
                     stu_id: stu_id,
                     stu_name: stu_name,
                     target_month: target_month,
                     type: type,
-                    ...daysData,
-                    // [핵심] 자율석으로 변경 시 기존 고정 좌석 번호를 비워주어 현황판 오류 방지
-                    seat_num: type === '자율석' ? null : document.getElementById('m-seatNum').value,
-                    updated_at: new Date().toISOString()
+                    ...daysData, // mon, tue 등 요일 데이터 포함
+                    // 자율석이면 좌석번호를 비우고(null), 고정석이면 입력된 값을 넣음
+                    seat_num: type === '자율석' ? null : seat_num_val,
+                    updated_at: new Date().toISOString() // 마지막 수정 시간 기록
                 };
 
+                // 5. Supabase 저장 실행 (수정 또는 신규 추가)
                 if (id) {
-                    // [수정 모드] edit-doc-id 값이 있을 경우 명확하게 update 수행
+                    // [수정 모드] 고유 ID가 있으면 해당 줄을 업데이트
                     const { error: updateError } = await supabaseClient
                         .from('applications')
                         .update(payload)
-                        .eq('id', id); // 만약 DB의 id 컬럼이 숫자형(int8)이라면 parseInt(id)로 변경
+                        .eq('id', id);
 
                     if (updateError) throw updateError;
                 } else {
-                    // [신규 모드] 기존 데이터가 없을 경우 insert 수행
+                    // [신규 모드] 고유 ID가 없으면 새로운 줄을 추가
                     const { error: insertError } = await supabaseClient
                         .from('applications')
                         .insert([payload]);
@@ -2238,21 +2230,28 @@
                     if (insertError) throw insertError;
                 }
 
+                // 6. 마무리 작업
                 alert("데이터가 성공적으로 저장되었습니다!");
+
+                // 입력창 초기화
                 resetManualForm();
 
-                // [중요] renderStatusTable() 함수 내부에서 Supabase 데이터를 
-                // 다시 fetch(select) 하고 있는지 꼭 확인해야 합니다.
-                await renderStatusTable();
+                // 화면 표(Table)를 최신 데이터로 다시 그리기
+                if (typeof renderStatusTable === "function") {
+                    await renderStatusTable();
+                }
 
-                // 3. (선택 사항) 사용자의 편의를 위해 '월별 신청 현황' 탭으로 자동 이동
-                switchTab('tab-status', document.querySelector('.tab-btn[onclick*="tab-status"]'));
+                // 사용자의 편의를 위해 '신청 현황' 탭으로 이동
+                const statusTabBtn = document.querySelector('.tab-btn[onclick*="tab-status"]');
+                if (statusTabBtn) {
+                    switchTab('tab-status', statusTabBtn);
+                }
 
             } catch (err) {
+                console.error("저장 오류:", err);
                 alert("저장 중 오류 발생: " + err.message);
             }
         }
-
 
         async function closeMissingTags() {
             const targetDate = document.getElementById('daily-date').value;
