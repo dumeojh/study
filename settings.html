@@ -1501,55 +1501,57 @@
             const roster = rosterData?.value ? JSON.parse(rosterData.value.list) : {};
             const priorityIds = priorityData?.value ? priorityData.value.ids : [];
 
-            // 2. 학생별 타임(T) 집계 시작
-            allStudentData = Object.entries(roster).map(([id, name]) => {
-                // 해당 학생의 로그만 필터링
-                const studentLogs = attendanceLogs ? attendanceLogs.filter(log => String(log.stu_id).trim() === String(id).trim()) : [];
 
-                // 월별 타임 카운트 초기화 (3~12월)
-                const counts = { m3: 0, m4: 0, m5: 0, m6: 0, m7: 0, m8: 0, m9: 0, m10: 0, m11: 0, m12: 0 };
-                studentLogs.forEach(log => {
-                    if (log.date) {
-                        const month = new Date(log.date).getMonth() + 1;
-                        const key = `m${month}`;
 
-                        if (counts[key] !== undefined) {
-                            let tCount = 0;
 
-                            // 1. time_slot 컬럼을 사용하는 경우 (예: "1,2" 또는 ["1", "2"])
-                            if (log.time_slot) {
-                                if (Array.isArray(log.time_slot)) {
-                                    tCount = log.time_slot.length;
-                                } else if (typeof log.time_slot === 'string') {
-                                    // 빈 문자열이거나 콤마만 있는 경우를 대비해 필터링
-                                    tCount = log.time_slot.split(',').filter(x => x.trim().length > 0).length;
-                                }
-                            }
-                            // 2. 만약 t1, t2, t3 컬럼이 별도로 있고, 서버에서 30분 미만일 때 false 처리를 해준다면
-                            else {
-                                if (log.t1 === true || log.t1 === 1) tCount++;
-                                if (log.t2 === true || log.t2 === 1) tCount++;
-                                if (log.t3 === true || log.t3 === 1) tCount++;
-                            }
 
-                            // 💡 핵심: 30분을 못 채워 tCount가 0이라면 counts에 아무것도 더하지 않음
-                            counts[key] += tCount;
+
+            // [수정 제안] 더 강력한 데이터 판별 로직
+            studentLogs.forEach(log => {
+                if (log.date) {
+                    const month = new Date(log.date).getMonth() + 1;
+                    const key = `m${month}`;
+
+                    if (counts[key] !== undefined) {
+                        let tCount = 0;
+
+                        // 데이터가 문자열이면 배열로 변환 시도, 배열이면 그대로 사용
+                        let slots = [];
+                        if (typeof log.time_slot === 'string') {
+                            slots = log.time_slot.replace(/[\[\]"]/g, '').split(',').filter(x => x.trim());
+                        } else if (Array.isArray(log.time_slot)) {
+                            slots = log.time_slot;
                         }
-                    }
-                });
 
-                const total = Object.values(counts).reduce((a, b) => a + b, 0);
-                return {
-                    id: id,
-                    name: name,
-                    isChecked: priorityIds.includes(id),
-                    ...counts,
-                    total: total
-                };
+                        tCount = slots.length;
+
+                        // 만약 slots 방식이 실패했다면 t1, t2, t3 컬럼 직접 체크
+                        if (tCount === 0) {
+                            if (log.t1 === true || log.t1 === 1 || log.t1 === 'true') tCount++;
+                            if (log.t2 === true || log.t2 === 1 || log.t2 === 'true') tCount++;
+                            if (log.t3 === true || log.t3 === 1 || log.t3 === 'true') tCount++;
+                        }
+
+                        counts[key] += tCount;
+                    }
+                }
             });
 
-            renderPriorityTable(); // 테이블 그리기
-            updateClassFilterOptions(); // 반별 필터 업데이트
+
+
+
+            const total = Object.values(counts).reduce((a, b) => a + b, 0);
+            return {
+                id: id,
+                name: name,
+                isChecked: priorityIds.includes(id),
+                ...counts,
+                total: total
+            };
+        });
+
+        renderPriorityTable(); // 테이블 그리기
+        updateClassFilterOptions(); // 반별 필터 업데이트
         }
 
 
