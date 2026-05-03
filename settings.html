@@ -1559,6 +1559,8 @@
             //           updateClassFilterOptions(); // 반별 필터 업데이트
         }
 
+
+
         // 🌟 [디자인 수정] 테이블 렌더링 시 숫자 뒤에 'T'를 붙여 타임임을 명시
         function renderPriorityTable() {
             const tbody = document.getElementById('student-list-body');
@@ -1584,7 +1586,7 @@
                 ${stu.isChecked ? 'checked' : ''} 
                 onchange="updateCheckedStatus('${stu.id}', this.checked)">
             </td>
-            ${[3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => `<td style="color:#666;">${stu['m' + m]}T</td>`).join('')}
+            ${[3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => `<td style="color:#666;">${stu['m' + m]}</td>`).join('')}
             <td style="font-weight:bold; color:#dc3545; font-size:15px;">${stu.total}</td>
         `;
                 tbody.appendChild(row);
