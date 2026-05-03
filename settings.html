@@ -1513,33 +1513,54 @@
             renderPriorityTable(stats);
         }
 
-        // 데이터를 기반으로 테이블을 그리고 정렬하는 함수
-        function renderPriorityTable(stats) {
-            const tableBody = document.querySelector('#priorityTableBody');
-            tableBody.innerHTML = '';
+        // 🌟 통합 및 수정된 renderPriorityTable 함수
+        function renderPriorityTable() {
+            const tbody = document.getElementById('student-list-body');
+            tbody.innerHTML = "";
 
-            // 객체를 배열로 변환하여 '총 참여 타임' 기준 내림차순 정렬
-            const sortedStudents = Object.entries(stats).sort(([, a], [, b]) => {
-                const totalA = Object.values(a).reduce((sum, val) => sum + val, 0);
-                const totalB = Object.values(b).reduce((sum, val) => sum + val, 0);
-                return totalB - totalA; // 많이 참여한 순서대로 상단 배치[cite: 11]
-            });
+            // 1. 데이터 정렬 (총합 기준 내림차순 정렬)
+            allStudentData.sort((a, b) => b.total - a.total);
 
-            // 정렬된 데이터를 테이블에 추가
-            sortedStudents.forEach(([stuId, months]) => {
-                const row = `
-            <tr>
-                <td>${stuId}</td>
-                <td>${months.m3 || 0}T</td>
-                <td>${months.m4 || 0}T</td>
-                <td>${months.m5 || 0}T</td>
-                <td>${months.m6 || 0}T</td>
-                <td><strong>${Object.values(months).reduce((s, v) => s + v, 0)}T</strong></td>
-            </tr>
+            allStudentData.forEach((stu, index) => {
+                // 2. 학년/반 정보 추출
+                const grade = stu.id.substring(0, 1);
+                const ban = parseInt(stu.id.substring(1, 2));
+                const classInfo = `${grade}학년 ${ban}반`;
+
+                const row = document.createElement('tr');
+                row.style.borderBottom = "1px solid #eee";
+
+                // 3. 테이블 내용 작성 (T 단위 표시)
+                row.innerHTML = `
+            <td style="padding:10px; color:#999;">${index + 1}</td>
+            <td style="padding:10px;">${classInfo}</td>
+            <td style="padding:10px;">${stu.id}</td>
+            <td style="padding:10px; font-weight: bold;">${stu.name}</td>
+            <td style="padding:10px;">
+                <input type="checkbox" class="priority-check" value="${stu.id}" 
+                ${stu.isChecked ? 'checked' : ''} 
+                onchange="updateCheckedStatus('${stu.id}', this.checked)">
+            </td>
+            <!-- 각 월별 데이터 뒤에 'T'를 붙여 타임 횟수임을 명시 -->
+            <td style="color:#666;">${stu.m3}T</td>
+            <td style="color:#666;">${stu.m4}T</td>
+            <td style="color:#666;">${stu.m5}T</td>
+            <td style="color:#666;">${stu.m6}T</td>
+            <td style="color:#666;">${stu.m7}T</td>
+            <td style="color:#666;">${stu.m8}T</td>
+            <td style="color:#666;">${stu.m9}T</td>
+            <td style="color:#666;">${stu.m10}T</td>
+            <td style="color:#666;">${stu.m11}T</td>
+            <td style="color:#666;">${stu.m12}T</td>
+            <td style="font-weight:bold; color:#dc3545;">${stu.total}T</td>
         `;
-                tableBody.insertAdjacentHTML('beforeend', row);
+                tbody.appendChild(row);
             });
         }
+
+
+
+
         /////////////////////////////////////////////////////
         // 4. [신규] 뷰 초기화
         function resetPriorityView() {
@@ -1666,47 +1687,6 @@
                 return classA - classB;
             });
             renderPriorityTable();
-        }
-
-
-        function renderPriorityTable() {
-            const tbody = document.getElementById('student-list-body');
-            tbody.innerHTML = "";
-
-            allStudentData.forEach((stu, index) => {
-                // 🌟 학번(예: 3701)에서 학년(첫 글자)과 반(두 번째 글자)을 추출합니다.
-                // 안성여고 학번 체계에 맞춰 substring으로 자릅니다.
-                const grade = stu.id.substring(0, 1); // 첫 번째 글자: 학년
-                const ban = parseInt(stu.id.substring(1, 2)); // 두 번째 글자: 반
-                const classInfo = `${grade}학년 ${ban}반`;
-
-                const row = document.createElement('tr');
-                row.style.borderBottom = "1px solid #eee";
-
-                row.innerHTML = `
-            <td style="padding:10px; color:#999;">${index + 1}</td>
-            <td style="padding:10px;">${classInfo}</td> <!-- 🌟 학년반 데이터 출력 -->
-            <td style="padding:10px;">${stu.id}</td>
-            <td style="padding:10px; font-weight: bold;">${stu.name}</td>
-            <td style="padding:10px;">
-                <input type="checkbox" class="priority-check" value="${stu.id}" 
-                ${stu.isChecked ? 'checked' : ''} 
-                onchange="updateCheckedStatus('${stu.id}', this.checked)">
-            </td>
-            <td style="color:#666;">${stu.m3}</td>
-            <td style="color:#666;">${stu.m4}</td>
-            <td style="color:#666;">${stu.m5}</td>
-            <td style="color:#666;">${stu.m6}</td>
-            <td style="color:#666;">${stu.m7}</td>
-            <td style="color:#666;">${stu.m8}</td>
-            <td style="color:#666;">${stu.m9}</td>
-            <td style="color:#666;">${stu.m10}</td>
-            <td style="color:#666;">${stu.m11}</td>
-            <td style="color:#666;">${stu.m12}</td>
-            <td style="font-weight:bold; color:#dc3545;">${stu.total}</td>
-        `;
-                tbody.appendChild(row);
-            });
         }
 
 
