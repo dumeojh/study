@@ -2096,21 +2096,33 @@
                         }
 
                         // 6. 실제 행(Row) 생성
+                        // 6. 실제 행(Row) 생성
                         const tr = document.createElement('tr');
+
+                        // 연락처 정보를 가져옵니다 (데이터가 없으면 빈칸)
+                        const phone = (typeof rosterPhones !== 'undefined' && rosterPhones[String(d.stuId)]) ? rosterPhones[String(d.stuId)] : '';
+
                         tr.innerHTML = `
-                    <td>${d.targetMonth}</td>
-                    <td onclick="fillEditForm('${d.docId}')" style="cursor:pointer; color:var(--primary);">${d.stuId}</td>
-                    <td onclick="openCounsel('${d.docId}')" style="cursor:pointer; font-weight:bold;">${d.stuName}</td>
-                    <td>${d.type}</td>
-                    <td>${d.seatNum || '-'}</td>
-                    <td>${d.mon || ''}</td>
-                    <td>${d.tue || ''}</td>
-                    <td>${d.wed || ''}</td>
-                    <td>${d.thu || ''}</td>
-                    <td>${d.fri || ''}</td>
-                    <td>${d.sat || ''}</td>
-                    <td>${d.sun || ''}</td>
-                `;
+    <td>${d.targetMonth}</td>
+    <!-- 학번 클릭 시 수정 폼 호출 -->
+    <td onclick="fillEditForm('${d.docId}')" style="cursor:pointer; color:var(--primary); text-decoration:underline;">${d.stuId}</td>
+    
+    <!-- 이름 클릭 시 '일일 출결 관리 모달'을 띄우도록 수정 -->
+    <td onclick="openDailyStatus('${d.stuId}', '${d.stuName}', '${d.seatNum || ''}', '${phone}')" 
+        style="cursor:pointer; font-weight:bold; color:var(--primary); text-decoration:underline;">
+        ${d.stuName} 👆
+    </td>
+    
+    <td>${d.type}</td>
+    <td>${d.seatNum || '-'}</td>
+    <td>${d.mon || ''}</td>
+    <td>${d.tue || ''}</td>
+    <td>${d.wed || ''}</td>
+    <td>${d.thu || ''}</td>
+    <td>${d.fri || ''}</td>
+    <td>${d.sat || ''}</td>
+    <td>${d.sun || ''}</td>
+`;
                         tbody.appendChild(tr);
                     });
 
