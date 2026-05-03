@@ -1513,50 +1513,6 @@
             renderPriorityTable(stats);
         }
 
-        // 🌟 통합 및 수정된 renderPriorityTable 함수
-        function renderPriorityTable() {
-            const tbody = document.getElementById('student-list-body');
-            tbody.innerHTML = "";
-
-            // 1. 데이터 정렬 (총합 기준 내림차순 정렬)
-            allStudentData.sort((a, b) => b.total - a.total);
-
-            allStudentData.forEach((stu, index) => {
-                // 2. 학년/반 정보 추출
-                const grade = stu.id.substring(0, 1);
-                const ban = parseInt(stu.id.substring(1, 2));
-                const classInfo = `${grade}학년 ${ban}반`;
-
-                const row = document.createElement('tr');
-                row.style.borderBottom = "1px solid #eee";
-
-                // 3. 테이블 내용 작성 (T 단위 표시)
-                row.innerHTML = `
-            <td style="padding:10px; color:#999;">${index + 1}</td>
-            <td style="padding:10px;">${classInfo}</td>
-            <td style="padding:10px;">${stu.id}</td>
-            <td style="padding:10px; font-weight: bold;">${stu.name}</td>
-            <td style="padding:10px;">
-                <input type="checkbox" class="priority-check" value="${stu.id}" 
-                ${stu.isChecked ? 'checked' : ''} 
-                onchange="updateCheckedStatus('${stu.id}', this.checked)">
-            </td>
-            <!-- 각 월별 데이터 뒤에 'T'를 붙여 타임 횟수임을 명시 -->
-            <td style="color:#666;">${stu.m3}T</td>
-            <td style="color:#666;">${stu.m4}T</td>
-            <td style="color:#666;">${stu.m5}T</td>
-            <td style="color:#666;">${stu.m6}T</td>
-            <td style="color:#666;">${stu.m7}T</td>
-            <td style="color:#666;">${stu.m8}T</td>
-            <td style="color:#666;">${stu.m9}T</td>
-            <td style="color:#666;">${stu.m10}T</td>
-            <td style="color:#666;">${stu.m11}T</td>
-            <td style="color:#666;">${stu.m12}T</td>
-            <td style="font-weight:bold; color:#dc3545;">${stu.total}T</td>
-        `;
-                tbody.appendChild(row);
-            });
-        }
 
 
 
@@ -1643,7 +1599,104 @@
             renderPriorityTable();        // 테이블을 먼저 렌더링
             updateClassFilterOptions();   // 반별 필터 드롭다운 업데이트
         }
+        //================================================
 
+        // 🌟 [수정본] 학생별 참여 타임(T) 수를 계산하여 불러오는 함수
+        async function loadStudentPriorityList() {
+            // 1. 기초 데이터 로드
+            const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
+            const { data: priorityData } = await supabaseClient.from('settings').select('value').eq('key', 'priority_students').maybeSingle();
+            const { data: attendanceLogs } = await supabaseClient.from('attendance_logs').select('*');
+
+            const roster = rosterData?.value ? JSON.parse(rosterData.value.list) : {};
+            const priorityIds = priorityData?.value ? priorityData.value.ids : [];
+
+            // 2. 학생별 타임(T) 집계
+            allStudentData = Object.entries(roster).map(([id, name]) => {
+                const studentLogs = attendanceLogs ? attendanceLogs.filter(log => String(log.stu_id).trim() === String(id).trim()) : [];
+
+                // 월별 타임 카운트 초기화
+                const counts = { m3: 0, m4: 0, m5: 0, m6: 0, m7: 0, m8: 0, m9: 0, m10: 0, m11: 0, m12: 0 };
+
+                studentLogs.forEach(log => {
+                    if (log.date) {
+                        const month = new Date(log.date).getMonth() + 1;
+                        const key = `m${month}`;
+
+                        if (counts[key] !== undefined) {
+                            let tCount = 0;
+
+                            // A. time_slot 컬럼 데이터 분석 (배열, 문자열, 숫자 대응)
+                            if (log.time_slot !== undefined && log.time_slot !== null) {
+                                if (Array.isArray(log.time_slot)) {
+                                    tCount = log.time_slot.length;
+                                } else if (typeof log.time_slot === 'string') {
+                                    tCount = log.time_slot.split(',').filter(x => x.trim()).length;
+                                } else if (!isNaN(log.time_slot)) {
+                                    tCount = 1; // 단일 숫자면 1타임으로 간주
+                                }
+                            }
+                            // B. t1, t2, t3 개별 컬럼 방식 대응
+                            else if (log.t1 !== undefined || log.t2 !== undefined || log.t3 !== undefined) {
+                                if (log.t1) tCount++;
+                                if (log.t2) tCount++;
+                                if (log.t3) tCount++;
+                            }
+                            // C. 기본값 (로그 1개당 최소 1타임 인정)
+                            else {
+                                tCount = 1;
+                            }
+
+                            counts[key] += tCount; // 타임 수 누적
+                        }
+                    }
+                });
+
+                const total = Object.values(counts).reduce((a, b) => a + b, 0);
+                return {
+                    id: id,
+                    name: name,
+                    isChecked: priorityIds.includes(id),
+                    ...counts,
+                    total: total
+                };
+            });
+
+            renderPriorityTable();
+            updateClassFilterOptions();
+        }
+
+        // 🌟 [수정본] 테이블 렌더링 함수 (T 단위 표시)
+        function renderPriorityTable() {
+            const tbody = document.getElementById('student-list-body');
+            tbody.innerHTML = "";
+
+            // 총 타임 수 기준 내림차순 정렬
+            allStudentData.sort((a, b) => b.total - a.total);
+
+            allStudentData.forEach((stu, index) => {
+                const grade = stu.id.substring(0, 1);
+                const ban = parseInt(stu.id.substring(1, 2));
+                const classInfo = `${grade}학년 ${ban}반`;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+            <td style="padding:10px; color:#999;">${index + 1}</td>
+            <td style="padding:10px;">${classInfo}</td>
+            <td style="padding:10px;">${stu.id}</td>
+            <td style="padding:10px; font-weight: bold;">${stu.name}</td>
+            <td style="padding:10px;">
+                <input type="checkbox" class="priority-check" value="${stu.id}" 
+                ${stu.isChecked ? 'checked' : ''} 
+                onchange="updateCheckedStatus('${stu.id}', this.checked)">
+            </td>
+            ${[3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => `<td style="color:#666;">${stu['m' + m]}T</td>`).join('')}
+            <td style="font-weight:bold; color:#dc3545;">${stu.total}T</td>
+        `;
+                tbody.appendChild(row);
+            });
+        }
+        //================================================
 
 
 
