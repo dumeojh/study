@@ -1571,45 +1571,61 @@
 
 
 
+        // 기존의 중복된 loadStudentPriorityList 함수들을 전부 지우고 이 코드로 교체하세요!
         async function loadStudentPriorityList() {
             // 1. 기초 설정 데이터 및 기존 고정석 명단 가져오기
             const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
             const { data: priorityData } = await supabaseClient.from('settings').select('value').eq('key', 'priority_students').maybeSingle();
 
-            // 2. 실제 출결 기록(attendance_logs 테이블) 전체 가져오기
+            // 2. 🌟 핵심 수정: date 뿐만 아니라 time_slot 등 타임 정보를 모두 파악하기 위해 '*'로 가져옵니다.
             const { data: attendanceLogs } = await supabaseClient
-                .from('attendance_logs') // 🌟 수정: attendance -> attendance_logs
-                .select('stu_id, date'); // 🌟 수정: stuId -> stu_id
+                .from('attendance_logs')
+                .select('*');
 
             const roster = rosterData?.value ? JSON.parse(rosterData.value.list) : {};
             const priorityIds = priorityData?.value ? priorityData.value.ids : [];
 
-            // 2. 고정석 명단 로딩 로직 (데이터 집계 보완 버전)
+            // 3. 학생별 데이터 집계
             allStudentData = Object.entries(roster).map(([id, name]) => {
-
                 const studentLogs = attendanceLogs ? attendanceLogs.filter(log => {
-                    // 🌟 수정: log.stuId -> log.stu_id
                     const dbId = String(log.stu_id).trim();
                     const rosterId = String(id).trim();
                     return dbId === rosterId;
                 }) : [];
 
                 // 월별 카운트 초기화 (3월~12월)
-                // ... [이하 기존 코드 동일] ...
-
-                // 월별 카운트 초기화 (3월~12월)
                 const counts = { m3: 0, m4: 0, m5: 0, m6: 0, m7: 0, m8: 0, m9: 0, m10: 0, m11: 0, m12: 0 };
 
                 studentLogs.forEach(log => {
-                    // 💡 주의: DB 컬럼명이 정확히 date 가 맞는지 확인하세요. (예: created_at 이라면 log.created_at 으로 변경)
                     if (log.date) {
-                        // split('-') 대신 표준 Date 객체를 사용하여 어떤 형식의 날짜든 안전하게 파싱
                         const dateObj = new Date(log.date);
-                        const month = dateObj.getMonth() + 1; // getMonth()는 0부터 시작하므로 +1 처리
-
+                        const month = dateObj.getMonth() + 1;
                         const key = `m${month}`;
+
                         if (counts[key] !== undefined) {
-                            counts[key]++;
+                            // 🌟 핵심 수정: 일자 단위(1)가 아닌 실제 참여한 타임(T) 수를 계산합니다.
+                            let tCount = 1; // 1타임씩 개별 기록되는 DB 구조일 경우 기본값 1타임 처리
+
+                            // DB의 'time_slot' 컬럼에 타임 정보가 저장되는 경우 (배열, 숫자, 콤마 문자열 모두 자동 대응)
+                            if (log.time_slot !== undefined && log.time_slot !== null) {
+                                if (Array.isArray(log.time_slot)) {
+                                    tCount = log.time_slot.length; // 예: [1, 2, 3] -> 3타임
+                                } else if (!isNaN(log.time_slot) && String(log.time_slot).trim() !== "") {
+                                    tCount = Number(log.time_slot); // 예: 3 -> 3타임
+                                } else if (typeof log.time_slot === 'string') {
+                                    tCount = log.time_slot.split(',').filter(x => x.trim()).length; // 예: "1,2" -> 2타임
+                                }
+                            }
+                            // DB에 t1, t2, t3 컬럼으로 각각 true/false가 개별 저장되는 경우
+                            else if (log.t1 !== undefined || log.t2 !== undefined || log.t3 !== undefined) {
+                                tCount = 0;
+                                if (log.t1) tCount++;
+                                if (log.t2) tCount++;
+                                if (log.t3) tCount++;
+                            }
+
+                            // 기존의 무조건 1을 더하던 방식에서 -> 계산된 타임 수(tCount)를 누적하도록 변경
+                            counts[key] += tCount;
                         }
                     }
                 });
@@ -1624,10 +1640,12 @@
                 };
             });
 
-            // 🌟 이 부분에 아래 코드를 추가하거나 확인하세요!
-            renderPriorityTable();        // 테이블을 먼저 그리고
-            updateClassFilterOptions();   // 드롭다운 옵션을 생성합니다.
+            renderPriorityTable();        // 테이블을 먼저 렌더링
+            updateClassFilterOptions();   // 반별 필터 드롭다운 업데이트
         }
+
+
+
 
 
         function sortPriorityTable(key) {
