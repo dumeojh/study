@@ -1357,6 +1357,8 @@
             }
             // loadAllSettings() 함수 최하단에 추가
             for (let i = 1; i <= 3; i++) calculateMinutes(i);
+
+            // 이 함수가 정상 적으로 불러오고 있는지 점검 필요
             await loadStudentPriorityList(); // 페이지 로드 시 학생 권한 명단도 함께 불러옴
 
         }
@@ -1427,27 +1429,27 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // 1. [신규] 반별 드롭다운 목록을 생성하는 함수
-        function updateClassFilterOptions() {
-            const select = document.getElementById('class-filter-select');
-            const classes = new Set();
-
-            // 학번 앞 2자리(학년+반) 추출 (예: 3701 -> 37)
-            allStudentData.forEach(stu => {
-                if (stu.id && stu.id.length >= 2) {
-                    classes.add(String(stu.id).substring(0, 2));
-                }
-            });
-
-            // 정렬 후 옵션 추가
-            const sortedClasses = Array.from(classes).sort();
-            select.innerHTML = '<option value="">전체 보기</option>';
-            sortedClasses.forEach(cls => {
-                const grade = cls.substring(0, 1);
-                const ban = parseInt(cls.substring(1));
-                select.innerHTML += `<option value="${cls}">${grade}학년 ${ban}반</option>`;
-            });
-        }
+        /*      // 1. [신규] 반별 드롭다운 목록을 생성하는 함수
+              function updateClassFilterOptions() {
+                  const select = document.getElementById('class-filter-select');
+                  const classes = new Set();
+      
+                  // 학번 앞 2자리(학년+반) 추출 (예: 3701 -> 37)
+                  allStudentData.forEach(stu => {
+                      if (stu.id && stu.id.length >= 2) {
+                          classes.add(String(stu.id).substring(0, 2));
+                      }
+                  });
+      
+                  // 정렬 후 옵션 추가
+                  const sortedClasses = Array.from(classes).sort();
+                  select.innerHTML = '<option value="">전체 보기</option>';
+                  sortedClasses.forEach(cls => {
+                      const grade = cls.substring(0, 1);
+                      const ban = parseInt(cls.substring(1));
+                      select.innerHTML += `<option value="${cls}">${grade}학년 ${ban}반</option>`;
+                  });
+              } */
 
         // 검색어와 반 필터를 동시에 적용하는 통합 함수
         function filterPriorityTable() {
@@ -1491,67 +1493,60 @@
         }
 
 
-        // 🌟 [통합 및 수정] 학생별 참여 타임(T) 수를 정확히 합산하여 불러오는 함수
+        // 🌟 [수정] 학생별 참여 타임(T) 수를 정확히 합산하여 불러오는 함수
         async function loadStudentPriorityList() {
-            // 1. 기초 데이터 로드 (명단, 기존 권한자, 전체 출결 로그)
-            const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
-            const { data: priorityData } = await supabaseClient.from('settings').select('value').eq('key', 'priority_students').maybeSingle();
-            const { data: attendanceLogs } = await supabaseClient.from('attendance_logs').select('*');
+            try {
+                // 1. 기초 데이터 로드
+                const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').single();
+                const { data: priorityData } = await supabaseClient.from('settings').select('value').eq('key', 'priority_students').maybeSingle();
+                const { data: attendanceLogs } = await supabaseClient.from('attendance_logs').select('*');
 
-            const roster = rosterData?.value ? JSON.parse(rosterData.value.list) : {};
-            const priorityIds = priorityData?.value ? priorityData.value.ids : [];
+                const roster = rosterData?.value ? JSON.parse(rosterData.value.list) : {};
+                const priorityIds = priorityData?.value ? priorityData.value.ids : [];
 
+                // 2. 데이터 가공
+                allStudentData = Object.entries(roster).map(([id, name]) => {
+                    const counts = { m3: 0, m4: 0, m5: 0, m6: 0, m7: 0, m8: 0, m9: 0, m10: 0, m11: 0, m12: 0 };
+                    const studentLogs = attendanceLogs ? attendanceLogs.filter(log => String(log.student_id) === id) : [];
 
-
-
-
-
-            // [수정 제안] 더 강력한 데이터 판별 로직
-            studentLogs.forEach(log => {
-                if (log.date) {
-                    const month = new Date(log.date).getMonth() + 1;
-                    const key = `m${month}`;
-
-                    if (counts[key] !== undefined) {
-                        let tCount = 0;
-
-                        // 데이터가 문자열이면 배열로 변환 시도, 배열이면 그대로 사용
-                        let slots = [];
-                        if (typeof log.time_slot === 'string') {
-                            slots = log.time_slot.replace(/[\[\]"]/g, '').split(',').filter(x => x.trim());
-                        } else if (Array.isArray(log.time_slot)) {
-                            slots = log.time_slot;
+                    studentLogs.forEach(log => {
+                        if (log.date) {
+                            const month = new Date(log.date).getMonth() + 1;
+                            const key = `m${month}`;
+                            if (counts[key] !== undefined) {
+                                let tCount = 0;
+                                let slots = [];
+                                if (typeof log.time_slot === 'string') {
+                                    slots = log.time_slot.replace(/[\[\]"]/g, '').split(',').filter(x => x.trim());
+                                } else if (Array.isArray(log.time_slot)) {
+                                    slots = log.time_slot;
+                                }
+                                tCount = slots.length;
+                                if (tCount === 0) {
+                                    if (log.t1) tCount++;
+                                    if (log.t2) tCount++;
+                                    if (log.t3) tCount++;
+                                }
+                                counts[key] += tCount;
+                            }
                         }
+                    });
 
-                        tCount = slots.length;
+                    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+                    return {
+                        id: id,
+                        name: name,
+                        isChecked: priorityIds.includes(id),
+                        ...counts,
+                        total: total
+                    };
+                });
 
-                        // 만약 slots 방식이 실패했다면 t1, t2, t3 컬럼 직접 체크
-                        if (tCount === 0) {
-                            if (log.t1 === true || log.t1 === 1 || log.t1 === 'true') tCount++;
-                            if (log.t2 === true || log.t2 === 1 || log.t2 === 'true') tCount++;
-                            if (log.t3 === true || log.t3 === 1 || log.t3 === 'true') tCount++;
-                        }
-
-                        counts[key] += tCount;
-                    }
-                }
-            });
-
-
-
-
-            const total = Object.values(counts).reduce((a, b) => a + b, 0);
-            return {
-                id: id,
-                name: name,
-                isChecked: priorityIds.includes(id),
-                ...counts,
-                total: total
-            };
-        });
-
-        renderPriorityTable(); // 테이블 그리기
-        updateClassFilterOptions(); // 반별 필터 업데이트
+                renderPriorityTable();
+                updateClassFilterOptions();
+            } catch (e) {
+                console.error("명단 로드 실패:", e);
+            }
         }
 
 
