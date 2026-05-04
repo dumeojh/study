@@ -634,11 +634,9 @@
     </div>
 
 
-
     <!-- ▼ tab-priority 카드 내부를 이 코드로 교체하세요 ▼ -->
     <div id="tab-priority" class="card">
         <h3>💺 고정석 운영 및 권한 설정</h3>
-
 
         <div
             style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
@@ -668,11 +666,24 @@
                     기능 잠김 (수동 모드 고정)
                 </button>
             </div>
-
-
         </div>
 
+        <!-- 👇👇 여기로 버튼들을 끌어올렸습니다 👇👇 -->
+        <h4>📊 학생별 참여 통계 및 권한 부여</h4>
 
+        <!-- 상위 30명 자동 선택 및 전체 해제 도구 -->
+        <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+            <button onclick="selectTop30()" class="btn"
+                style="background:var(--primary); padding: 8px 15px; font-size: 13px;">
+                🏆 현재 순위 상위 30명 자동 선택
+            </button>
+            <button onclick="clearAllPriority()" class="btn"
+                style="background:var(--danger); padding: 8px 15px; font-size: 13px;">
+                ❌ 모든 선택 해제
+            </button>
+        </div>
+        <p style="font-size:12px; color:#666;">* 파란색 월 제목(3월▼)을 클릭하면 해당 월 참여가 많은 순으로 자동 정렬됩니다.</p>
+        <!-- 👆👆 여기까지 추가/이동된 부분 👆👆 -->
 
 
         <!-- 🔍 변경된 디자인: 통계 화면과 통일된 파란색 계열 필터 영역 -->
@@ -697,23 +708,6 @@
                     style="padding: 6px 10px; font-size: 13px; border-radius: 5px;">🔄 초기화</button>
             </div>
         </div>
-
-
-        <h4>📊 학생별 참여 통계 및 권한 부여</h4>
-        <!-- 상위 30명 자동 선택 및 전체 해제 도구 -->
-        <div style="margin-bottom: 15px; display: flex; gap: 10px;">
-            <button onclick="selectTop30()" class="btn"
-                style="background:var(--primary); padding: 8px 15px; font-size: 13px;">
-                🏆 현재 순위 상위 30명 자동 선택
-            </button>
-            <button onclick="clearAllPriority()" class="btn"
-                style="background:var(--danger); padding: 8px 15px; font-size: 13px;">
-                ❌ 모든 선택 해제
-            </button>
-        </div>
-        <p style="font-size:12px; color:#666;">* 파란색 월 제목(3월▼)을 클릭하면 해당 월 참여가 많은 순으로 자동 정렬됩니다.</p>
-
-        <!-- 🔍 검색 및 반별 필터 도구 모음 -->
 
 
 
