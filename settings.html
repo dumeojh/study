@@ -439,7 +439,7 @@
 
                 <!-- 🌟 수정 2: 맨 밑에 있던 모달창을 이 안으로 끌고 와서 달력 위만 덮도록(absolute) 설정 -->
                 <div id="calendar-date-modal" class="modal-overlay"
-                    style="position: absolute; top: 0; left: 0; align-items: flex-start; padding-top: 20px;">
+                    style="position: absolute; top: 0; left: 0; align-items: flex-start; padding-top: 20px; display: none;">
                     <div class="modal-content"
                         style="max-width: 100%; width: 95%; margin: 0 auto; border-radius: 15px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); border: 2px solid var(--primary); background: rgba(255, 255, 255, 0.98);">
                         <div
@@ -987,6 +987,10 @@
                 }
                 document.getElementById('calendar-container').innerHTML = html + `</tr></tbody></table>`;
             }
+
+
+
+
 
             // 🌟 [수정본] 달력 클릭 시 모달창 표시
             function toggleDate(dStr) {
