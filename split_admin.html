@@ -1863,12 +1863,31 @@
 
             const log = attendanceLogsData[String(stuId)];
             const recentLogDiv = document.getElementById('ds-recent-log');
+
+            // 👇👇 1. 여기서부터 새로 추가/교체되는 부분입니다. 👇👇
             if (log && log.history && log.history.length > 0) {
                 const lastLog = log.history[log.history.length - 1];
                 recentLogDiv.innerHTML = `최근 기록 참고: <b style="color:var(--primary);">${lastLog}</b>`;
+
+                // 🌟 추가됨: 학생의 기존 출결 기록을 분석하여 강제 승인 체크박스 미리 체크하기
+                const historyStr = log.history.join('');
+                document.querySelectorAll('.manual-t-chk').forEach(cb => {
+                    const t = cb.value;
+                    // 해당 타임에 '입실(교사)' 또는 키오스크 정상 '입실' 등의 기록이 있는지 확인
+                    if (historyStr.includes(`${t}T`) && !historyStr.includes(`${t}T누락`)) {
+                        cb.checked = true;
+                    } else {
+                        cb.checked = false;
+                    }
+                });
             } else {
                 recentLogDiv.innerHTML = `최근 기록 참고: <b style="color:#999;">없음 (미입실)</b>`;
+                // 기록이 없으면 모든 체크박스 해제
+                document.querySelectorAll('.manual-t-chk').forEach(cb => cb.checked = false);
             }
+            // 👆👆 여기까지가 추가/교체되는 부분입니다. 👆👆
+
+
 
             // 🌟 [추가됨] 현재 상태에 따라 불필요한 버튼 비활성화 🌟
             const btnIn = document.getElementById('btn-manual-in');
