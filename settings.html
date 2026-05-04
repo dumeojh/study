@@ -954,7 +954,7 @@
                 }
                 const [year, month] = monthInput.value.split('-').map(Number);
 
-                // 🌟 상단 월 표시 업데이트 (4월, 5월... 기재)
+                // 🌟 상단 월 표시 업데이트
                 const monthDisplay = document.getElementById('current-month-display');
                 if (monthDisplay) monthDisplay.innerText = `${month}월 배정 현황`;
 
@@ -996,6 +996,7 @@
                     if (dayIdx === 0) dateColor = "red";
                     else if (dayIdx === 6) dateColor = "blue";
 
+                    // onclick 이벤트를 toggleDate로 연결
                     html += `
             <td class="${data.active ? 'is-active' : ''}" onclick="toggleDate('${dStr}')" style="position:relative;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -1011,7 +1012,7 @@
                             `<div style="font-size:11px; color:var(--primary); margin-top:6px; font-weight:bold; text-align:center; background:#f0f7ff; border-radius:4px; padding:2px 0;">
                         👨‍🏫 ${data.supervisor}
                     </div>` :
-                            `<div style="height:21px;"></div>` // 레이아웃 유지를 위한 빈 공간
+                            `<div style="height:21px;"></div>`
                         }
             </td>`;
 
@@ -1022,9 +1023,48 @@
             }
 
 
+            // 🌟 [핵심] 달력에서 날짜 클릭 시 신형 모달창 열기
+            function toggleDate(dStr) {
+                const data = currentSchedule[dStr] || { active: false, reason: "", supervisor: "" };
+
+                // 모달에 날짜 및 기본값 세팅
+                document.getElementById('cdm-date-value').value = dStr;
+                document.getElementById('cdm-title').innerText = `📅 ${dStr} 설정`;
+
+                const radioOn = document.querySelector('input[name="cdm-status"][value="on"]');
+                const radioOff = document.querySelector('input[name="cdm-status"][value="off"]');
+
+                if (data.active) radioOn.checked = true;
+                else radioOff.checked = true;
+
+                document.getElementById('cdm-reason').value = data.reason || "";
+
+                // 감독 교사 목록 드롭다운 채우기
+                const listRaw = document.getElementById('supervisor-list-input').value.trim();
+                const supervisors = listRaw.split('\n').map(line => line.split(',')[0].trim()).filter(n => n);
+                const supSelect = document.getElementById('cdm-supervisor');
+
+                let options = `<option value="">-- 배정 안 함 --</option>`;
+                supervisors.forEach(s => {
+                    options += `<option value="${s}" ${s === data.supervisor ? 'selected' : ''}>${s}</option>`;
+                });
+                supSelect.innerHTML = options;
+
+                // 드롭다운 변경 시 통계 업데이트 이벤트 연결
+                supSelect.onchange = () => updateCdmSupStats(supSelect.value, dStr);
+
+                // 라디오 버튼 상태에 따라 보여줄 영역 전환
+                toggleCdmReason(data.active);
+
+                // 모달 열 때 현재 저장된 교사 통계 바로 보여주기
+                updateCdmSupStats(data.supervisor, dStr);
+
+                // 🌟 중요: 모달의 display를 'flex'로 변경하여 화면에 표시
+                document.getElementById('calendar-date-modal').style.display = 'flex';
+            }
 
 
-            // 라디오 버튼 선택 시 입력란 보여주기/숨기기
+            // 라디오 버튼 선택 시 입력란 보여주기/숨기기 전환
             function toggleCdmReason(isActive) {
                 if (isActive) {
                     document.getElementById('cdm-reason-area').style.display = 'none';
@@ -1035,7 +1075,8 @@
                 }
             }
 
-            // 모달에서 저장 버튼 클릭 시 처리
+
+            // 모달에서 저장 버튼 클릭 시 처리 (메모리(currentSchedule)에 반영하고 달력 다시 그리기)
             function saveCdmDate() {
                 const dStr = document.getElementById('cdm-date-value').value;
                 const isActive = document.querySelector('input[name="cdm-status"][value="on"]').checked;
@@ -1048,22 +1089,13 @@
                     currentSchedule[dStr] = { active: false, reason: reason, supervisor: "" };
                 }
 
+                // 모달 닫기
                 document.getElementById('calendar-date-modal').style.display = 'none';
+
+                // 화면의 달력을 새로운 데이터로 다시 그리기
                 renderCalendar();
             }
 
-
-
-
-
-
-
-            function applySupSelection(dStr) {
-                const selectedSup = document.getElementById('pop-sup-select').value;
-                currentSchedule[dStr] = { active: true, reason: "", supervisor: selectedSup };
-                document.getElementById('pop-sup-select').parentElement.remove();
-                renderCalendar();
-            }
             //////////////////////////
 
             // 도면 및 시간 계산 기타 로직들
