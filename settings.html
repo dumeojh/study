@@ -1022,43 +1022,7 @@
             }
 
 
-            // 🌟 [교체] 달력에서 날짜 클릭 시 모달창 열기
-            function toggleDate(dStr) {
-                const data = currentSchedule[dStr] || { active: false, reason: "", supervisor: "" };
 
-                // 모달에 날짜 및 기본값 세팅
-                document.getElementById('cdm-date-value').value = dStr;
-                document.getElementById('cdm-title').innerText = `📅 ${dStr} 설정`;
-
-                const radioOn = document.querySelector('input[name="cdm-status"][value="on"]');
-                const radioOff = document.querySelector('input[name="cdm-status"][value="off"]');
-
-                if (data.active) radioOn.checked = true;
-                else radioOff.checked = true;
-
-                document.getElementById('cdm-reason').value = data.reason || "";
-
-                // 감독 교사 목록 드롭다운 채우기
-                const listRaw = document.getElementById('supervisor-list-input').value.trim();
-                const supervisors = listRaw.split('\n').map(line => line.split(',')[0].trim()).filter(n => n);
-                const supSelect = document.getElementById('cdm-supervisor');
-
-                let options = `<option value="">-- 배정 안 함 --</option>`;
-                supervisors.forEach(s => {
-                    options += `<option value="${s}" ${s === data.supervisor ? 'selected' : ''}>${s}</option>`;
-                });
-                supSelect.innerHTML = options;
-
-                // 드롭다운 변경 시 통계 업데이트 이벤트 연결
-                supSelect.onchange = () => updateCdmSupStats(supSelect.value, dStr);
-
-                // 라디오 버튼 상태에 따라 보여줄 영역 전환
-                toggleCdmReason(data.active);
-                updateCdmSupStats(data.supervisor, dStr);
-
-                // 모달 열기
-                document.getElementById('calendar-date-modal').style.display = 'flex';
-            }
 
             // 라디오 버튼 선택 시 입력란 보여주기/숨기기
             function toggleCdmReason(isActive) {
@@ -1092,26 +1056,7 @@
 
 
 
-            // 🌟 드롭다운 선택 팝업창 함수
-            function showSupervisorSelector(dStr, currentSup, supervisors) {
-                let options = `<option value="">-- 선택 없음 --</option>`;
-                supervisors.forEach(s => {
-                    options += `<option value="${s}" ${s === currentSup ? 'selected' : ''}>${s}</option>`;
-                });
 
-                // 간단한 커스텀 모달 또는 prompt 대신 사용 가능한 UI 구성
-                const div = document.createElement('div');
-                div.style = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:25px; border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.3); z-index:10000; text-align:center;";
-                div.innerHTML = `
-        <h3>[${dStr}] 감독교사 선택</h3>
-        <select id="pop-sup-select" style="font-size:18px; padding:10px; width:200px;">${options}</select>
-        <div style="margin-top:20px; display:flex; gap:10px;">
-            <button class="btn" style="background:var(--primary); flex:1;" onclick="applySupSelection('${dStr}')">적용</button>
-            <button class="btn" style="background:var(--gray); flex:1;" onclick="this.parentElement.parentElement.remove()">취소</button>
-        </div>
-    `;
-                document.body.appendChild(div);
-            }
 
             function applySupSelection(dStr) {
                 const selectedSup = document.getElementById('pop-sup-select').value;
