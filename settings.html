@@ -492,9 +492,10 @@
                                 <!-- 스크립트로 옵션 채워짐 -->
                             </select>
 
+                            <!-- 여기에 교사 통계 요약이 들어갑니다 -->
                             <div id="cdm-sup-stats"
-                                style="margin-top: 15px; background: #f8f9fa; border: 2px dashed #ccc; padding: 20px; border-radius: 8px; font-size: 15px; color: #555;">
-                                교사를 선택하면 이번 달 배정 횟수와 전체 누적 횟수가 표시됩니다.
+                                style="margin-top: 15px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 8px; font-size: 13px; color: #555; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                                👨‍🏫 교사를 선택하시면 월별 감독 횟수가 표시됩니다.
                             </div>
                         </div>
 
@@ -1047,39 +1048,83 @@
                 renderCalendar();
             }
 
+            // 🌟 [추가] 모달 내 감독교사 통계 실시간 업데이트 (디자인/정확도 개선판)
             function updateCdmSupStats(teacherName, targetDateStr) {
                 const statsBox = document.getElementById('cdm-sup-stats');
-                if (!teacherName) return statsBox.innerHTML = `교사를 선택하면 배정 횟수 통계가 표시됩니다.`;
+                if (!teacherName) {
+                    statsBox.innerHTML = `<div style="text-align:center; padding: 10px; color:#999;">👨‍🏫 교사를 선택하시면 월별 감독 횟수가 표시됩니다.</div>`;
+                    return;
+                }
 
+                // 1. 소급 데이터 파싱 (3월, 4월)
                 const listRaw = document.getElementById('supervisor-list-input').value.trim();
-                let prevCount = 0;
+                let b3 = 0, b4 = 0;
                 listRaw.split('\n').forEach(line => {
                     const [n, m, a] = line.split(',').map(s => s.trim());
-                    if (n === teacherName) prevCount = (parseInt(m) || 0) + (parseInt(a) || 0);
-                });
-
-                let totalCalendarCount = 0;
-                let currentMonthCount = 0;
-                const cleanTargetMonth = parseInt(targetDateStr.split('-')[1]) + "월";
-
-                Object.entries(currentSchedule).forEach(([dStr, day]) => {
-                    if (day.active && day.supervisor === teacherName) {
-                        totalCalendarCount++;
-                        if (parseInt(dStr.split('-')[1]) + "월" === cleanTargetMonth) currentMonthCount++;
+                    if (n === teacherName) {
+                        b3 = parseInt(m) || 0;
+                        b4 = parseInt(a) || 0;
                     }
                 });
 
-                const finalTotal = prevCount + totalCalendarCount;
-                let warningHtml = finalTotal >= 10 ? `<span style="color:#dc3545; font-weight:bold;">(⚠️업무 과다)</span>` : "";
+                // 2. 달력 데이터 파싱 (3월~12월 배정 카운트)
+                let calCounts = { 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0 };
+                Object.entries(currentSchedule).forEach(([dStr, day]) => {
+                    if (day.active && day.supervisor === teacherName) {
+                        const m = parseInt(dStr.split('-')[1]);
+                        if (calCounts[m] !== undefined) calCounts[m]++;
+                    }
+                });
 
-                statsBox.innerHTML = `
-                <div style="display:flex; justify-content:space-around; align-items:center; text-align:center;">
-                    <div><div style="color:#666; font-size:11px;">해당 월(${cleanTargetMonth}) 배정</div><div style="font-size:16px; font-weight:bold; color:var(--primary);">${currentMonthCount}회</div></div>
-                    <div style="border-left:1px solid #ccc; height:30px;"></div>
-                    <div><div style="color:#666; font-size:11px;">누적 총계 (소급포함)</div><div style="font-size:16px; font-weight:bold; color:#1a1a1a;">${finalTotal}회 ${warningHtml}</div></div>
-                </div>
-            `;
+                // 3. 총계 계산 (오차 없이 정확하게 합산)
+                let total = 0;
+                let monthsData = {};
+                for (let i = 3; i <= 12; i++) {
+                    let backlog = (i === 3) ? b3 : (i === 4 ? b4 : 0);
+                    let monthTotal = backlog + calCounts[i];
+                    monthsData[i] = { total: monthTotal, backlog: backlog };
+                    total += monthTotal;
+                }
+
+                let warningHtml = total >= 10 ? `<span style="color:#dc3545; font-size:12px; margin-left:5px;">(⚠️업무 과다)</span>` : "";
+
+                // 4. 모달 UI용 HTML 렌더링 (5칸씩 2줄 그리드)
+                let html = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; border-bottom: 2px solid #b6d4fe; padding-bottom: 8px;">
+                        <span style="font-size: 14px; font-weight: bold; color: #052c65;">📊 ${teacherName} 선생님 배정 현황</span>
+                        <span style="color: #dc3545; font-size: 15px; font-weight:bold;">총 <span style="font-size:22px;">${total}</span>회${warningHtml}</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; text-align: center;">
+                `;
+
+                // 클릭한 날짜가 속한 달
+                const targetMonth = parseInt(targetDateStr.split('-')[1]);
+
+                for (let i = 3; i <= 12; i++) {
+                    let isTarget = (i === targetMonth);
+                    // 클릭한 날짜의 달은 초록색으로 강조
+                    let bg = isTarget ? "#e8f5e9" : "#fff";
+                    let border = isTarget ? "2px solid #198754" : "1px solid #ced4da";
+                    let textColor = monthsData[i].total > 0 ? (isTarget ? "#0f5132" : "#212529") : "#adb5bd";
+                    let fontWeight = monthsData[i].total > 0 ? "900" : "normal";
+
+                    // 소급분이 포함되어 있으면 헷갈리지 않게 괄호로 별도 표기
+                    let backlogStr = monthsData[i].backlog > 0 ? `<div style="font-size:10px; color:#6c757d; margin-top:-2px;">(+소급${monthsData[i].backlog})</div>` : "";
+
+                    html += `
+                        <div style="background: ${bg}; border: ${border}; border-radius: 6px; padding: 6px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                            <div style="color: #6c757d; font-size: 11px; font-weight: bold;">${i}월</div>
+                            <div style="color: ${textColor}; font-weight: ${fontWeight}; font-size: 15px; margin: 2px 0;">${monthsData[i].total}</div>
+                            ${backlogStr}
+                        </div>
+                    `;
+                }
+
+                html += `</div>`;
+                statsBox.innerHTML = html;
             }
+
+
 
             function saveHistory() { if (historyStack.length >= 20) historyStack.shift(); historyStack.push(JSON.stringify({ rows, cols, grid: seatMapData })); }
             function undo() { if (historyStack.length === 0) return; const p = JSON.parse(historyStack.pop()); rows = p.rows; cols = p.cols; seatMapData = p.grid; drawEditGrid(); }
