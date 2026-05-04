@@ -601,9 +601,11 @@
                                 value="3"> <b>[3단계] 학번 + 이름 모두 입력</b> (보안 최고, 시간 소요)</label>
                     </div>
 
+
                     <div style="margin-bottom:10px;">
                         <b style="color: #333;">🎟️ 발권 시작 시간:</b> 1타임 시작
-                        <input type="number" id="ticket-lead-time" value="30"
+                        <!-- onchange 이벤트 추가 -->
+                        <input type="number" id="ticket-lead-time" value="30" onchange="updateTicketNoticeAuto()"
                             style="width:50px; text-align:center; padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
                         분 전부터 가능
                     </div>
@@ -617,8 +619,10 @@
                 <div
                     style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #eee; padding-bottom:10px;">
                     <b style="font-size:16px; color: #333;">1T:</b>
-                    <input type="time" id="t1-start" onchange="calculateMinutes(1)"
+                    <!-- onchange 이벤트에 updateTicketNoticeAuto() 추가 -->
+                    <input type="time" id="t1-start" onchange="calculateMinutes(1); updateTicketNoticeAuto();"
                         style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;"> ~
+
                     <input type="time" id="t1-end" onchange="calculateMinutes(1)"
                         style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
                     <span style="color:#666; font-size:13px;">(총 <b id="t1-min"
@@ -1395,11 +1399,15 @@
                 } catch (error) {
                     console.error("데이터 로딩 중 에러 발생:", error);
                 }
+
                 // loadAllSettings() 함수 최하단에 추가
                 for (let i = 1; i <= 3; i++) calculateMinutes(i);
+                updateTicketNoticeAuto(); // 🌟 화면 로딩 직후 자동 계산 실행
                 await loadStudentPriorityList(); // 페이지 로드 시 학생 권한 명단도 함께 불러옴
 
             }
+
+
 
 
             //////////
@@ -1801,6 +1809,31 @@
                 document.body.insertAdjacentHTML('beforeend', html);
             }
 
+
+            // 🌟 [추가] 발권 시작 시간에 맞춰 공지사항 문구 자동 업데이트 함수
+            function updateTicketNoticeAuto() {
+                const leadTimeStr = document.getElementById('ticket-lead-time').value;
+                const t1StartStr = document.getElementById('t1-start').value;
+                const noticeInput = document.getElementById('ticket-notice');
+
+                if (!leadTimeStr || !t1StartStr) return;
+
+                const leadTime = parseInt(leadTimeStr);
+                const [h, m] = t1StartStr.split(':').map(Number);
+
+                // 1타임 시작 시간에서 leadTime(분)만큼 빼기
+                let startMin = (h * 60 + m) - leadTime;
+
+                // 0시 이전으로 넘어가면 전날로 처리 (음수 방지)
+                if (startMin < 0) startMin += 1440;
+
+                const resH = String(Math.floor(startMin / 60)).padStart(2, '0');
+                const resM = String(startMin % 60).padStart(2, '0');
+                const calculatedTime = `${resH}:${resM}`;
+
+                // 공지사항 문구 자동 완성 (기존 입력된 값이 이 형식이 아닐 수 있으므로 강제 덮어쓰기)
+                noticeInput.value = `자율석 신청 학생만 이용 가능합니다. (${calculatedTime}부터 이용하세요)`;
+            }
 
             // 2. 체크된 학생들만 모아서 저장
             async function savePriorityList() {
