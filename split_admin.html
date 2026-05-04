@@ -2341,21 +2341,31 @@
         }
 
 
+        // 🌟 수정됨: 관리자 강제 승인 메뉴 토글 시, 수동 입실 버튼 영역 숨기기/보이기 연동
         function toggleAdminSection() {
-            const area = document.getElementById('admin-content-area');
-            const icon = document.getElementById('toggle-icon');
+            const adminArea = document.getElementById('admin-content-area');
+            const toggleIcon = document.getElementById('toggle-icon');
+            // 수동 입실/복귀/외출/결석 버튼들을 감싸고 있는 가장 가까운 div 요소 찾기
+            const manualControlArea = document.getElementById('manual-time-input').parentElement;
 
-            if (area.style.display === 'none') {
-                area.style.display = 'block'; // 보이기
-                icon.innerText = '접기 ▲';
-                icon.style.color = '#333';
+            if (adminArea.style.display === 'none' || adminArea.style.display === '') {
+                // 1. 관리자 강제 승인 메뉴를 펼칠 때
+                adminArea.style.display = 'block';
+                toggleIcon.innerText = '접기 ▲';
+                toggleIcon.style.color = '#333';
+
+                // 수동 제어 버튼 영역 숨기기
+                manualControlArea.style.display = 'none';
             } else {
-                area.style.display = 'none';  // 숨기기
-                icon.innerText = '펼치기 ▼';
-                icon.style.color = '#999';
+                // 2. 관리자 강제 승인 메뉴를 접을 때
+                adminArea.style.display = 'none';
+                toggleIcon.innerText = '펼치기 ▼';
+                toggleIcon.style.color = '#999';
+
+                // 수동 제어 버튼 영역 다시 보이기 (기존 스타일 속성인 grid로 복원)
+                manualControlArea.style.display = 'grid';
             }
         }
-
 
 
 
