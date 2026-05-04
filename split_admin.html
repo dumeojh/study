@@ -1882,6 +1882,12 @@
                 btnOut.disabled = true; // 미입실인데 외출 불가
                 btnReturn.disabled = true; // 미입실인데 복귀 불가
             }
+            // 👇👇 여기에 아래 4줄을 추가해 주세요! 👇👇
+            // 🌟 모달이 열릴 때마다 관리자 강제 승인 영역은 접어두고, 수동 버튼 영역은 보이게 초기화
+            document.getElementById('admin-content-area').style.display = 'none';
+            document.getElementById('toggle-icon').innerText = '펼치기 ▼';
+            document.getElementById('toggle-icon').style.color = '#999';
+            document.getElementById('manual-time-input').parentElement.style.display = 'grid';
         }
 
 
