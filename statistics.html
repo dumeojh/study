@@ -414,8 +414,17 @@
                         <option value="total_desc">총계 높은 순</option>
                     </select>
                 </div>
-                <div style="margin-left:auto; font-size:13px; color:#666;">
-                    ※ 숫자는 해당 일자에 출석한 <b>타임 횟수</b>를 의미합니다.
+
+                <!-- 👇 여기에 학생 검색창이 추가되었습니다 👇 -->
+                <div style="margin-left:auto; display:flex; align-items:center; gap:15px;">
+                    <div style="font-size:13px; color:#666;">
+                        ※ 숫자는 출석 <b>타임 횟수</b>입니다.
+                    </div>
+                    <div>
+                        <label for="matrix-search-filter">🔍 학생 검색:</label>
+                        <input type="text" id="matrix-search-filter" placeholder="이름 또는 학번 입력"
+                            onkeyup="applyDailyMatrixFilter()" style="width: 160px; padding: 6px 12px;">
+                    </div>
                 </div>
             </div>
 
@@ -905,17 +914,29 @@
         function applyDailyMatrixFilter() {
             const tbody = document.getElementById('matrix-tbody');
             const classValue = document.getElementById('matrix-class-filter').value;
-            // 👇 새로 추가: 정렬 기준 값 가져오기
             const sortValue = document.getElementById('matrix-sort-filter') ? document.getElementById('matrix-sort-filter').value : 'id_asc';
+
+            // 👇 새로 추가: 검색어 가져오기
+            const searchInput = document.getElementById('matrix-search-filter');
+            const searchValue = searchInput ? searchInput.value.trim() : "";
 
             // 원본 데이터를 해치지 않기 위해 배열 복사
             let filteredData = [...globalDailyMatrixData];
 
+            // 1. 반별 필터 적용
             if (classValue !== "all") {
                 filteredData = filteredData.filter(stat => stat.className === classValue);
             }
 
-            // 👇 새로 추가: 선택한 기준에 따른 정렬 로직
+            // 2. 검색어 필터 적용 (이름 또는 학번)
+            if (searchValue !== "") {
+                filteredData = filteredData.filter(stat =>
+                    stat.stu_name.includes(searchValue) ||
+                    stat.stu_id.includes(searchValue)
+                );
+            }
+
+            // 3. 정렬 로직 적용
             filteredData.sort((a, b) => {
                 if (sortValue === 'total_desc') {
                     // 총계가 다르면 총계 내림차순(높은 순)
