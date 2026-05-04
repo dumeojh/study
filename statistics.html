@@ -1,263 +1,587 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>안성여고 - 야간 자율학습 월간 통계</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #007bff; --success: #28a745; --warning: #ffc107; --danger: #dc3545; --gray: #6c757d; }
-        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1250px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        
-        .header-area { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; }
-        h2 { margin: 0; color: #1a1a1a; }
-        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; text-decoration: none; display: inline-block; }
-        .btn-gray { background: var(--gray); }
-        .btn-primary { background: var(--primary); }
-        
-        .controls { display: flex; gap: 15px; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ddd; }
-        .controls input[type="month"] { padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px; font-weight: bold; }
-        
-        /* 달력 CSS */
-        .stat-calendar { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .stat-calendar th { background: #e9ecef; padding: 12px; border: 1px solid #dee2e6; font-size: 14px; color: #495057; }
-        .stat-calendar td { border: 1px solid #dee2e6; height: 130px; vertical-align: top; padding: 8px; transition: 0.2s; background: white; }
-        .stat-calendar td:hover { background: #f8f9fa; }
-        
-        .date-num { font-weight: bold; font-size: 16px; margin-bottom: 8px; display: inline-block; }
-        .sunday { color: #dc3545; }
-        .saturday { color: #0d6efd; }
-        
-        /* 일일 현황 요약 박스 디자인 */
-        .stat-box { font-size: 11px; line-height: 1.4; display: flex; flex-direction: column; gap: 4px; }
-        .box-apply { background: #eef6ff; border: 1px solid #b6d4fe; border-radius: 5px; padding: 4px; color: #052c65; }
-        .box-current { background: #fff3cd; border: 1px solid #ffe69c; border-radius: 5px; padding: 4px; color: #664d03; font-weight: bold; }
-        .box-result { background: #d1e7dd; border: 1px solid #a3cfbb; border-radius: 5px; padding: 4px; color: #0a3622; font-weight: bold; }
-        .box-holiday { background: #f8d7da; border: 1px dashed #f5c2c7; border-radius: 5px; padding: 10px; text-align: center; color: #842029; font-weight: bold; margin-top: 10px; }
-        
-        /* 로딩 스피너 */
-        #loading { display: none; text-align: center; padding: 50px; font-size: 18px; font-weight: bold; color: var(--primary); }
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --gray: #6c757d;
+        }
 
-        .apply-times { display: flex; justify-content: space-between; font-size: 11px; margin-top: 4px; font-weight: bold; color: #0d6efd; padding: 0 2px; }
-        .time-slot b { color: #333; }
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1250px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .header-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin: 0;
+            color: #1a1a1a;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-gray {
+            background: var(--gray);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .controls input[type="month"] {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        /* 달력 CSS */
+        .stat-calendar {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .stat-calendar th {
+            background: #e9ecef;
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .stat-calendar td {
+            border: 1px solid #dee2e6;
+            height: 130px;
+            vertical-align: top;
+            padding: 8px;
+            transition: 0.2s;
+            background: white;
+        }
+
+        .stat-calendar td:hover {
+            background: #f8f9fa;
+        }
+
+        .date-num {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        .sunday {
+            color: #dc3545;
+        }
+
+        .saturday {
+            color: #0d6efd;
+        }
+
+        /* 일일 현황 요약 박스 디자인 */
+        .stat-box {
+            font-size: 11px;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .box-apply {
+            background: #eef6ff;
+            border: 1px solid #b6d4fe;
+            border-radius: 5px;
+            padding: 4px;
+            color: #052c65;
+        }
+
+        .box-current {
+            background: #fff3cd;
+            border: 1px solid #ffe69c;
+            border-radius: 5px;
+            padding: 4px;
+            color: #664d03;
+            font-weight: bold;
+        }
+
+        .box-result {
+            background: #d1e7dd;
+            border: 1px solid #a3cfbb;
+            border-radius: 5px;
+            padding: 4px;
+            color: #0a3622;
+            font-weight: bold;
+        }
+
+        .box-holiday {
+            background: #f8d7da;
+            border: 1px dashed #f5c2c7;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+            color: #842029;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* 로딩 스피너 */
+        #loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .apply-times {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-top: 4px;
+            font-weight: bold;
+            color: #0d6efd;
+            padding: 0 2px;
+        }
+
+        .time-slot b {
+            color: #333;
+        }
 
         /* --- 신청 현황 그리드 디자인 --- */
-        .apply-grid { display: grid; grid-template-columns: 26px 1fr 1fr 1fr 1fr; gap: 3px; margin-bottom: 5px; align-items: center; }
-        .grid-title { font-size: 10px; font-weight: bold; color: #495057; text-align: left; letter-spacing: -0.5px; }
-        .grid-item { text-align: center; border-radius: 4px; padding: 2px 0; font-size: 10px; }
-        .grid-item.header { background: #6c757d; color: #ffffff; border: 1px solid #5c636a !important; font-weight: bold; }
-        .grid-item.val { background: #ffffff; color: #111; font-weight: bold; font-size: 11px; border: 1px dashed #adb5bd; }
-        .grid-item.status-val { background: #ffffff; color: #198754; font-weight: bold; font-size: 11px; border: 1px dashed #adb5bd; }
-        .grid-item.status-error { background: #f8d7da; color: #dc3545; border: 1px dashed #dc3545; font-weight: bold; font-size: 11px; }
-        .today-cell { border: 2px solid #0d6efd !important; background-color: #f4f8ff !important; box-shadow: inset 0 0 8px rgba(13, 110, 253, 0.1); position: relative; z-index: 1; }
+        .apply-grid {
+            display: grid;
+            grid-template-columns: 26px 1fr 1fr 1fr 1fr;
+            gap: 3px;
+            margin-bottom: 5px;
+            align-items: center;
+        }
+
+        .grid-title {
+            font-size: 10px;
+            font-weight: bold;
+            color: #495057;
+            text-align: left;
+            letter-spacing: -0.5px;
+        }
+
+        .grid-item {
+            text-align: center;
+            border-radius: 4px;
+            padding: 2px 0;
+            font-size: 10px;
+        }
+
+        .grid-item.header {
+            background: #6c757d;
+            color: #ffffff;
+            border: 1px solid #5c636a !important;
+            font-weight: bold;
+        }
+
+        .grid-item.val {
+            background: #ffffff;
+            color: #111;
+            font-weight: bold;
+            font-size: 11px;
+            border: 1px dashed #adb5bd;
+        }
+
+        .grid-item.status-val {
+            background: #ffffff;
+            color: #198754;
+            font-weight: bold;
+            font-size: 11px;
+            border: 1px dashed #adb5bd;
+        }
+
+        .grid-item.status-error {
+            background: #f8d7da;
+            color: #dc3545;
+            border: 1px dashed #dc3545;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .today-cell {
+            border: 2px solid #0d6efd !important;
+            background-color: #f4f8ff !important;
+            box-shadow: inset 0 0 8px rgba(13, 110, 253, 0.1);
+            position: relative;
+            z-index: 1;
+        }
 
         /* --- 탭 메뉴 및 표 디자인 --- */
-        .tab-menu { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; background: #e9ecef; color: #495057; transition: 0.3s; }
-        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3); }
-        .tab-content { display: none; animation: fadeIn 0.3s ease; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-menu {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
 
-        .stat-class-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .stat-class-table th { background: #f8f9fa; padding: 12px; border: 1px solid #dee2e6; font-size: 14px; color: #495057; }
-        .stat-class-table td { border: 1px solid #dee2e6; padding: 12px; text-align: center; font-size: 14px; background: white; }
-        .stat-class-table tbody tr:hover { background-color: #f1f8ff; }
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #e9ecef;
+            color: #495057;
+            transition: 0.3s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-class-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .stat-class-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .stat-class-table td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: center;
+            font-size: 14px;
+            background: white;
+        }
+
+        .stat-class-table tbody tr:hover {
+            background-color: #f1f8ff;
+        }
 
         /* 필터 영역 스타일 */
-        .filter-area { display: flex; gap: 20px; background: #eef6ff; padding: 15px; border-radius: 8px; border: 1px solid #b6d4fe; margin-bottom: 15px; align-items: center; }
-        .filter-area select, .filter-area input { padding: 8px 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; cursor: pointer; }
-        .filter-area label { font-weight: bold; color: #052c65; margin-right: 8px; font-size: 14px; }
+        .filter-area {
+            display: flex;
+            gap: 20px;
+            background: #eef6ff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #b6d4fe;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .filter-area select,
+        .filter-area input {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .filter-area label {
+            font-weight: bold;
+            color: #052c65;
+            margin-right: 8px;
+            font-size: 14px;
+        }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <div class="header-area">
-        <h2>📊 자율학습 누적 통계 현황</h2>
-        <div>
-            <a href="split_admin.html" class="btn btn-gray">⬅️ 관리자 메인으로</a>
+    <div class="container">
+        <div class="header-area">
+            <h2>📊 자율학습 누적 통계 현황</h2>
+            <div>
+                <a href="split_admin.html" class="btn btn-gray">⬅️ 관리자 메인으로</a>
+            </div>
         </div>
-    </div>
 
-    <div class="tab-menu">
-        <button class="tab-btn active" onclick="switchTab('tab-calendar', this)">📅 달력 현황</button>
-<button class="tab-btn" onclick="switchTab('tab-daily-matrix', this)">🗓️ 개인별 일자 현황</button>
+        <div class="tab-menu">
+            <button class="tab-btn active" onclick="switchTab('tab-calendar', this)">📅 달력 현황</button>
+            <button class="tab-btn" onclick="switchTab('tab-daily-matrix', this)">🗓️ 개인별 일자 현황</button>
 
-        <button class="tab-btn" onclick="switchTab('tab-class', this)">🏫 반별 통계 현황</button>
-        <button class="tab-btn" onclick="switchTab('tab-personal', this)">👤 개인별 통계 현황</button>
-        <button class="tab-btn" onclick="switchTab('tab-yearly', this)" style="background: #fff3cd; color: #856404; border: 1px solid #ffeeba;">🏆 연간 누적 통계</button>
-    </div>
+            <button class="tab-btn" onclick="switchTab('tab-class', this)">🏫 반별 통계 현황</button>
+            <button class="tab-btn" onclick="switchTab('tab-personal', this)">👤 개인별 통계 현황</button>
+            <button class="tab-btn" onclick="switchTab('tab-yearly', this)"
+                style="background: #fff3cd; color: #856404; border: 1px solid #ffeeba;">🏆 연간 누적 통계</button>
+        </div>
 
-    <div id="monthly-controls" class="controls">
-        <b style="font-size: 16px;">조회할 연도 및 월:</b>
-        <input type="month" id="month-picker" onchange="fetchDataAndRender()">
-        <button class="btn btn-primary" onclick="fetchDataAndRender()">🔄 데이터 새로고침</button>
-        <span style="margin-left:auto; font-size:13px; color:#666;">※ 과거 데이터나 미래의 신청 내역을 조회할 수 있습니다.</span>
-    </div>
+        <div id="monthly-controls" class="controls">
+            <b style="font-size: 16px;">조회할 연도 및 월:</b>
+            <input type="month" id="month-picker" onchange="fetchDataAndRender()">
+            <button class="btn btn-primary" onclick="fetchDataAndRender()">🔄 데이터 새로고침</button>
+            <span style="margin-left:auto; font-size:13px; color:#666;">※ 과거 데이터나 미래의 신청 내역을 조회할 수 있습니다.</span>
+        </div>
 
-    <div id="loading">데이터를 분석 중입니다... 잠시만 기다려주세요 ⏳</div>
-    
-<div id="tab-calendar" class="tab-content active">
-        <div id="calendar-container"></div>
-    </div>
+        <div id="loading">데이터를 분석 중입니다... 잠시만 기다려주세요 ⏳</div>
 
-
-
-<div id="tab-daily-matrix" class="tab-content">
-        <div class="filter-area">
-            <div>
-                <label for="matrix-class-filter">🏫 반별 검색:</label>
-                <select id="matrix-class-filter" onchange="applyDailyMatrixFilter()">
-                    <option value="all">전체 보기</option>
-                </select>
-            </div>
-            <div>
-                <label for="matrix-sort-filter">↕️ 정렬 기준:</label>
-                <select id="matrix-sort-filter" onchange="applyDailyMatrixFilter()">
-                    <option value="id_asc">학번 순 (기본)</option>
-                    <option value="total_desc">총계 높은 순</option>
-                </select>
-            </div>
-            <div style="margin-left:auto; font-size:13px; color:#666;">
-                ※ 숫자는 해당 일자에 출석한 <b>타임 횟수</b>를 의미합니다.
-            </div>
+        <div id="tab-calendar" class="tab-content active">
+            <div id="calendar-container"></div>
         </div>
 
 
 
-        <div style="overflow-x: auto; border: 1px solid #dee2e6; border-radius: 8px;">
-            <table class="stat-class-table" style="min-width: 1200px; font-size: 12px; margin-top: 0;">
-                <thead id="matrix-thead"></thead>
-                <tbody id="matrix-tbody"></tbody>
+        <div id="tab-daily-matrix" class="tab-content">
+            <div class="filter-area">
+                <div>
+                    <label for="matrix-class-filter">🏫 반별 검색:</label>
+                    <select id="matrix-class-filter" onchange="applyDailyMatrixFilter()">
+                        <option value="all">전체 보기</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="matrix-sort-filter">↕️ 정렬 기준:</label>
+                    <select id="matrix-sort-filter" onchange="applyDailyMatrixFilter()">
+                        <option value="id_asc">학번 순 (기본)</option>
+                        <option value="total_desc">총계 높은 순</option>
+                    </select>
+                </div>
+                <div style="margin-left:auto; font-size:13px; color:#666;">
+                    ※ 숫자는 해당 일자에 출석한 <b>타임 횟수</b>를 의미합니다.
+                </div>
+            </div>
+
+
+
+            <div style="overflow-x: auto; border: 1px solid #dee2e6; border-radius: 8px;">
+                <table class="stat-class-table" style="min-width: 1200px; font-size: 12px; margin-top: 0;">
+                    <thead id="matrix-thead"></thead>
+                    <tbody id="matrix-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-class" class="tab-content">
+            <table class="stat-class-table">
+                <thead>
+                    <tr>
+                        <th>학급 (반)</th>
+                        <th>신청 인원 (명)</th>
+                        <th>월간 누적 신청 타임 (회)</th>
+                        <th>월간 누적 출석 타임 (회)</th>
+                    </tr>
+                </thead>
+                <tbody id="class-stat-body">
+                </tbody>
+            </table>
+        </div>
+
+        <div id="tab-personal" class="tab-content">
+
+
+            <div class="filter-area">
+                <div>
+                    <label for="class-filter">🏫 반별 검색:</label>
+                    <select id="class-filter" onchange="applyPersonalFilterAndSort()">
+                        <option value="all">전체 보기</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="sort-filter">↕️ 정렬 기준:</label>
+                    <select id="sort-filter" onchange="applyPersonalFilterAndSort()">
+                        <option value="attend_times_desc">출석 횟수 (타임) 높은 순</option>
+
+                        <option value="stu_id_asc">학번 순 (기본)</option>
+                        <option value="attend_days_desc">출석 횟수 (일) 높은 순</option>
+
+                    </select>
+                </div>
+                <div style="margin-left: auto;">
+                    <label for="search-filter">🔍 학생 검색:</label>
+                    <input type="text" id="search-filter" placeholder="이름 또는 학번 입력"
+                        onkeyup="applyPersonalFilterAndSort()" style="width: 160px; padding: 6px 12px;">
+                </div>
+            </div>
+
+
+
+
+            <table class="stat-class-table">
+                <thead>
+                    <tr>
+                        <th>학급 (반)</th>
+                        <th>학번</th>
+                        <th>이름</th>
+                        <th>신청 횟수 (일/타임)</th>
+                        <th>출석 횟수 (일/타임)</th>
+                        <th>월간 출석률</th>
+                    </tr>
+                </thead>
+                <tbody id="personal-stat-body">
+                </tbody>
+            </table>
+        </div>
+
+        <div id="tab-yearly" class="tab-content">
+            <div class="filter-area" style="background:#fff8e1; border-color:#ffecb5;">
+                <div>
+                    <label>🔍 조회할 연도:</label>
+                    <input type="number" id="yearly-year" value="2026"
+                        style="width: 80px; font-weight: bold; text-align: center;">
+                    <button class="btn btn-primary" style="background: #fd7e14;" onclick="fetchYearlyData()">🔄 연간 데이터
+                        전체 집계</button>
+                    <span style="font-size: 12px; color: #666; margin-left: 10px;">(※ 1년치 기록을 모두 계산하므로 몇 초 정도 소요될 수
+                        있습니다)</span>
+                </div>
+                <div style="margin-left: auto;">
+                    <label for="sort-yearly">↕️ 정렬 기준:</label>
+                    <select id="sort-yearly" onchange="renderYearlyTable()">
+                        <option value="id_asc">학번 순 (기본)</option>
+                        <option value="total_desc">총 누적 타임 높은 순</option>
+                    </select>
+                </div>
+            </div>
+
+            <table class="stat-class-table">
+                <thead>
+                    <tr>
+                        <th>학번</th>
+                        <th>이름</th>
+                        <th>3월</th>
+                        <th>4월</th>
+                        <th>5월</th>
+                        <th>6월</th>
+                        <th>7월</th>
+                        <th>8월</th>
+                        <th>9월</th>
+                        <th>10월</th>
+                        <th>11월</th>
+                        <th>12월</th>
+                        <th style="background-color: #eef6ff; color: #052c65;">총 누적 타임</th>
+                    </tr>
+                </thead>
+                <tbody id="yearly-stat-body">
+                    <tr>
+                        <td colspan="13" style="color:#6c757d; padding:30px; text-align:center;">상단의 <b
+                                style="color:#fd7e14;">[연간 데이터 전체 집계]</b> 버튼을 눌러주세요.</td>
+                    </tr>
+                </tbody>
             </table>
         </div>
     </div>
-
-    <div id="tab-class" class="tab-content">
-        <table class="stat-class-table">
-            <thead>
-                <tr>
-                    <th>학급 (반)</th>
-                    <th>신청 인원 (명)</th>
-                    <th>월간 누적 신청 타임 (회)</th>
-                    <th>월간 누적 출석 타임 (회)</th>
-                </tr>
-            </thead>
-            <tbody id="class-stat-body">
-            </tbody>
-        </table>
-    </div>
-
-    <div id="tab-personal" class="tab-content">
-
-
-<div class="filter-area">
-            <div>
-                <label for="class-filter">🏫 반별 검색:</label>
-                <select id="class-filter" onchange="applyPersonalFilterAndSort()">
-                    <option value="all">전체 보기</option>
-                </select>
-            </div>
-            <div>
-                <label for="sort-filter">↕️ 정렬 기준:</label>
-                <select id="sort-filter" onchange="applyPersonalFilterAndSort()">
-                    <option value="attend_times_desc">출석 횟수 (타임) 높은 순</option>
-
-                    <option value="stu_id_asc">학번 순 (기본)</option>
-                    <option value="attend_days_desc">출석 횟수 (일) 높은 순</option>
-
-                </select>
-            </div>
-            <div style="margin-left: auto;">
-                <label for="search-filter">🔍 학생 검색:</label>
-                <input type="text" id="search-filter" placeholder="이름 또는 학번 입력" onkeyup="applyPersonalFilterAndSort()" style="width: 160px; padding: 6px 12px;">
-            </div>
-        </div>
-
-
-
-
-        <table class="stat-class-table">
-            <thead>
-                <tr>
-                    <th>학급 (반)</th>
-                    <th>학번</th>
-                    <th>이름</th>
-                    <th>신청 횟수 (일/타임)</th>
-                    <th>출석 횟수 (일/타임)</th>
-                    <th>월간 출석률</th>
-                </tr>
-            </thead>
-            <tbody id="personal-stat-body">
-            </tbody>
-        </table>
-    </div>
-
-    <div id="tab-yearly" class="tab-content">
-        <div class="filter-area" style="background:#fff8e1; border-color:#ffecb5;">
-            <div>
-                <label>🔍 조회할 연도:</label>
-                <input type="number" id="yearly-year" value="2026" style="width: 80px; font-weight: bold; text-align: center;">
-                <button class="btn btn-primary" style="background: #fd7e14;" onclick="fetchYearlyData()">🔄 연간 데이터 전체 집계</button>
-                <span style="font-size: 12px; color: #666; margin-left: 10px;">(※ 1년치 기록을 모두 계산하므로 몇 초 정도 소요될 수 있습니다)</span>
-            </div>
-            <div style="margin-left: auto;">
-                <label for="sort-yearly">↕️ 정렬 기준:</label>
-                <select id="sort-yearly" onchange="renderYearlyTable()">
-                    <option value="id_asc">학번 순 (기본)</option>
-                    <option value="total_desc">총 누적 타임 높은 순</option>
-                </select>
-            </div>
-        </div>
-
-        <table class="stat-class-table">
-            <thead>
-                <tr>
-                    <th>학번</th>
-                    <th>이름</th>
-                    <th>3월</th><th>4월</th><th>5월</th><th>6월</th><th>7월</th>
-                    <th>8월</th><th>9월</th><th>10월</th><th>11월</th><th>12월</th>
-                    <th style="background-color: #eef6ff; color: #052c65;">총 누적 타임</th>
-                </tr>
-            </thead>
-            <tbody id="yearly-stat-body">
-                <tr><td colspan="13" style="color:#6c757d; padding:30px; text-align:center;">상단의 <b style="color:#fd7e14;">[연간 데이터 전체 집계]</b> 버튼을 눌러주세요.</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-<div id="student-calendar-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
-        <div style="background:white; padding:25px; border-radius:15px; width:95%; max-width:650px; overflow-y:auto; max-height:90vh; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px;">
+    <div id="student-calendar-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+        <div
+            style="background:white; padding:25px; border-radius:15px; width:95%; max-width:650px; overflow-y:auto; max-height:90vh; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px;">
                 <h3 id="sc-title" style="margin:0; font-size: 18px; color:#1a1a1a;">🧑‍🎓 학생 상세 출결 달력</h3>
-                <button class="btn btn-gray" style="padding: 5px 12px; border-radius:6px; font-size:13px;" onclick="document.getElementById('student-calendar-modal').style.display='none'">닫기</button>
+                <button class="btn btn-gray" style="padding: 5px 12px; border-radius:6px; font-size:13px;"
+                    onclick="document.getElementById('student-calendar-modal').style.display='none'">닫기</button>
             </div>
-            
+
             <div id="sc-calendar-area" style="margin-top: 15px;"></div>
-            
-            <div style="background:#f8f9fa; padding:15px; border-radius:10px; margin-top:15px; display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; font-size:13px; text-align:center; border: 1px solid #eee;">
+
+            <div
+                style="background:#f8f9fa; padding:15px; border-radius:10px; margin-top:15px; display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; font-size:13px; text-align:center; border: 1px solid #eee;">
                 <div>신청 타임<br><b id="sc-total-apply" style="color:var(--primary); font-size:18px;">0</b>회</div>
                 <div>출석 타임<br><b id="sc-total-present" style="color:var(--success); font-size:18px;">0</b>회</div>
                 <div>참여율<br><b id="sc-rate" style="color:var(--danger); font-size:18px;">0</b>%</div>
             </div>
-            
-            <div id="sc-comment" style="margin-top:15px; padding:12px; background:#eef6ff; border-radius:8px; font-size:14px; font-weight:bold; text-align:center; color:#052c65;"></div>
-            
+
+            <div id="sc-comment"
+                style="margin-top:15px; padding:12px; background:#eef6ff; border-radius:8px; font-size:14px; font-weight:bold; text-align:center; color:#052c65;">
+            </div>
+
             <div style="margin-top:10px; text-align:center; font-size:11px; color:#666;">
-                <span style="display:inline-block; padding:2px 8px; background:var(--primary); color:white; border-radius:3px; margin-right:5px;">■</span>출석/인정 
-                <span style="display:inline-block; padding:2px 8px; background:#fff0f0; border:1px solid #dc3545; color:#dc3545; border-radius:3px; margin:0 5px;">■</span>미입실(결석)
-                <span style="display:inline-block; padding:2px 8px; background:transparent; border:1px solid #f0f0f0; color:#ccc; border-radius:3px; margin-left:5px;">■</span>미신청 타임
+                <span
+                    style="display:inline-block; padding:2px 8px; background:var(--primary); color:white; border-radius:3px; margin-right:5px;">■</span>출석/인정
+                <span
+                    style="display:inline-block; padding:2px 8px; background:#fff0f0; border:1px solid #dc3545; color:#dc3545; border-radius:3px; margin:0 5px;">■</span>미입실(결석)
+                <span
+                    style="display:inline-block; padding:2px 8px; background:transparent; border:1px solid #f0f0f0; color:#ccc; border-radius:3px; margin-left:5px;">■</span>미신청
+                타임
             </div>
         </div>
     </div>
 
-<div id="daily-detail-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:1100; justify-content:center; align-items:center;">
-        <div style="background:white; padding:20px; border-radius:12px; width:90%; max-width:400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #ccc; padding-bottom:10px; margin-bottom:15px;">
+    <div id="daily-detail-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:1100; justify-content:center; align-items:center;">
+        <div
+            style="background:white; padding:20px; border-radius:12px; width:90%; max-width:400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #ccc; padding-bottom:10px; margin-bottom:15px;">
                 <h4 id="dd-title" style="margin:0; font-size:16px; color:#333;">📅 00월 00일 상세 기록</h4>
-                <button class="btn btn-gray" style="padding:4px 8px; font-size:12px;" onclick="document.getElementById('daily-detail-modal').style.display='none'">닫기</button>
+                <button class="btn btn-gray" style="padding:4px 8px; font-size:12px;"
+                    onclick="document.getElementById('daily-detail-modal').style.display='none'">닫기</button>
             </div>
             <div style="margin-bottom:10px; font-size:13px;">
                 <b>최종 마감 상태:</b> <span id="dd-status" style="font-weight:bold;"></span>
@@ -265,392 +589,392 @@
             <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #eee;">
                 <b style="font-size:13px; color:#555; display:block; margin-bottom:10px;">🕒 실제 태그(스캔) 흐름</b>
                 <div id="dd-history" style="font-size:13px; line-height:1.6; color:#333;">
-                    </div>
+                </div>
             </div>
         </div>
     </div>
 
 
-<script>
-    const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <script>
+        const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let applicationData = [];
-    let attendanceLogsData = [];
-    let calendarSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
-    let globalPersonalStatsData = []; 
+        let applicationData = [];
+        let attendanceLogsData = [];
+        let calendarSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
+        let globalPersonalStatsData = [];
 
 
-let globalYearlyStatsData = []; // 🌟 연간 통계용 전역 변수
+        let globalYearlyStatsData = []; // 🌟 연간 통계용 전역 변수
 
-    // 👇 새로 추가할 전역 변수
-    let globalDailyMatrixData = [];
-    let matrixLastDate = 31;
+        // 👇 새로 추가할 전역 변수
+        let globalDailyMatrixData = [];
+        let matrixLastDate = 31;
 
-    // 🌟 추가: 통계용 시간 설정 및 최소 인정 기준 변수
-    let currentSchedule = { t1: "16:00", t2: "18:50", t3: "20:10", t1_req: 60, t2_req: 60, t3_req: 60 };
+        // 🌟 추가: 통계용 시간 설정 및 최소 인정 기준 변수
+        let currentSchedule = { t1: "16:00", t2: "18:50", t3: "20:10", t1_req: 60, t2_req: 60, t3_req: 60 };
 
-    document.addEventListener("DOMContentLoaded", () => {
-        const now = new Date();
-        const monthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        document.getElementById('month-picker').value = monthVal;
-        document.getElementById('yearly-year').value = now.getFullYear(); // 연간 통계 연도 세팅
-        fetchDataAndRender();
-    });
+        document.addEventListener("DOMContentLoaded", () => {
+            const now = new Date();
+            const monthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            document.getElementById('month-picker').value = monthVal;
+            document.getElementById('yearly-year').value = now.getFullYear(); // 연간 통계 연도 세팅
+            fetchDataAndRender();
+        });
 
-    async function fetchDataAndRender() {
-        const picker = document.getElementById('month-picker').value;
-        if (!picker) return;
+        async function fetchDataAndRender() {
+            const picker = document.getElementById('month-picker').value;
+            if (!picker) return;
 
-        document.getElementById('loading').style.display = 'block';
-        document.getElementById('calendar-container').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('calendar-container').style.display = 'none';
 
-        const [year, month] = picker.split('-').map(Number);
-        const targetMonthStr = month + "월";
-        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-        const lastDateObj = new Date(year, month, 0);
-        const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDateObj.getDate()).padStart(2, '0')}`;
+            const [year, month] = picker.split('-').map(Number);
+            const targetMonthStr = month + "월";
+            const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+            const lastDateObj = new Date(year, month, 0);
+            const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDateObj.getDate()).padStart(2, '0')}`;
 
-        try {
-            const { data: apps } = await supabaseClient.from('applications').select('*').eq('target_month', targetMonthStr);
-            applicationData = apps || [];
+            try {
+                const { data: apps } = await supabaseClient.from('applications').select('*').eq('target_month', targetMonthStr);
+                applicationData = apps || [];
 
-        const { data: logs } = await supabaseClient.from('attendance_logs')
-                .select('date, status, stu_id, history') // 👈 history 추가
-                .gte('date', startDate)
-                .lte('date', endDate);
-            attendanceLogsData = logs || [];
+                const { data: logs } = await supabaseClient.from('attendance_logs')
+                    .select('date, status, stu_id, history') // 👈 history 추가
+                    .gte('date', startDate)
+                    .lte('date', endDate);
+                attendanceLogsData = logs || [];
 
-const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
-            if (cal && cal.value) {
-                if (cal.value.data) calendarSchedule.data = JSON.parse(cal.value.data);
-                if (cal.value.defaultDays) calendarSchedule.defaultDays = cal.value.defaultDays;
+                const { data: cal } = await supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle();
+                if (cal && cal.value) {
+                    if (cal.value.data) calendarSchedule.data = JSON.parse(cal.value.data);
+                    if (cal.value.defaultDays) calendarSchedule.defaultDays = cal.value.defaultDays;
+                }
+
+                // 🌟 추가: 운영 시간 및 최소 인정 기준(분) 데이터 불러오기
+                const { data: sched } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+                if (sched && sched.value) {
+                    currentSchedule.t1 = sched.value.t1 || "16:00";
+                    currentSchedule.t2 = sched.value.t2 || "18:50";
+                    currentSchedule.t3 = sched.value.t3 || "20:10";
+                    currentSchedule.t1_req = parseInt(sched.value.t1_req) || 0;
+                    currentSchedule.t2_req = parseInt(sched.value.t2_req) || 0;
+                    currentSchedule.t3_req = parseInt(sched.value.t3_req) || 0;
+                }
+
+                renderCalendar(year, month, lastDateObj.getDate());
+                renderClassStats(year, month, lastDateObj.getDate());
+                renderPersonalStats(year, month, lastDateObj.getDate());
+                // 👇 새로 추가: 일자 현황 렌더링 함수 호출
+                renderDailyMatrix(year, month, lastDateObj.getDate());
+
+            } catch (error) {
+                console.error("데이터 로딩 오류:", error);
+                alert("통계 데이터를 불러오는 중 오류가 발생했습니다.");
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('calendar-container').style.display = 'block';
             }
-
-            // 🌟 추가: 운영 시간 및 최소 인정 기준(분) 데이터 불러오기
-            const { data: sched } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
-            if (sched && sched.value) {
-                currentSchedule.t1 = sched.value.t1 || "16:00";
-                currentSchedule.t2 = sched.value.t2 || "18:50";
-                currentSchedule.t3 = sched.value.t3 || "20:10";
-                currentSchedule.t1_req = parseInt(sched.value.t1_req) || 0;
-                currentSchedule.t2_req = parseInt(sched.value.t2_req) || 0;
-                currentSchedule.t3_req = parseInt(sched.value.t3_req) || 0;
-            }
-
-            renderCalendar(year, month, lastDateObj.getDate());
-            renderClassStats(year, month, lastDateObj.getDate());
-            renderPersonalStats(year, month, lastDateObj.getDate());
-            // 👇 새로 추가: 일자 현황 렌더링 함수 호출
-            renderDailyMatrix(year, month, lastDateObj.getDate());
-
-        } catch (error) {
-            console.error("데이터 로딩 오류:", error);
-            alert("통계 데이터를 불러오는 중 오류가 발생했습니다.");
-        } finally {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('calendar-container').style.display = 'block';
-        }
-    }
-
-
-// [수정] 연간 데이터 통합 집계 함수 (속도 및 정확도 개선)
-async function fetchYearlyData() {
-    const year = parseInt(document.getElementById('yearly-year').value);
-    if (!year) return;
-
-    document.getElementById('loading').style.display = 'block';
-    const tbody = document.getElementById('yearly-stat-body');
-    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding:40px;"><b>데이터를 통합 분석 중입니다... ⏳</b></td></tr>`;
-
-    try {
-        // 1. 필요한 설정값 동시 로드
-        const [{ data: cal }, { data: sched }] = await Promise.all([
-            supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle(),
-            supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle()
-        ]);
-
-        let calSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
-        if (cal?.value) {
-            calSchedule.data = JSON.parse(cal.value.data || "{}");
-            calSchedule.defaultDays = cal.value.defaultDays || [1, 2, 3, 4, 5];
         }
 
-        // 2. 1년치(3월~12월) 데이터 통째로 가져오기
-        const targetMonths = Array.from({ length: 10 }, (_, i) => `${i + 3}월`);
-        const [appsRes, logsRes] = await Promise.all([
-            supabaseClient.from('applications').select('*').in('target_month', targetMonths),
-            supabaseClient.from('attendance_logs').select('date, status, stu_id, history').gte('date', `${year}-03-01`).lte('date', `${year}-12-31`)
-        ]);
 
-        const allApps = appsRes.data || [];
-        const allLogs = logsRes.data || [];
-        let yearlyStats = {};
+        // [수정] 연간 데이터 통합 집계 함수 (속도 및 정확도 개선)
+        async function fetchYearlyData() {
+            const year = parseInt(document.getElementById('yearly-year').value);
+            if (!year) return;
 
-        // 3. 월별 루프 (메모리 내 계산)
-        for (let m = 3; m <= 12; m++) {
-            const monthPrefix = `${year}-${String(m).padStart(2, '0')}`;
-            const monthApps = allApps.filter(a => a.target_month === `${m}월`);
-            const monthLogs = allLogs.filter(l => l.date?.startsWith(monthPrefix));
+            document.getElementById('loading').style.display = 'block';
+            const tbody = document.getElementById('yearly-stat-body');
+            tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding:40px;"><b>데이터를 통합 분석 중입니다... ⏳</b></td></tr>`;
 
-            const mStats = calculateMonthStats(year, m, monthApps, monthLogs, calSchedule);
+            try {
+                // 1. 필요한 설정값 동시 로드
+                const [{ data: cal }, { data: sched }] = await Promise.all([
+                    supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle(),
+                    supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle()
+                ]);
 
-            for (let stuId in mStats) {
-                if (!yearlyStats[stuId]) {
-                    yearlyStats[stuId] = { 
-                        stu_id: stuId, 
-                        stu_name: mStats[stuId].stu_name, 
-                        total: 0,
-                        ...Object.fromEntries(Array.from({length:10}, (_,i)=>[`m${i+3}`, 0]))
+                let calSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
+                if (cal?.value) {
+                    calSchedule.data = JSON.parse(cal.value.data || "{}");
+                    calSchedule.defaultDays = cal.value.defaultDays || [1, 2, 3, 4, 5];
+                }
+
+                // 2. 1년치(3월~12월) 데이터 통째로 가져오기
+                const targetMonths = Array.from({ length: 10 }, (_, i) => `${i + 3}월`);
+                const [appsRes, logsRes] = await Promise.all([
+                    supabaseClient.from('applications').select('*').in('target_month', targetMonths),
+                    supabaseClient.from('attendance_logs').select('date, status, stu_id, history').gte('date', `${year}-03-01`).lte('date', `${year}-12-31`)
+                ]);
+
+                const allApps = appsRes.data || [];
+                const allLogs = logsRes.data || [];
+                let yearlyStats = {};
+
+                // 3. 월별 루프 (메모리 내 계산)
+                for (let m = 3; m <= 12; m++) {
+                    const monthPrefix = `${year}-${String(m).padStart(2, '0')}`;
+                    const monthApps = allApps.filter(a => a.target_month === `${m}월`);
+                    const monthLogs = allLogs.filter(l => l.date?.startsWith(monthPrefix));
+
+                    const mStats = calculateMonthStats(year, m, monthApps, monthLogs, calSchedule);
+
+                    for (let stuId in mStats) {
+                        if (!yearlyStats[stuId]) {
+                            yearlyStats[stuId] = {
+                                stu_id: stuId,
+                                stu_name: mStats[stuId].stu_name,
+                                total: 0,
+                                ...Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`m${i + 3}`, 0]))
+                            };
+                        }
+                        yearlyStats[stuId][`m${m}`] = mStats[stuId].attendedTimes;
+                        yearlyStats[stuId].total += mStats[stuId].attendedTimes;
+                    }
+                }
+
+                globalYearlyStatsData = Object.values(yearlyStats);
+                renderYearlyTable();
+
+            } catch (e) {
+                console.error("집계 오류:", e);
+                tbody.innerHTML = `<tr><td colspan="13" style="color:red; padding:20px;">데이터 로드 실패</td></tr>`;
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // [보정] 타임 판정 로직 (모달과 통계 일치화)
+        function getRecognizedTimes(log, appliedTimesStr) {
+            if (!log || log.status === "미입실" || log.status === "귀가(누락)") return 0;
+            if (!appliedTimesStr) return 0;
+
+            let appliedArray = appliedTimesStr.split(',').map(v => v.trim()).filter(v => v);
+            let recognizedCount = 0;
+
+            // 1. 교사 수동 인정 체크 (가장 우선)
+            if (log.history) {
+                let manualSet = new Set();
+                log.history.forEach(h => {
+                    appliedArray.forEach(t => {
+                        if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`)) manualSet.add(t);
+                    });
+                });
+                if (manualSet.size > 0) return manualSet.size;
+            }
+
+            // 2. 시간 기반 체크 (키오스크 귀가)
+            if (log.status === "귀가" && log.history) {
+                let lastTimeStr = "";
+                for (let i = log.history.length - 1; i >= 0; i--) {
+                    if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
+                        const match = log.history[i].match(/(\d{2}:\d{2})/);
+                        if (match) { lastTimeStr = match[1]; break; }
+                    }
+                }
+
+                if (lastTimeStr) {
+                    const [h, m] = lastTimeStr.split(':').map(Number);
+                    const finishMin = h * 60 + m;
+                    const timeToMin = (t) => { const [sh, sm] = t.split(':').map(Number); return sh * 60 + sm; };
+
+                    appliedArray.forEach(t => {
+                        const startStr = currentSchedule[`t${t}`];
+                        const reqMin = currentSchedule[`t${t}_req`] || 0;
+                        if (startStr && finishMin >= (timeToMin(startStr) + reqMin)) recognizedCount++;
+                    });
+                }
+            } else if (["입실", "복귀", "외출"].includes(log.status)) {
+                // 현재 야자실에 있는(진행 중인) 상태이므로, 
+                // 학생이 오늘 신청한 전체 타임 개수만큼을 '예상 출석'으로 모두 인정합니다.
+                recognizedCount += appliedArray.length;
+            }
+
+            return recognizedCount;
+        }
+
+
+
+
+
+
+
+        // ---------- [🌟 새로 추가된 개인별 일자 현황 핵심 함수들 🌟] ---------- //
+        function renderDailyMatrix(year, month, lastDate) {
+            matrixLastDate = lastDate;
+            const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            let matrixStats = {};
+
+            // 1. 학생별 데이터 구조 초기화
+            applicationData.forEach(app => {
+                const stuIdStr = String(app.stu_id);
+                if (stuIdStr.length < 4) return;
+                const classCode = stuIdStr.slice(0, -2);
+                const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
+
+                if (!matrixStats[stuIdStr]) {
+                    matrixStats[stuIdStr] = {
+                        stu_id: stuIdStr,
+                        stu_name: app.stu_name || '-',
+                        className: className,
+                        dailyCounts: new Array(lastDate).fill(0), // 1일부터 말일까지 배열 0으로 세팅
+                        totalCount: 0
                     };
                 }
-                yearlyStats[stuId][`m${m}`] = mStats[stuId].attendedTimes;
-                yearlyStats[stuId].total += mStats[stuId].attendedTimes;
-            }
-        }
-
-        globalYearlyStatsData = Object.values(yearlyStats);
-        renderYearlyTable();
-
-    } catch (e) {
-        console.error("집계 오류:", e);
-        tbody.innerHTML = `<tr><td colspan="13" style="color:red; padding:20px;">데이터 로드 실패</td></tr>`;
-    } finally {
-        document.getElementById('loading').style.display = 'none';
-    }
-}
-
-// [보정] 타임 판정 로직 (모달과 통계 일치화)
-function getRecognizedTimes(log, appliedTimesStr) {
-    if (!log || log.status === "미입실" || log.status === "귀가(누락)") return 0;
-    if (!appliedTimesStr) return 0;
-
-    let appliedArray = appliedTimesStr.split(',').map(v => v.trim()).filter(v => v);
-    let recognizedCount = 0;
-
-    // 1. 교사 수동 인정 체크 (가장 우선)
-    if (log.history) {
-        let manualSet = new Set();
-        log.history.forEach(h => {
-            appliedArray.forEach(t => {
-                if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`)) manualSet.add(t);
             });
-        });
-        if (manualSet.size > 0) return manualSet.size;
-    }
 
-    // 2. 시간 기반 체크 (키오스크 귀가)
-    if (log.status === "귀가" && log.history) {
-        let lastTimeStr = "";
-        for (let i = log.history.length - 1; i >= 0; i--) {
-            if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
-                const match = log.history[i].match(/(\d{2}:\d{2})/);
-                if (match) { lastTimeStr = match[1]; break; }
+            // 2. 일자별 출석 타임 계산
+            for (let d = 1; d <= lastDate; d++) {
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dayIdx = new Date(year, month - 1, d).getDay();
+                const dayKey = daysEng[dayIdx];
+
+                let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
+                if (calendarSchedule.data[dateStr] !== undefined) {
+                    isOperating = calendarSchedule.data[dateStr].active;
+                }
+
+                if (isOperating) {
+                    const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
+
+                    applicationData.forEach(app => {
+                        if (app[dayKey]) {
+                            const stuIdStr = String(app.stu_id);
+                            if (stuIdStr.length < 4) return;
+
+                            const stat = matrixStats[stuIdStr];
+                            if (!stat) return;
+
+                            const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
+                            const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
+
+                            // 미입실(결석)이 아니라면 해당 일자에 타임수 누적
+                            const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
+                            if (recognizedCount > 0) {
+                                stat.dailyCounts[d - 1] += recognizedCount;
+                                stat.totalCount += recognizedCount;
+                            }
+
+
+                        }
+                    });
+                }
             }
-        }
 
-        if (lastTimeStr) {
-            const [h, m] = lastTimeStr.split(':').map(Number);
-            const finishMin = h * 60 + m;
-            const timeToMin = (t) => { const [sh, sm] = t.split(':').map(Number); return sh * 60 + sm; };
+            globalDailyMatrixData = Object.values(matrixStats);
 
-            appliedArray.forEach(t => {
-                const startStr = currentSchedule[`t${t}`];
-                const reqMin = currentSchedule[`t${t}_req`] || 0;
-                if (startStr && finishMin >= (timeToMin(startStr) + reqMin)) recognizedCount++;
+            // 3. 반별 필터 옵션 생성
+            let classesSet = new Set();
+            globalDailyMatrixData.forEach(stat => classesSet.add(stat.className));
+            const sortedClassNames = Array.from(classesSet).sort();
+
+            const classFilter = document.getElementById('matrix-class-filter');
+            const currentSelectedClass = classFilter.value;
+            let optionsHtml = '<option value="all">전체 보기</option>';
+            sortedClassNames.forEach(c => {
+                optionsHtml += `<option value="${c}">${c}</option>`;
             });
-        }
-    } else if (["입실", "복귀", "외출"].includes(log.status)) {
-        // 현재 진행 중인 학생은 신청한 타임 중 이미 지난 타임들만 인정
-        // (이 부분은 통계 시점에 따라 0으로 둘지 선택 가능)
-        return 0; 
-    }
-
-    return recognizedCount;
-}
-
-
-
-
-
-
-
-// ---------- [🌟 새로 추가된 개인별 일자 현황 핵심 함수들 🌟] ---------- //
-    function renderDailyMatrix(year, month, lastDate) {
-        matrixLastDate = lastDate;
-        const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-        let matrixStats = {};
-
-        // 1. 학생별 데이터 구조 초기화
-        applicationData.forEach(app => {
-            const stuIdStr = String(app.stu_id);
-            if (stuIdStr.length < 4) return;
-            const classCode = stuIdStr.slice(0, -2);
-            const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
-
-            if (!matrixStats[stuIdStr]) {
-                matrixStats[stuIdStr] = {
-                    stu_id: stuIdStr,
-                    stu_name: app.stu_name || '-',
-                    className: className,
-                    dailyCounts: new Array(lastDate).fill(0), // 1일부터 말일까지 배열 0으로 세팅
-                    totalCount: 0
-                };
-            }
-        });
-
-        // 2. 일자별 출석 타임 계산
-        for (let d = 1; d <= lastDate; d++) {
-            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const dayIdx = new Date(year, month - 1, d).getDay();
-            const dayKey = daysEng[dayIdx];
-
-            let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
-            if (calendarSchedule.data[dateStr] !== undefined) {
-                isOperating = calendarSchedule.data[dateStr].active;
+            classFilter.innerHTML = optionsHtml;
+            if (sortedClassNames.includes(currentSelectedClass)) {
+                classFilter.value = currentSelectedClass;
+            } else {
+                classFilter.value = "all";
             }
 
-            if (isOperating) {
-                const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
-                
-                applicationData.forEach(app => {
-                    if (app[dayKey]) {
-                        const stuIdStr = String(app.stu_id);
-                        if (stuIdStr.length < 4) return;
-                        
-                        const stat = matrixStats[stuIdStr];
-                        if (!stat) return;
-                        
-                        const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
-                        const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
-                        
-                        // 미입실(결석)이 아니라면 해당 일자에 타임수 누적
-const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
-if (recognizedCount > 0) {
-    stat.dailyCounts[d - 1] += recognizedCount;
-    stat.totalCount += recognizedCount;
-}
-
-
-                    }
-                });
-            }
-        }
-
-        globalDailyMatrixData = Object.values(matrixStats);
-
-        // 3. 반별 필터 옵션 생성
-        let classesSet = new Set();
-        globalDailyMatrixData.forEach(stat => classesSet.add(stat.className));
-        const sortedClassNames = Array.from(classesSet).sort();
-        
-        const classFilter = document.getElementById('matrix-class-filter');
-        const currentSelectedClass = classFilter.value; 
-        let optionsHtml = '<option value="all">전체 보기</option>';
-        sortedClassNames.forEach(c => {
-            optionsHtml += `<option value="${c}">${c}</option>`;
-        });
-        classFilter.innerHTML = optionsHtml;
-        if (sortedClassNames.includes(currentSelectedClass)) {
-            classFilter.value = currentSelectedClass;
-        } else {
-            classFilter.value = "all";
-        }
-
-        // 4. 테이블 헤더(1일~말일) 동적 생성
-        let theadHtml = `<tr>
+            // 4. 테이블 헤더(1일~말일) 동적 생성
+            let theadHtml = `<tr>
             <th style="width: 70px; position:sticky; left:0; background:#f8f9fa; z-index:2;">학급</th>
             <th style="width: 50px; position:sticky; left:70px; background:#f8f9fa; z-index:2;">학번</th>
             <th style="width: 60px; position:sticky; left:120px; background:#f8f9fa; z-index:2; border-right:2px solid #ccc;">이름</th>`;
-        
-        for(let d = 1; d <= lastDate; d++) {
-            const dayIdx = new Date(year, month - 1, d).getDay();
-            let color = "#495057";
-            if(dayIdx === 0) color = "#dc3545"; // 일요일 빨강
-            if(dayIdx === 6) color = "#0d6efd"; // 토요일 파랑
-            theadHtml += `<th style="width: 25px; padding: 5px; color: ${color}; font-size: 11px;">${d}</th>`;
-        }
-        theadHtml += `<th style="width: 50px; color: var(--primary); background:#eef6ff; border-left:2px solid #b6d4fe;">총계</th></tr>`;
-        document.getElementById('matrix-thead').innerHTML = theadHtml;
 
-        applyDailyMatrixFilter();
-    }
-
-// 필터 및 화면 렌더링 함수
-    function applyDailyMatrixFilter() {
-        const tbody = document.getElementById('matrix-tbody');
-        const classValue = document.getElementById('matrix-class-filter').value;
-        // 👇 새로 추가: 정렬 기준 값 가져오기
-        const sortValue = document.getElementById('matrix-sort-filter') ? document.getElementById('matrix-sort-filter').value : 'id_asc';
-        
-        // 원본 데이터를 해치지 않기 위해 배열 복사
-        let filteredData = [...globalDailyMatrixData]; 
-        
-        if (classValue !== "all") {
-            filteredData = filteredData.filter(stat => stat.className === classValue);
-        }
-
-        // 👇 새로 추가: 선택한 기준에 따른 정렬 로직
-        filteredData.sort((a, b) => {
-            if (sortValue === 'total_desc') {
-                // 총계가 다르면 총계 내림차순(높은 순)
-                if (b.totalCount !== a.totalCount) return b.totalCount - a.totalCount; 
-                // 총계가 같으면 학번 오름차순
-                return parseInt(a.stu_id) - parseInt(b.stu_id); 
+            for (let d = 1; d <= lastDate; d++) {
+                const dayIdx = new Date(year, month - 1, d).getDay();
+                let color = "#495057";
+                if (dayIdx === 0) color = "#dc3545"; // 일요일 빨강
+                if (dayIdx === 6) color = "#0d6efd"; // 토요일 파랑
+                theadHtml += `<th style="width: 25px; padding: 5px; color: ${color}; font-size: 11px;">${d}</th>`;
             }
-            // 기본값: 학번 오름차순
-            return parseInt(a.stu_id) - parseInt(b.stu_id);
-        });
+            theadHtml += `<th style="width: 50px; color: var(--primary); background:#eef6ff; border-left:2px solid #b6d4fe;">총계</th></tr>`;
+            document.getElementById('matrix-thead').innerHTML = theadHtml;
 
-        let html = "";
-        if (filteredData.length === 0) {
-            html = `<tr><td colspan="${matrixLastDate + 4}" style="color:#6c757d; padding:30px; text-align:center;">조건에 맞는 학생 데이터가 없습니다.</td></tr>`;
-        } else {
-            filteredData.forEach(stat => {
-                html += `<tr>
+            applyDailyMatrixFilter();
+        }
+
+        // 필터 및 화면 렌더링 함수
+        function applyDailyMatrixFilter() {
+            const tbody = document.getElementById('matrix-tbody');
+            const classValue = document.getElementById('matrix-class-filter').value;
+            // 👇 새로 추가: 정렬 기준 값 가져오기
+            const sortValue = document.getElementById('matrix-sort-filter') ? document.getElementById('matrix-sort-filter').value : 'id_asc';
+
+            // 원본 데이터를 해치지 않기 위해 배열 복사
+            let filteredData = [...globalDailyMatrixData];
+
+            if (classValue !== "all") {
+                filteredData = filteredData.filter(stat => stat.className === classValue);
+            }
+
+            // 👇 새로 추가: 선택한 기준에 따른 정렬 로직
+            filteredData.sort((a, b) => {
+                if (sortValue === 'total_desc') {
+                    // 총계가 다르면 총계 내림차순(높은 순)
+                    if (b.totalCount !== a.totalCount) return b.totalCount - a.totalCount;
+                    // 총계가 같으면 학번 오름차순
+                    return parseInt(a.stu_id) - parseInt(b.stu_id);
+                }
+                // 기본값: 학번 오름차순
+                return parseInt(a.stu_id) - parseInt(b.stu_id);
+            });
+
+            let html = "";
+            if (filteredData.length === 0) {
+                html = `<tr><td colspan="${matrixLastDate + 4}" style="color:#6c757d; padding:30px; text-align:center;">조건에 맞는 학생 데이터가 없습니다.</td></tr>`;
+            } else {
+                filteredData.forEach(stat => {
+                    html += `<tr>
                     <td style="position:sticky; left:0; background:white; z-index:1;">${stat.className}</td>
                     <td style="position:sticky; left:70px; background:white; z-index:1; font-weight:bold;">${stat.stu_id}</td>
           
                     <td style="position:sticky; left:120px; background:white; z-index:1; font-weight:bold; border-right:2px solid #eee; cursor:pointer; color:var(--primary); text-decoration:underline;" onclick="openStudentCalendar('${stat.stu_id}', '${stat.stu_name}')">${stat.stu_name} 🔍</td>`;
 
-                for(let i = 0; i < matrixLastDate; i++) {
-                    const count = stat.dailyCounts[i];
-                    // 숫자가 0이면 회색 하이픈(-), 있으면 진한 숫자 표기
-                    const display = count > 0 ? `<b style="color:#333;">${count}</b>` : `<span style="color:#ddd;">-</span>`;
-                    html += `<td style="padding:6px 2px;">${display}</td>`;
-                }
-                
-                html += `<td style="font-weight:900; color:#0d6efd; background-color:#f4f8ff; border-left:2px solid #b6d4fe;">${stat.totalCount}</td>
+                    for (let i = 0; i < matrixLastDate; i++) {
+                        const count = stat.dailyCounts[i];
+                        // 숫자가 0이면 회색 하이픈(-), 있으면 진한 숫자 표기
+                        const display = count > 0 ? `<b style="color:#333;">${count}</b>` : `<span style="color:#ddd;">-</span>`;
+                        html += `<td style="padding:6px 2px;">${display}</td>`;
+                    }
+
+                    html += `<td style="font-weight:900; color:#0d6efd; background-color:#f4f8ff; border-left:2px solid #b6d4fe;">${stat.totalCount}</td>
                 </tr>`;
-            });
+                });
+            }
+            tbody.innerHTML = html;
         }
-        tbody.innerHTML = html;
-    }
 
 
 
-    // 🌟 탭을 전환할 때 숨겨야 할 요소들 제어
-    function switchTab(tabId, btn) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        btn.classList.add('active');
+        // 🌟 탭을 전환할 때 숨겨야 할 요소들 제어
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
 
-        // 연간 탭일 때는 월별 조회 컨트롤(month-picker)을 숨깁니다.
-        if (tabId === 'tab-yearly') {
-            document.getElementById('monthly-controls').style.display = 'none';
-        } else {
-            document.getElementById('monthly-controls').style.display = 'flex';
+            // 연간 탭일 때는 월별 조회 컨트롤(month-picker)을 숨깁니다.
+            if (tabId === 'tab-yearly') {
+                document.getElementById('monthly-controls').style.display = 'none';
+            } else {
+                document.getElementById('monthly-controls').style.display = 'flex';
+            }
         }
-    }
 
-    // ---------- [기존 함수들 (달력, 반별, 개인별 통계)] ---------- //
-    function renderCalendar(year, month, lastDate) {
-        const firstDayIdx = new Date(year, month - 1, 1).getDay();
-        const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-        
-        let html = `
+        // ---------- [기존 함수들 (달력, 반별, 개인별 통계)] ---------- //
+        function renderCalendar(year, month, lastDate) {
+            const firstDayIdx = new Date(year, month - 1, 1).getDay();
+            const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+            let html = `
             <table class="stat-calendar">
                 <thead>
                     <tr>
@@ -659,97 +983,97 @@ if (recognizedCount > 0) {
                 </thead>
                 <tbody><tr>`;
 
-        for (let i = 0; i < firstDayIdx; i++) {
-            html += `<td></td>`;
-        }
-
-        for (let d = 1; d <= lastDate; d++) {
-            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const dayIdx = new Date(year, month - 1, d).getDay();
-            const dayKey = daysEng[dayIdx];
-
-            let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
-            let reason = "";
-            if (calendarSchedule.data[dateStr] !== undefined) {
-                isOperating = calendarSchedule.data[dateStr].active;
-                reason = calendarSchedule.data[dateStr].reason;
+            for (let i = 0; i < firstDayIdx; i++) {
+                html += `<td></td>`;
             }
 
-            let dateClass = "date-num";
-            if (dayIdx === 0) dateClass += " sunday";
-            if (dayIdx === 6) dateClass += " saturday";
+            for (let d = 1; d <= lastDate; d++) {
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dayIdx = new Date(year, month - 1, d).getDay();
+                const dayKey = daysEng[dayIdx];
 
-            const realToday = new Date().toLocaleDateString('en-CA');
-            let tdClass = dateStr === realToday ? "today-cell" : "";
+                let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
+                let reason = "";
+                if (calendarSchedule.data[dateStr] !== undefined) {
+                    isOperating = calendarSchedule.data[dateStr].active;
+                    reason = calendarSchedule.data[dateStr].reason;
+                }
 
-            html += `<td class="${tdClass}"><span class="${dateClass}">${d}</span>`;            
+                let dateClass = "date-num";
+                if (dayIdx === 0) dateClass += " sunday";
+                if (dayIdx === 6) dateClass += " saturday";
 
-            if (!isOperating) {
-                html += `<div class="box-holiday">${reason || "야자 미운영"}</div>`;
-            } else {
-                let t0 = 0, t1 = 0, t2 = 0, t3 = 0;
-                applicationData.forEach(app => {
-                    if (app[dayKey]) {
-                        if (app[dayKey].includes('0')) t0++;
-                        if (app[dayKey].includes('1')) t1++;
-                        if (app[dayKey].includes('2')) t2++;
-                        if (app[dayKey].includes('3')) t3++;
-                    }
-                });
+                const realToday = new Date().toLocaleDateString('en-CA');
+                let tdClass = dateStr === realToday ? "today-cell" : "";
 
-                let currentPresent = 0;
-                let finalResult = 0;
-                let absent = 0;
+                html += `<td class="${tdClass}"><span class="${dateClass}">${d}</span>`;
 
-                const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
-                
-                dayLogs.forEach(log => {
-                    if (log.status === "입실" || log.status === "복귀" || log.status === "외출") {
-                        currentPresent++;
-                    } else if (log.status === "귀가") {
-                        finalResult++;
-                    } else {
-                        absent++;
-                    }
-                });
-
-                if ((t0+t1+t2+t3) === 0 && dayLogs.length === 0) {
-                    html += `<div style="text-align:center; color:#adb5bd; font-size:11px; margin-top:20px;">신청 데이터 없음</div>`;
+                if (!isOperating) {
+                    html += `<div class="box-holiday">${reason || "야자 미운영"}</div>`;
                 } else {
-                    const todayStr = new Date().toLocaleDateString('en-CA');
-                    let row3Label = "현재";
-                    let row3Color = "#198754";
-
-                    if (dateStr < todayStr) {
-                        row3Label = "결과";
-                        row3Color = "#6c757d";
-                    } else if (dateStr > todayStr) {
-                        row3Label = "대기";
-                        row3Color = "#adb5bd";
-                    }
-
-                    let c0 = 0, c1 = 0, c2 = 0, c3 = 0; 
-                    let err0 = 0, err1 = 0, err2 = 0, err3 = 0;
-
+                    let t0 = 0, t1 = 0, t2 = 0, t3 = 0;
                     applicationData.forEach(app => {
                         if (app[dayKey]) {
-                            const studentLog = dayLogs.find(log => String(log.stu_id) === String(app.stu_id));
-                            if (studentLog && studentLog.status !== "미입실") {
-                                const isError = (studentLog.status === "귀가(누락)");
-                                if (app[dayKey].includes('0')) { c0++; if(isError) err0++; }
-                                if (app[dayKey].includes('1')) { c1++; if(isError) err1++; }
-                                if (app[dayKey].includes('2')) { c2++; if(isError) err2++; }
-                                if (app[dayKey].includes('3')) { c3++; if(isError) err3++; }
-                            }
+                            if (app[dayKey].includes('0')) t0++;
+                            if (app[dayKey].includes('1')) t1++;
+                            if (app[dayKey].includes('2')) t2++;
+                            if (app[dayKey].includes('3')) t3++;
                         }
                     });
 
-                    let c0Class = err0 > 0 ? "status-error" : "status-val";
-                    let c1Class = err1 > 0 ? "status-error" : "status-val"; 
-                    let c2Class = err2 > 0 ? "status-error" : "status-val";
-                    let c3Class = err3 > 0 ? "status-error" : "status-val";
+                    let currentPresent = 0;
+                    let finalResult = 0;
+                    let absent = 0;
 
-                    html += `
+                    const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
+
+                    dayLogs.forEach(log => {
+                        if (log.status === "입실" || log.status === "복귀" || log.status === "외출") {
+                            currentPresent++;
+                        } else if (log.status === "귀가") {
+                            finalResult++;
+                        } else {
+                            absent++;
+                        }
+                    });
+
+                    if ((t0 + t1 + t2 + t3) === 0 && dayLogs.length === 0) {
+                        html += `<div style="text-align:center; color:#adb5bd; font-size:11px; margin-top:20px;">신청 데이터 없음</div>`;
+                    } else {
+                        const todayStr = new Date().toLocaleDateString('en-CA');
+                        let row3Label = "현재";
+                        let row3Color = "#198754";
+
+                        if (dateStr < todayStr) {
+                            row3Label = "결과";
+                            row3Color = "#6c757d";
+                        } else if (dateStr > todayStr) {
+                            row3Label = "대기";
+                            row3Color = "#adb5bd";
+                        }
+
+                        let c0 = 0, c1 = 0, c2 = 0, c3 = 0;
+                        let err0 = 0, err1 = 0, err2 = 0, err3 = 0;
+
+                        applicationData.forEach(app => {
+                            if (app[dayKey]) {
+                                const studentLog = dayLogs.find(log => String(log.stu_id) === String(app.stu_id));
+                                if (studentLog && studentLog.status !== "미입실") {
+                                    const isError = (studentLog.status === "귀가(누락)");
+                                    if (app[dayKey].includes('0')) { c0++; if (isError) err0++; }
+                                    if (app[dayKey].includes('1')) { c1++; if (isError) err1++; }
+                                    if (app[dayKey].includes('2')) { c2++; if (isError) err2++; }
+                                    if (app[dayKey].includes('3')) { c3++; if (isError) err3++; }
+                                }
+                            }
+                        });
+
+                        let c0Class = err0 > 0 ? "status-error" : "status-val";
+                        let c1Class = err1 > 0 ? "status-error" : "status-val";
+                        let c2Class = err2 > 0 ? "status-error" : "status-val";
+                        let c3Class = err3 > 0 ? "status-error" : "status-val";
+
+                        html += `
                         <div class="stat-box">
                             <div class="apply-grid">
                                 <div class="grid-title">구분</div>
@@ -781,286 +1105,286 @@ if (recognizedCount > 0) {
                             </div>
                         </div>
                     `;
+                    }
+                }
+                html += `</td>`;
+                if ((firstDayIdx + d) % 7 === 0) html += `</tr><tr>`;
+            }
+
+            const lastDayIdx = new Date(year, month - 1, lastDate).getDay();
+            if (lastDayIdx < 6) {
+                for (let i = lastDayIdx + 1; i <= 6; i++) {
+                    html += `<td></td>`;
                 }
             }
-            html += `</td>`;
-            if ((firstDayIdx + d) % 7 === 0) html += `</tr><tr>`;
+
+            html += `</tr></tbody></table>`;
+            document.getElementById('calendar-container').innerHTML = html;
         }
 
-        const lastDayIdx = new Date(year, month - 1, lastDate).getDay();
-        if (lastDayIdx < 6) {
-            for (let i = lastDayIdx + 1; i <= 6; i++) {
-                html += `<td></td>`;
-            }
-        }
+        function renderClassStats(year, month, lastDate) {
+            const tbody = document.getElementById('class-stat-body');
+            tbody.innerHTML = '';
 
-        html += `</tr></tbody></table>`;
-        document.getElementById('calendar-container').innerHTML = html;
-    }
-
-    function renderClassStats(year, month, lastDate) {
-        const tbody = document.getElementById('class-stat-body');
-        tbody.innerHTML = '';
-
-        if (!applicationData || applicationData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="color:#6c757d; padding:20px;">해당 월의 신청 데이터가 없습니다.</td></tr>`;
-            return;
-        }
-
-        let classStats = {};
-        const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-
-        applicationData.forEach(app => {
-            const stuIdStr = String(app.stu_id);
-            if (stuIdStr.length < 4) return;
-
-            const classCode = stuIdStr.slice(0, -2);
-            const grade = classCode.substring(0, 1);
-            const classNum = classCode.substring(1);
-            const className = `${grade}학년 ${classNum}반`;
-
-            if (!classStats[className]) {
-                classStats[className] = { students: new Set(), totalTimes: 0, attendedTimes: 0, orderCode: parseInt(classCode) };
-            }
-            classStats[className].students.add(stuIdStr);
-        });
-
-        for (let d = 1; d <= lastDate; d++) {
-            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const dayIdx = new Date(year, month - 1, d).getDay();
-            const dayKey = daysEng[dayIdx];
-
-            let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
-            if (calendarSchedule.data[dateStr] !== undefined) {
-                isOperating = calendarSchedule.data[dateStr].active;
+            if (!applicationData || applicationData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="color:#6c757d; padding:20px;">해당 월의 신청 데이터가 없습니다.</td></tr>`;
+                return;
             }
 
-            if (isOperating) {
-                const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
-                
-                applicationData.forEach(app => {
-                    if (app[dayKey]) {
-                        const stuIdStr = String(app.stu_id);
-                        if (stuIdStr.length < 4) return;
-                        
-                        const classCode = stuIdStr.slice(0, -2);
-                        const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
-                        
-                        const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
-                        if (classStats[className]) {
-                            classStats[className].totalTimes += timesCount;
-                            
-                            const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
+            let classStats = {};
+            const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+            applicationData.forEach(app => {
+                const stuIdStr = String(app.stu_id);
+                if (stuIdStr.length < 4) return;
+
+                const classCode = stuIdStr.slice(0, -2);
+                const grade = classCode.substring(0, 1);
+                const classNum = classCode.substring(1);
+                const className = `${grade}학년 ${classNum}반`;
+
+                if (!classStats[className]) {
+                    classStats[className] = { students: new Set(), totalTimes: 0, attendedTimes: 0, orderCode: parseInt(classCode) };
+                }
+                classStats[className].students.add(stuIdStr);
+            });
+
+            for (let d = 1; d <= lastDate; d++) {
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dayIdx = new Date(year, month - 1, d).getDay();
+                const dayKey = daysEng[dayIdx];
+
+                let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
+                if (calendarSchedule.data[dateStr] !== undefined) {
+                    isOperating = calendarSchedule.data[dateStr].active;
+                }
+
+                if (isOperating) {
+                    const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
+
+                    applicationData.forEach(app => {
+                        if (app[dayKey]) {
+                            const stuIdStr = String(app.stu_id);
+                            if (stuIdStr.length < 4) return;
+
+                            const classCode = stuIdStr.slice(0, -2);
+                            const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
+
+                            const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
+                            if (classStats[className]) {
+                                classStats[className].totalTimes += timesCount;
+
+                                const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
 
 
-const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
-if (recognizedCount > 0) {
-    classStats[className].attendedTimes += recognizedCount;
-}
+                                const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
+                                if (recognizedCount > 0) {
+                                    classStats[className].attendedTimes += recognizedCount;
+                                }
 
 
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
-        }
 
-        const sortedClasses = Object.keys(classStats).sort((a, b) => classStats[a].orderCode - classStats[b].orderCode);
+            const sortedClasses = Object.keys(classStats).sort((a, b) => classStats[a].orderCode - classStats[b].orderCode);
 
-        let html = "";
-        let totalStudents = 0;
-        let totalAllTimes = 0;
-        let totalAttendedTimes = 0;
+            let html = "";
+            let totalStudents = 0;
+            let totalAllTimes = 0;
+            let totalAttendedTimes = 0;
 
-        sortedClasses.forEach(cls => {
-            const stuCount = classStats[cls].students.size;
-            const times = classStats[cls].totalTimes;
-            const attended = classStats[cls].attendedTimes; 
-            
-            totalStudents += stuCount;
-            totalAllTimes += times;
-            totalAttendedTimes += attended; 
+            sortedClasses.forEach(cls => {
+                const stuCount = classStats[cls].students.size;
+                const times = classStats[cls].totalTimes;
+                const attended = classStats[cls].attendedTimes;
 
-            let rate = times > 0 ? Math.round((attended / times) * 100) : 0;
+                totalStudents += stuCount;
+                totalAllTimes += times;
+                totalAttendedTimes += attended;
 
-            html += `<tr>
+                let rate = times > 0 ? Math.round((attended / times) * 100) : 0;
+
+                html += `<tr>
                 <td style="font-weight:bold; color:var(--primary);">${cls}</td>
                 <td>${stuCount}명</td>
                 <td>${times}회</td>
                 <td style="font-weight:bold; color:#0d6efd;">${attended}회 <span style="font-size:13px; color:#6c757d; font-weight:normal;">(${rate}%)</span></td>
             </tr>`;
-        });
+            });
 
-        if (sortedClasses.length > 0) {
-            let totalRate = totalAllTimes > 0 ? Math.round((totalAttendedTimes / totalAllTimes) * 100) : 0;
-            html += `<tr style="background:#eef6ff; font-weight:bold; color:#052c65;">
+            if (sortedClasses.length > 0) {
+                let totalRate = totalAllTimes > 0 ? Math.round((totalAttendedTimes / totalAllTimes) * 100) : 0;
+                html += `<tr style="background:#eef6ff; font-weight:bold; color:#052c65;">
                 <td>합계</td>
                 <td>${totalStudents}명</td>
                 <td>${totalAllTimes}회</td>
                 <td>${totalAttendedTimes}회 <span style="font-size:13px; color:#6c757d; font-weight:normal;">(${totalRate}%)</span></td>
             </tr>`;
-        }
-
-        tbody.innerHTML = html;
-    }
-
-    function renderPersonalStats(year, month, lastDate) {
-        const tbody = document.getElementById('personal-stat-body');
-        const classFilter = document.getElementById('class-filter');
-        
-        if (!applicationData || applicationData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="color:#6c757d; padding:20px; text-align:center;">해당 월의 신청 데이터가 없습니다.</td></tr>`;
-            classFilter.innerHTML = '<option value="all">전체 보기</option>';
-            return;
-        }
-
-        let personalStats = {}; 
-        const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-
-        applicationData.forEach(app => {
-            const stuIdStr = String(app.stu_id);
-            if (stuIdStr.length < 4) return;
-            
-            const classCode = stuIdStr.slice(0, -2);
-            const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
-
-            if (!personalStats[stuIdStr]) {
-                personalStats[stuIdStr] = {
-                    stu_id: stuIdStr,
-                    stu_name: app.stu_name || '-',
-                    className: className, 
-                    appliedDays: 0,
-                    appliedTimes: 0,
-                    attendedDays: 0,
-                    attendedTimes: 0
-                };
-            }
-        });
-
-        for (let d = 1; d <= lastDate; d++) {
-            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const dayIdx = new Date(year, month - 1, d).getDay();
-            const dayKey = daysEng[dayIdx];
-
-            let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
-            if (calendarSchedule.data[dateStr] !== undefined) {
-                isOperating = calendarSchedule.data[dateStr].active;
             }
 
-            if (isOperating) {
-                const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
-                
-                applicationData.forEach(app => {
-                    if (app[dayKey]) {
-                        const stuIdStr = String(app.stu_id);
-                        if (stuIdStr.length < 4) return;
-                        
-                        const stat = personalStats[stuIdStr];
-                        const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
-                        
-                        stat.appliedDays += 1;
-                        stat.appliedTimes += timesCount;
+            tbody.innerHTML = html;
+        }
 
-                        const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
-           
-                        
-const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
-if (recognizedCount > 0) {
-    stat.attendedDays += 1;
-    stat.attendedTimes += recognizedCount;
-}
+        function renderPersonalStats(year, month, lastDate) {
+            const tbody = document.getElementById('personal-stat-body');
+            const classFilter = document.getElementById('class-filter');
 
-
-                    }
-                });
+            if (!applicationData || applicationData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="color:#6c757d; padding:20px; text-align:center;">해당 월의 신청 데이터가 없습니다.</td></tr>`;
+                classFilter.innerHTML = '<option value="all">전체 보기</option>';
+                return;
             }
-        }
 
-        globalPersonalStatsData = Object.values(personalStats);
+            let personalStats = {};
+            const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
-        let classesSet = new Set();
-        globalPersonalStatsData.forEach(stat => classesSet.add(stat.className));
-        
-        const sortedClassNames = Array.from(classesSet).sort();
-        
-        const currentSelectedClass = classFilter.value; 
-        let optionsHtml = '<option value="all">전체 보기</option>';
-        sortedClassNames.forEach(c => {
-            optionsHtml += `<option value="${c}">${c}</option>`;
-        });
-        classFilter.innerHTML = optionsHtml;
+            applicationData.forEach(app => {
+                const stuIdStr = String(app.stu_id);
+                if (stuIdStr.length < 4) return;
 
-        if (sortedClassNames.includes(currentSelectedClass)) {
-            classFilter.value = currentSelectedClass;
-        } else {
-            classFilter.value = "all";
-        }
+                const classCode = stuIdStr.slice(0, -2);
+                const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
 
-        applyPersonalFilterAndSort();
-    }
+                if (!personalStats[stuIdStr]) {
+                    personalStats[stuIdStr] = {
+                        stu_id: stuIdStr,
+                        stu_name: app.stu_name || '-',
+                        className: className,
+                        appliedDays: 0,
+                        appliedTimes: 0,
+                        attendedDays: 0,
+                        attendedTimes: 0
+                    };
+                }
+            });
 
+            for (let d = 1; d <= lastDate; d++) {
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dayIdx = new Date(year, month - 1, d).getDay();
+                const dayKey = daysEng[dayIdx];
 
-function applyPersonalFilterAndSort() {
-        const tbody = document.getElementById('personal-stat-body');
-        const classValue = document.getElementById('class-filter').value;
-        const sortValue = document.getElementById('sort-filter').value;
-        // 🌟 검색어 가져오기 (양쪽 공백 제거)
-        const searchInput = document.getElementById('search-filter');
-        const searchValue = searchInput ? searchInput.value.trim() : ""; 
-
-        let filteredData = globalPersonalStatsData;
-
-        // 1. 반별 필터 적용
-        if (classValue !== "all") {
-            filteredData = filteredData.filter(stat => stat.className === classValue);
-        }
-
-        // 2. 🌟 검색어 필터 적용 (이름 또는 학번에 검색어가 포함되어 있는지 확인)
-        if (searchValue !== "") {
-            filteredData = filteredData.filter(stat => 
-                stat.stu_name.includes(searchValue) || 
-                stat.stu_id.includes(searchValue)
-            );
-        }
-
-        // 3. 정렬 적용
-        filteredData.sort((a, b) => {
-            if (sortValue === "stu_id_asc") return parseInt(a.stu_id) - parseInt(b.stu_id);
-            else if (sortValue === "attend_days_desc") {
-                if (b.attendedDays !== a.attendedDays) return b.attendedDays - a.attendedDays;
-                else if (b.attendedTimes !== a.attendedTimes) return b.attendedTimes - a.attendedTimes;
-                else return parseInt(a.stu_id) - parseInt(b.stu_id);
-            } 
-            else if (sortValue === "attend_times_desc") {
-                if (b.attendedTimes !== a.attendedTimes) return b.attendedTimes - a.attendedTimes;
-                else return parseInt(a.stu_id) - parseInt(b.stu_id);
-            }
-            return 0;
-        });
-
-        let html = "";
-        if (filteredData.length === 0) {
-            html = `<tr><td colspan="6" style="color:#6c757d; padding:20px; text-align:center;">조건에 맞는 학생 데이터가 없습니다.</td></tr>`;
-        } else {
-            filteredData.forEach(stat => {
-                let rate = 0;
-                if (stat.appliedTimes > 0) rate = Math.round((stat.attendedTimes / stat.appliedTimes) * 100);
-                
-                let rateColor = "color: #333;";
-                if (rate >= 80) rateColor = "color: #198754;";
-                else if (rate < 50) rateColor = "color: #dc3545;";
-
-                let applyHtml, attendHtml;
-                
-                if (sortValue === "attend_times_desc") {
-                    applyHtml = `<span style="font-size:12px;">${stat.appliedDays}일</span> <span style="font-size:14px; font-weight:bold;">(${stat.appliedTimes}타임)</span>`;
-                    attendHtml = `<span style="font-size:12px; font-weight:normal; color:#6ea8fe;">${stat.attendedDays}일</span> <span style="font-size:16px; font-weight:900;">(${stat.attendedTimes}타임)</span>`;
-                } else {
-                    applyHtml = `<span style="font-size:14px; font-weight:bold;">${stat.appliedDays}일</span> <span style="font-size:12px;">(${stat.appliedTimes}타임)</span>`;
-                    attendHtml = `<span style="font-size:16px; font-weight:900;">${stat.attendedDays}일</span> <span style="font-size:12px; font-weight:normal; color:#6ea8fe;">(${stat.attendedTimes}타임)</span>`;
+                let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
+                if (calendarSchedule.data[dateStr] !== undefined) {
+                    isOperating = calendarSchedule.data[dateStr].active;
                 }
 
-                html += `<tr>
+                if (isOperating) {
+                    const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
+
+                    applicationData.forEach(app => {
+                        if (app[dayKey]) {
+                            const stuIdStr = String(app.stu_id);
+                            if (stuIdStr.length < 4) return;
+
+                            const stat = personalStats[stuIdStr];
+                            const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
+
+                            stat.appliedDays += 1;
+                            stat.appliedTimes += timesCount;
+
+                            const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
+
+
+                            const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
+                            if (recognizedCount > 0) {
+                                stat.attendedDays += 1;
+                                stat.attendedTimes += recognizedCount;
+                            }
+
+
+                        }
+                    });
+                }
+            }
+
+            globalPersonalStatsData = Object.values(personalStats);
+
+            let classesSet = new Set();
+            globalPersonalStatsData.forEach(stat => classesSet.add(stat.className));
+
+            const sortedClassNames = Array.from(classesSet).sort();
+
+            const currentSelectedClass = classFilter.value;
+            let optionsHtml = '<option value="all">전체 보기</option>';
+            sortedClassNames.forEach(c => {
+                optionsHtml += `<option value="${c}">${c}</option>`;
+            });
+            classFilter.innerHTML = optionsHtml;
+
+            if (sortedClassNames.includes(currentSelectedClass)) {
+                classFilter.value = currentSelectedClass;
+            } else {
+                classFilter.value = "all";
+            }
+
+            applyPersonalFilterAndSort();
+        }
+
+
+        function applyPersonalFilterAndSort() {
+            const tbody = document.getElementById('personal-stat-body');
+            const classValue = document.getElementById('class-filter').value;
+            const sortValue = document.getElementById('sort-filter').value;
+            // 🌟 검색어 가져오기 (양쪽 공백 제거)
+            const searchInput = document.getElementById('search-filter');
+            const searchValue = searchInput ? searchInput.value.trim() : "";
+
+            let filteredData = globalPersonalStatsData;
+
+            // 1. 반별 필터 적용
+            if (classValue !== "all") {
+                filteredData = filteredData.filter(stat => stat.className === classValue);
+            }
+
+            // 2. 🌟 검색어 필터 적용 (이름 또는 학번에 검색어가 포함되어 있는지 확인)
+            if (searchValue !== "") {
+                filteredData = filteredData.filter(stat =>
+                    stat.stu_name.includes(searchValue) ||
+                    stat.stu_id.includes(searchValue)
+                );
+            }
+
+            // 3. 정렬 적용
+            filteredData.sort((a, b) => {
+                if (sortValue === "stu_id_asc") return parseInt(a.stu_id) - parseInt(b.stu_id);
+                else if (sortValue === "attend_days_desc") {
+                    if (b.attendedDays !== a.attendedDays) return b.attendedDays - a.attendedDays;
+                    else if (b.attendedTimes !== a.attendedTimes) return b.attendedTimes - a.attendedTimes;
+                    else return parseInt(a.stu_id) - parseInt(b.stu_id);
+                }
+                else if (sortValue === "attend_times_desc") {
+                    if (b.attendedTimes !== a.attendedTimes) return b.attendedTimes - a.attendedTimes;
+                    else return parseInt(a.stu_id) - parseInt(b.stu_id);
+                }
+                return 0;
+            });
+
+            let html = "";
+            if (filteredData.length === 0) {
+                html = `<tr><td colspan="6" style="color:#6c757d; padding:20px; text-align:center;">조건에 맞는 학생 데이터가 없습니다.</td></tr>`;
+            } else {
+                filteredData.forEach(stat => {
+                    let rate = 0;
+                    if (stat.appliedTimes > 0) rate = Math.round((stat.attendedTimes / stat.appliedTimes) * 100);
+
+                    let rateColor = "color: #333;";
+                    if (rate >= 80) rateColor = "color: #198754;";
+                    else if (rate < 50) rateColor = "color: #dc3545;";
+
+                    let applyHtml, attendHtml;
+
+                    if (sortValue === "attend_times_desc") {
+                        applyHtml = `<span style="font-size:12px;">${stat.appliedDays}일</span> <span style="font-size:14px; font-weight:bold;">(${stat.appliedTimes}타임)</span>`;
+                        attendHtml = `<span style="font-size:12px; font-weight:normal; color:#6ea8fe;">${stat.attendedDays}일</span> <span style="font-size:16px; font-weight:900;">(${stat.attendedTimes}타임)</span>`;
+                    } else {
+                        applyHtml = `<span style="font-size:14px; font-weight:bold;">${stat.appliedDays}일</span> <span style="font-size:12px;">(${stat.appliedTimes}타임)</span>`;
+                        attendHtml = `<span style="font-size:16px; font-weight:900;">${stat.attendedDays}일</span> <span style="font-size:12px; font-weight:normal; color:#6ea8fe;">(${stat.attendedTimes}타임)</span>`;
+                    }
+
+                    html += `<tr>
                     <td>${stat.className}</td>
                     <td style="font-weight:bold;">${stat.stu_id}</td>
                     <td style="cursor:pointer; color:var(--primary); font-weight:bold; text-decoration:underline;" 
@@ -1071,90 +1395,90 @@ function applyPersonalFilterAndSort() {
                     <td style="color:#0d6efd;">${attendHtml}</td>
                     <td style="font-weight:bold; ${rateColor}">${rate}%</td>
                 </tr>`;
-            });
-        }
-        
-        tbody.innerHTML = html;
-    }
-    // ---------- [🌟 새로 추가된 연간 통계용 핵심 함수들 🌟] ---------- //
-
-    // 특정 1개의 달(Month)에 대한 학생별 출결 타임을 계산해주는 헬퍼 함수
-    function calculateMonthStats(year, month, monthApps, monthLogs, calendarSchedule) {
-        let stats = {};
-        const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-        const lastDate = new Date(year, month, 0).getDate();
-
-        // 1. 해당 월에 신청한 학생들 초기화
-        monthApps.forEach(app => {
-            const stuIdStr = String(app.stu_id);
-            if (stuIdStr.length < 4) return;
-            if (!stats[stuIdStr]) {
-                stats[stuIdStr] = { stu_name: app.stu_name, attendedTimes: 0 };
-            }
-        });
-
-        // 2. 1일부터 말일까지 돌면서 출석 계산
-        for (let d = 1; d <= lastDate; d++) {
-            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const dayIdx = new Date(year, month - 1, d).getDay();
-            const dayKey = daysEng[dayIdx];
-
-            let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
-            if (calendarSchedule.data[dateStr] !== undefined) {
-                isOperating = calendarSchedule.data[dateStr].active;
-            }
-
-            if (isOperating) {
-                const dayLogs = monthLogs.filter(log => log.date === dateStr);
-                monthApps.forEach(app => {
-                    if (app[dayKey]) {
-                        const stuIdStr = String(app.stu_id);
-                        const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
-                        const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
-                        
-                        // 미입실이 아니라면(정상입실/복귀/귀가/외출 등 모두 인정) 타임 횟수 누적
-
-
-const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
-if (recognizedCount > 0) {
-    if(stats[stuIdStr]) stats[stuIdStr].attendedTimes += recognizedCount;
-}
-
-                    }
                 });
             }
+
+            tbody.innerHTML = html;
         }
-        return stats;
-    }
+        // ---------- [🌟 새로 추가된 연간 통계용 핵심 함수들 🌟] ---------- //
+
+        // 특정 1개의 달(Month)에 대한 학생별 출결 타임을 계산해주는 헬퍼 함수
+        function calculateMonthStats(year, month, monthApps, monthLogs, calendarSchedule) {
+            let stats = {};
+            const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            const lastDate = new Date(year, month, 0).getDate();
+
+            // 1. 해당 월에 신청한 학생들 초기화
+            monthApps.forEach(app => {
+                const stuIdStr = String(app.stu_id);
+                if (stuIdStr.length < 4) return;
+                if (!stats[stuIdStr]) {
+                    stats[stuIdStr] = { stu_name: app.stu_name, attendedTimes: 0 };
+                }
+            });
+
+            // 2. 1일부터 말일까지 돌면서 출석 계산
+            for (let d = 1; d <= lastDate; d++) {
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dayIdx = new Date(year, month - 1, d).getDay();
+                const dayKey = daysEng[dayIdx];
+
+                let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
+                if (calendarSchedule.data[dateStr] !== undefined) {
+                    isOperating = calendarSchedule.data[dateStr].active;
+                }
+
+                if (isOperating) {
+                    const dayLogs = monthLogs.filter(log => log.date === dateStr);
+                    monthApps.forEach(app => {
+                        if (app[dayKey]) {
+                            const stuIdStr = String(app.stu_id);
+                            const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
+                            const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
+
+                            // 미입실이 아니라면(정상입실/복귀/귀가/외출 등 모두 인정) 타임 횟수 누적
 
 
+                            const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
+                            if (recognizedCount > 0) {
+                                if (stats[stuIdStr]) stats[stuIdStr].attendedTimes += recognizedCount;
+                            }
 
-/////////////////////////
-
-
-
-
-    // 집계된 연간 데이터를 정렬하고 화면 표에 뿌려주는 함수
-    function renderYearlyTable() {
-        const sortValue = document.getElementById('sort-yearly').value;
-        let data = [...globalYearlyStatsData]; // 배열 복사
-
-        // 정렬
-        data.sort((a, b) => {
-            if (sortValue === 'id_asc') return parseInt(a.stu_id) - parseInt(b.stu_id);
-            if (sortValue === 'total_desc') {
-                if (b.total !== a.total) return b.total - a.total; // 합계 높은 순
-                return parseInt(a.stu_id) - parseInt(b.stu_id); // 합계가 같으면 학번 순
+                        }
+                    });
+                }
             }
-            return 0;
-        });
+            return stats;
+        }
 
-        let html = "";
-        data.forEach(stat => {
-            // 출석 횟수가 0회면 깔끔하게 연한 회색 하이픈('-')으로 표시하는 함수
-            const formatCount = (val) => val > 0 ? `<b style="color:#333;">${val}</b>` : `<span style="color:#ddd;">-</span>`;
 
-            html += `<tr>
+
+        /////////////////////////
+
+
+
+
+        // 집계된 연간 데이터를 정렬하고 화면 표에 뿌려주는 함수
+        function renderYearlyTable() {
+            const sortValue = document.getElementById('sort-yearly').value;
+            let data = [...globalYearlyStatsData]; // 배열 복사
+
+            // 정렬
+            data.sort((a, b) => {
+                if (sortValue === 'id_asc') return parseInt(a.stu_id) - parseInt(b.stu_id);
+                if (sortValue === 'total_desc') {
+                    if (b.total !== a.total) return b.total - a.total; // 합계 높은 순
+                    return parseInt(a.stu_id) - parseInt(b.stu_id); // 합계가 같으면 학번 순
+                }
+                return 0;
+            });
+
+            let html = "";
+            data.forEach(stat => {
+                // 출석 횟수가 0회면 깔끔하게 연한 회색 하이픈('-')으로 표시하는 함수
+                const formatCount = (val) => val > 0 ? `<b style="color:#333;">${val}</b>` : `<span style="color:#ddd;">-</span>`;
+
+                html += `<tr>
                 <td style="font-weight:bold; color:var(--primary);">${stat.stu_id}</td>
                 <td style="font-weight:bold;">${stat.stu_name}</td>
                 <td>${formatCount(stat.m3)}</td>
@@ -1169,35 +1493,35 @@ if (recognizedCount > 0) {
                 <td>${formatCount(stat.m12)}</td>
                 <td style="background-color: #f1f8ff; font-weight:900; color:#0d6efd; font-size:16px;">${stat.total}</td>
             </tr>`;
-        });
+            });
 
-        if (data.length === 0) {
-            html = `<tr><td colspan="13" style="color:#6c757d; padding:30px; text-align:center;">해당 연도에 신청/출결 기록이 전혀 없습니다.</td></tr>`;
+            if (data.length === 0) {
+                html = `<tr><td colspan="13" style="color:#6c757d; padding:30px; text-align:center;">해당 연도에 신청/출결 기록이 전혀 없습니다.</td></tr>`;
+            }
+
+            document.getElementById('yearly-stat-body').innerHTML = html;
         }
 
-        document.getElementById('yearly-stat-body').innerHTML = html;
-    }
 
 
+        /////////////////////////////////////////////
+        function openStudentCalendar(stuId, stuName) {
+            const picker = document.getElementById('month-picker').value;
+            if (!picker) return;
+            const [year, month] = picker.split('-').map(Number);
 
-    /////////////////////////////////////////////
-function openStudentCalendar(stuId, stuName) {
-    const picker = document.getElementById('month-picker').value;
-    if (!picker) return;
-    const [year, month] = picker.split('-').map(Number);
-    
-    document.getElementById('student-calendar-modal').style.display = 'flex';
-    document.getElementById('sc-title').innerText = `🧑‍🎓 ${stuName} (${stuId}) - ${month}월 출결 달력`;
+            document.getElementById('student-calendar-modal').style.display = 'flex';
+            document.getElementById('sc-title').innerText = `🧑‍🎓 ${stuName} (${stuId}) - ${month}월 출결 달력`;
 
-    // 데이터 추출 시 타입 일관성 확보
-    const studentApp = applicationData.find(app => String(app.stu_id) === String(stuId));
-    const studentLogs = attendanceLogsData.filter(log => String(log.stu_id) === String(stuId));
+            // 데이터 추출 시 타입 일관성 확보
+            const studentApp = applicationData.find(app => String(app.stu_id) === String(stuId));
+            const studentLogs = attendanceLogsData.filter(log => String(log.stu_id) === String(stuId));
 
-    const firstDay = new Date(year, month - 1, 1).getDay();
-    const lastDate = new Date(year, month, 0).getDate();
-    const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            const firstDay = new Date(year, month - 1, 1).getDay();
+            const lastDate = new Date(year, month, 0).getDate();
+            const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
-    let html = `<table class="stat-calendar" style="height:auto;">
+            let html = `<table class="stat-calendar" style="height:auto;">
         <thead>
             <tr>
                 <th style="color:#dc3545; padding:8px;">일</th><th style="padding:8px;">월</th><th style="padding:8px;">화</th>
@@ -1205,143 +1529,144 @@ function openStudentCalendar(stuId, stuName) {
             </tr>
         </thead>
         <tbody><tr>`;
-    
-    let tApply = 0, tPresent = 0;
 
-    for(let i = 0; i < firstDay; i++) html += `<td style="height:70px;"></td>`;
+            let tApply = 0, tPresent = 0;
 
-    for(let d = 1; d <= lastDate; d++) {
-        const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        const dayIdx = new Date(year, month - 1, d).getDay();
-        const dayKey = daysEng[dayIdx];
+            for (let i = 0; i < firstDay; i++) html += `<td style="height:70px;"></td>`;
 
-        let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
-        let reason = "";
-        if (calendarSchedule.data[dateStr] !== undefined) {
-            isOperating = calendarSchedule.data[dateStr].active;
-            reason = calendarSchedule.data[dateStr].reason;
-        }
+            for (let d = 1; d <= lastDate; d++) {
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dayIdx = new Date(year, month - 1, d).getDay();
+                const dayKey = daysEng[dayIdx];
 
-        const dailyLog = studentLogs.find(l => l.date === dateStr);
-        let slotHtml = `<div style="display:flex; flex-direction:column; gap:2px; margin-top:2px;">`;
-
-        if (!isOperating) {
-            slotHtml += `<div style="font-size:9px; color:#dc3545; font-weight:bold; margin-top:10px; text-align:center;">${reason || "미운영"}</div>`;
-        } else {
-            // 신청한 타임들 배열화 (예: ["1", "2"])
-            const appliedStr = (studentApp && studentApp[dayKey]) ? studentApp[dayKey] : "";
-            const appliedTimes = appliedStr.split(',').filter(v => v.trim());
-            
-            // 🌟 통계 일관성: 메인 화면과 동일한 '인정 타임 수' 계산 함수 호출
-            // 만약 getRecognizedTimes 함수가 전역에 없다면, 메인 로직의 해당 부분을 참조해야 함
-            const recognizedCount = (typeof getRecognizedTimes === 'function') 
-                                    ? getRecognizedTimes(dailyLog, appliedStr) 
-                                    : (dailyLog && dailyLog.status !== "미입실" ? appliedTimes.length : 0);
-
-            [1, 2, 3].forEach(t => {
-                const isApplied = appliedTimes.includes(String(t));
-                let leftBg = "transparent", leftCol = "#ccc", borderColor = "#f0f0f0", rightBg = "transparent";
-                
-                if (isApplied) {
-                    tApply++;
-                    leftBg = "#f8f9fa"; leftCol = "#333"; borderColor = "#ced4da";
-                    
-                    // 신청 순서에 따른 인정 여부 판정
-                    const appliedIndex = appliedTimes.indexOf(String(t)) + 1;
-                    if (appliedIndex <= recognizedCount) {
-                        rightBg = "var(--primary)"; // 출석 인정
-                        tPresent++;
-                    } else {
-                        rightBg = "#ff9999"; // 결석 혹은 인정 시간 미달
-                    }
+                let isOperating = calendarSchedule.defaultDays.includes(dayIdx);
+                let reason = "";
+                if (calendarSchedule.data[dateStr] !== undefined) {
+                    isOperating = calendarSchedule.data[dateStr].active;
+                    reason = calendarSchedule.data[dateStr].reason;
                 }
-                
-                slotHtml += `
+
+                const dailyLog = studentLogs.find(l => l.date === dateStr);
+                let slotHtml = `<div style="display:flex; flex-direction:column; gap:2px; margin-top:2px;">`;
+
+                if (!isOperating) {
+                    slotHtml += `<div style="font-size:9px; color:#dc3545; font-weight:bold; margin-top:10px; text-align:center;">${reason || "미운영"}</div>`;
+                } else {
+                    // 신청한 타임들 배열화 (예: ["1", "2"])
+                    const appliedStr = (studentApp && studentApp[dayKey]) ? studentApp[dayKey] : "";
+                    const appliedTimes = appliedStr.split(',').filter(v => v.trim());
+
+                    // 🌟 통계 일관성: 메인 화면과 동일한 '인정 타임 수' 계산 함수 호출
+                    // 만약 getRecognizedTimes 함수가 전역에 없다면, 메인 로직의 해당 부분을 참조해야 함
+                    const recognizedCount = (typeof getRecognizedTimes === 'function')
+                        ? getRecognizedTimes(dailyLog, appliedStr)
+                        : (dailyLog && dailyLog.status !== "미입실" ? appliedTimes.length : 0);
+
+                    [1, 2, 3].forEach(t => {
+                        const isApplied = appliedTimes.includes(String(t));
+                        let leftBg = "transparent", leftCol = "#ccc", borderColor = "#f0f0f0", rightBg = "transparent";
+
+                        if (isApplied) {
+                            tApply++;
+                            leftBg = "#f8f9fa"; leftCol = "#333"; borderColor = "#ced4da";
+
+                            // 신청 순서에 따른 인정 여부 판정
+                            const appliedIndex = appliedTimes.indexOf(String(t)) + 1;
+                            if (appliedIndex <= recognizedCount) {
+                                rightBg = "var(--primary)"; // 출석 인정
+                                tPresent++;
+                            } else {
+                                rightBg = "#ff9999"; // 결석 혹은 인정 시간 미달
+                            }
+                        }
+
+                        slotHtml += `
                 <div style="display:flex; width:100%; height:18px; font-size:10px; font-weight:bold; border-radius:3px; overflow:hidden; border:1px solid ${borderColor}; margin-bottom:1px;">
                     <div style="flex:2; display:flex; justify-content:center; align-items:center; background:${leftBg}; color:${leftCol};">${t}T</div>
                     <div style="flex:1; background:${rightBg}; border-left:1px solid ${borderColor};"></div>
                 </div>`;
-            });
-        }
-        slotHtml += `</div>`;
+                    });
+                }
+                slotHtml += `</div>`;
 
-        let dateColor = dayIdx === 0 ? "color:#dc3545;" : (dayIdx === 6 ? "color:#0d6efd;" : "color:#333;");
-        const statusVal = dailyLog ? dailyLog.status : '미입실';
-        const historyArrStr = (dailyLog && dailyLog.history) ? JSON.stringify(dailyLog.history).replace(/"/g, '&quot;') : '[]';
+                let dateColor = dayIdx === 0 ? "color:#dc3545;" : (dayIdx === 6 ? "color:#0d6efd;" : "color:#333;");
+                const statusVal = dailyLog ? dailyLog.status : '미입실';
+                const historyArrStr = (dailyLog && dailyLog.history) ? JSON.stringify(dailyLog.history).replace(/"/g, '&quot;') : '[]';
 
-        html += `<td style="height:70px; padding:6px; vertical-align:top; background:white; cursor:pointer; transition:0.2s;"
+                html += `<td style="height:70px; padding:6px; vertical-align:top; background:white; cursor:pointer; transition:0.2s;"
                      onclick="openDailyDetail('${dateStr}', '${statusVal}', ${historyArrStr})"
                      onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='white'">
                     <div style="font-weight:bold; margin-bottom:2px; font-size:12px; ${dateColor}">${d}</div>
                     ${slotHtml}
-                </td>`;           
+                </td>`;
 
-        if ((firstDay + d) % 7 === 0) html += `</tr><tr>`;
-    }
+                if ((firstDay + d) % 7 === 0) html += `</tr><tr>`;
+            }
 
-    // (이하 마무리 코드는 동일)
-    const lastDayIdx = new Date(year, month - 1, lastDate).getDay();
-    if (lastDayIdx < 6) {
-        for (let i = lastDayIdx + 1; i <= 6; i++) html += `<td style="height:70px;"></td>`;
-    }
-    html += `</tr></tbody></table>`;
-    document.getElementById('sc-calendar-area').innerHTML = html;
-    
-    const rate = tApply > 0 ? Math.round((tPresent / tApply) * 100) : 0;
-    document.getElementById('sc-total-apply').innerText = tApply;
-    document.getElementById('sc-total-present').innerText = tPresent;
-    document.getElementById('sc-rate').innerText = rate + "%";
-    
-    let comment = "이번 달 신청 데이터가 없습니다.";
-    if (tApply > 0) {
-        if (rate >= 80) comment = "✨ 훌륭합니다! 성실하게 참여하고 있습니다.";
-        else if (rate >= 60) comment = "🙂 무난하게 참여 중이나, 결석한 날의 사유 확인이 필요합니다.";
-        else comment = "🚨 잦은 결석이 확인됩니다! 학생과의 깊은 상담을 권장합니다.";
-    }
-    document.getElementById('sc-comment').innerText = comment;
-}
+            // (이하 마무리 코드는 동일)
+            const lastDayIdx = new Date(year, month - 1, lastDate).getDay();
+            if (lastDayIdx < 6) {
+                for (let i = lastDayIdx + 1; i <= 6; i++) html += `<td style="height:70px;"></td>`;
+            }
+            html += `</tr></tbody></table>`;
+            document.getElementById('sc-calendar-area').innerHTML = html;
 
+            const rate = tApply > 0 ? Math.round((tPresent / tApply) * 100) : 0;
+            document.getElementById('sc-total-apply').innerText = tApply;
+            document.getElementById('sc-total-present').innerText = tPresent;
+            document.getElementById('sc-rate').innerText = rate + "%";
 
+            let comment = "이번 달 신청 데이터가 없습니다.";
+            if (tApply > 0) {
+                if (rate >= 80) comment = "✨ 훌륭합니다! 성실하게 참여하고 있습니다.";
+                else if (rate >= 60) comment = "🙂 무난하게 참여 중이나, 결석한 날의 사유 확인이 필요합니다.";
+                else comment = "🚨 잦은 결석이 확인됩니다! 학생과의 깊은 상담을 권장합니다.";
+            }
+            document.getElementById('sc-comment').innerText = comment;
+        }
 
 
 
 
-    // 🌟 특정 날짜를 클릭했을 때 상세 태그 흐름을 띄워주는 함수 (새로 추가) 🌟
-    function openDailyDetail(dateStr, status, historyList) {
-        const [y, m, d] = dateStr.split('-');
-        document.getElementById('dd-title').innerText = `📅 ${parseInt(m)}월 ${parseInt(d)}일 상세 기록`;
-        
-        // 최종 상태 색상 지정
-        let statusColor = "#dc3545"; // 기본 빨강 (미입실)
-        if(status === "입실" || status === "복귀") statusColor = "#0d6efd";
-        else if(status === "외출") statusColor = "#fd7e14";
-        else if(status === "귀가" || status === "귀가(누락)") statusColor = "#6c757d";
-        
-        document.getElementById('dd-status').innerHTML = `<span style="color:${statusColor}">${status}</span>`;
-        
-        // 타임라인 내역 그리기
-        let historyHtml = "";
-        if(!historyList || historyList.length === 0) {
-            historyHtml = "<div style='color:#999; text-align:center; padding:10px 0;'>키오스크 태그 기록이 없습니다.</div>";
-        } else {
-            historyList.forEach((h, idx) => {
-                // 텍스트에 따라 태그 색상 다르게 지정
-                let bg="#e7f1ff", col="#0d6efd", border="#b6d4fe"; 
-                if (h.includes("교사") || h.includes("빈자리")) { bg="#f3e8ff"; col="#5b21b6"; border="#8b5cf6"; }
-                else if (h.includes("외출")) { bg="#fff3cd"; col="#b38200"; border="#ffe69c"; }
-                else if (h.includes("귀가") || h.includes("누락")) { bg="#fff0f0"; col="#dc3545"; border="#f5c2c7"; }
-                
-                historyHtml += `<div style="margin-bottom:8px; display:flex; align-items:center;">
-                    <span style="display:inline-block; width:25px; text-align:center; color:#adb5bd; font-size:12px; font-weight:bold;">${idx+1}.</span> 
+
+
+        // 🌟 특정 날짜를 클릭했을 때 상세 태그 흐름을 띄워주는 함수 (새로 추가) 🌟
+        function openDailyDetail(dateStr, status, historyList) {
+            const [y, m, d] = dateStr.split('-');
+            document.getElementById('dd-title').innerText = `📅 ${parseInt(m)}월 ${parseInt(d)}일 상세 기록`;
+
+            // 최종 상태 색상 지정
+            let statusColor = "#dc3545"; // 기본 빨강 (미입실)
+            if (status === "입실" || status === "복귀") statusColor = "#0d6efd";
+            else if (status === "외출") statusColor = "#fd7e14";
+            else if (status === "귀가" || status === "귀가(누락)") statusColor = "#6c757d";
+
+            document.getElementById('dd-status').innerHTML = `<span style="color:${statusColor}">${status}</span>`;
+
+            // 타임라인 내역 그리기
+            let historyHtml = "";
+            if (!historyList || historyList.length === 0) {
+                historyHtml = "<div style='color:#999; text-align:center; padding:10px 0;'>키오스크 태그 기록이 없습니다.</div>";
+            } else {
+                historyList.forEach((h, idx) => {
+                    // 텍스트에 따라 태그 색상 다르게 지정
+                    let bg = "#e7f1ff", col = "#0d6efd", border = "#b6d4fe";
+                    if (h.includes("교사") || h.includes("빈자리")) { bg = "#f3e8ff"; col = "#5b21b6"; border = "#8b5cf6"; }
+                    else if (h.includes("외출")) { bg = "#fff3cd"; col = "#b38200"; border = "#ffe69c"; }
+                    else if (h.includes("귀가") || h.includes("누락")) { bg = "#fff0f0"; col = "#dc3545"; border = "#f5c2c7"; }
+
+                    historyHtml += `<div style="margin-bottom:8px; display:flex; align-items:center;">
+                    <span style="display:inline-block; width:25px; text-align:center; color:#adb5bd; font-size:12px; font-weight:bold;">${idx + 1}.</span> 
                     <span style="display:inline-block; background:${bg}; color:${col}; border:1px solid ${border}; padding:4px 10px; border-radius:6px; font-weight:bold; font-size:12px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">${h}</span>
                 </div>`;
-            });
+                });
+            }
+
+            document.getElementById('dd-history').innerHTML = historyHtml;
+            document.getElementById('daily-detail-modal').style.display = 'flex';
         }
-        
-        document.getElementById('dd-history').innerHTML = historyHtml;
-        document.getElementById('daily-detail-modal').style.display = 'flex';
-    }
-</script>
+    </script>
 
 </body>
+
 </html>
