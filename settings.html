@@ -1022,27 +1022,75 @@
             }
 
 
-
+            // 🌟 [교체] 달력에서 날짜 클릭 시 모달창 열기
             function toggleDate(dStr) {
-                const data = currentSchedule[dStr] || { active: false };
+                const data = currentSchedule[dStr] || { active: false, reason: "", supervisor: "" };
 
-                // 감독교사 명단 가져오기
+                // 모달에 날짜 및 기본값 세팅
+                document.getElementById('cdm-date-value').value = dStr;
+                document.getElementById('cdm-title').innerText = `📅 ${dStr} 설정`;
+
+                const radioOn = document.querySelector('input[name="cdm-status"][value="on"]');
+                const radioOff = document.querySelector('input[name="cdm-status"][value="off"]');
+
+                if (data.active) radioOn.checked = true;
+                else radioOff.checked = true;
+
+                document.getElementById('cdm-reason').value = data.reason || "";
+
+                // 감독 교사 목록 드롭다운 채우기
                 const listRaw = document.getElementById('supervisor-list-input').value.trim();
                 const supervisors = listRaw.split('\n').map(line => line.split(',')[0].trim()).filter(n => n);
+                const supSelect = document.getElementById('cdm-supervisor');
 
-                if (data.active) {
-                    const action = confirm(`[${dStr}] 현재 야자 운영일입니다.\n\n[확인]: 미운영(휴무)으로 변경\n[취소]: 감독교사 변경/통계 확인`);
-                    if (action) {
-                        const reason = prompt("야자 미운영 사유:", "공휴일");
-                        if (reason !== null) currentSchedule[dStr] = { active: false, reason: reason, supervisor: "" };
-                        renderCalendar();
-                    } else {
-                        showSupervisorSelector(dStr, data.supervisor, supervisors);
-                    }
+                let options = `<option value="">-- 배정 안 함 --</option>`;
+                supervisors.forEach(s => {
+                    options += `<option value="${s}" ${s === data.supervisor ? 'selected' : ''}>${s}</option>`;
+                });
+                supSelect.innerHTML = options;
+
+                // 드롭다운 변경 시 통계 업데이트 이벤트 연결
+                supSelect.onchange = () => updateCdmSupStats(supSelect.value, dStr);
+
+                // 라디오 버튼 상태에 따라 보여줄 영역 전환
+                toggleCdmReason(data.active);
+                updateCdmSupStats(data.supervisor, dStr);
+
+                // 모달 열기
+                document.getElementById('calendar-date-modal').style.display = 'flex';
+            }
+
+            // 라디오 버튼 선택 시 입력란 보여주기/숨기기
+            function toggleCdmReason(isActive) {
+                if (isActive) {
+                    document.getElementById('cdm-reason-area').style.display = 'none';
+                    document.getElementById('cdm-sup-area').style.display = 'block';
                 } else {
-                    showSupervisorSelector(dStr, "", supervisors);
+                    document.getElementById('cdm-reason-area').style.display = 'block';
+                    document.getElementById('cdm-sup-area').style.display = 'none';
                 }
             }
+
+            // 모달에서 저장 버튼 클릭 시 처리
+            function saveCdmDate() {
+                const dStr = document.getElementById('cdm-date-value').value;
+                const isActive = document.querySelector('input[name="cdm-status"][value="on"]').checked;
+
+                if (isActive) {
+                    const sup = document.getElementById('cdm-supervisor').value;
+                    currentSchedule[dStr] = { active: true, reason: "", supervisor: sup };
+                } else {
+                    const reason = document.getElementById('cdm-reason').value;
+                    currentSchedule[dStr] = { active: false, reason: reason, supervisor: "" };
+                }
+
+                document.getElementById('calendar-date-modal').style.display = 'none';
+                renderCalendar();
+            }
+
+
+
+
 
             // 🌟 드롭다운 선택 팝업창 함수
             function showSupervisorSelector(dStr, currentSup, supervisors) {
@@ -1845,8 +1893,118 @@
                 });
 
                 if (!error) alert("고정석 권한 명단이 저장되었습니다.");
+
+            }
+
+
+            // 🌟 [추가] 모달 내 감독교사 통계 실시간 업데이트
+            function updateCdmSupStats(teacherName, targetDateStr) {
+                const statsBox = document.getElementById('cdm-sup-stats');
+                if (!teacherName) {
+                    statsBox.innerHTML = `교사를 선택하면 배정 횟수 통계가 표시됩니다.`;
+                    return;
+                }
+
+                // 1. 소급 데이터 파싱
+                const listRaw = document.getElementById('supervisor-list-input').value.trim();
+                let prevCount = 0;
+                listRaw.split('\n').forEach(line => {
+                    const [n, m, a] = line.split(',').map(s => s.trim());
+                    if (n === teacherName) {
+                        prevCount = (parseInt(m) || 0) + (parseInt(a) || 0);
+                    }
+                });
+
+                // 2. 현재 달력에서 배정 횟수 세기
+                let totalCalendarCount = 0;
+                let currentMonthCount = 0;
+                const targetMonth = targetDateStr.split('-')[1] + "월"; // 예: "05월" -> "5월"
+                const cleanTargetMonth = parseInt(targetMonth) + "월";
+
+                Object.entries(currentSchedule).forEach(([dStr, day]) => {
+                    if (day.active && day.supervisor === teacherName) {
+                        totalCalendarCount++;
+                        const mLabel = parseInt(dStr.split('-')[1]) + "월";
+                        if (mLabel === cleanTargetMonth) {
+                            currentMonthCount++;
+                        }
+                    }
+                });
+
+                const finalTotal = prevCount + totalCalendarCount;
+
+                let warningHtml = finalTotal >= 10 ? `<span style="color:#dc3545; font-weight:bold;">(⚠️업무 과다)</span>` : "";
+
+                statsBox.innerHTML = `
+                <div style="display:flex; justify-content:space-around; align-items:center; text-align:center;">
+                    <div>
+                        <div style="color:#666; font-size:11px;">해당 월(${cleanTargetMonth}) 배정</div>
+                        <div style="font-size:16px; font-weight:bold; color:var(--primary);">${currentMonthCount}회</div>
+                    </div>
+                    <div style="border-left:1px solid #ccc; height:30px;"></div>
+                    <div>
+                        <div style="color:#666; font-size:11px;">누적 총계 (소급포함)</div>
+                        <div style="font-size:16px; font-weight:bold; color:#1a1a1a;">${finalTotal}회 ${warningHtml}</div>
+                    </div>
+                </div>
+            `;
             }
         </script>
+
+
+
+        <!-- 🌟 [신규 추가] 달력 개별 날짜 설정용 통합 모달 -->
+        <div id="calendar-date-modal" class="modal-overlay">
+            <div class="modal-content" style="max-width: 500px;">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px; margin-bottom: 20px;">
+                    <h3 id="cdm-title" style="margin:0; font-size:18px;">📅 날짜 설정</h3>
+                    <button class="btn btn-gray" style="padding: 5px 10px;"
+                        onclick="document.getElementById('calendar-date-modal').style.display='none'">닫기</button>
+                </div>
+
+                <input type="hidden" id="cdm-date-value">
+
+                <div style="margin-bottom: 20px;">
+                    <label style="font-weight:bold; color:#333; margin-bottom:5px; display:block;">운영 여부:</label>
+                    <div style="display:flex; gap:10px;">
+                        <label
+                            style="flex:1; background:#eef6ff; border:1px solid #b6d4fe; padding:10px; border-radius:8px; text-align:center; cursor:pointer;">
+                            <input type="radio" name="cdm-status" value="on" onchange="toggleCdmReason(true)"> 🟢 야자 운영
+                        </label>
+                        <label
+                            style="flex:1; background:#fff0f0; border:1px solid #f5c2c7; padding:10px; border-radius:8px; text-align:center; cursor:pointer;">
+                            <input type="radio" name="cdm-status" value="off" onchange="toggleCdmReason(false)"> 🔴 미운영
+                            (휴무)
+                        </label>
+                    </div>
+                </div>
+
+                <div id="cdm-reason-area" style="margin-bottom: 20px; display:none;">
+                    <label style="font-weight:bold; color:#333; margin-bottom:5px; display:block;">미운영 사유:</label>
+                    <input type="text" id="cdm-reason" placeholder="예: 공휴일, 모의고사, 학교행사 등"
+                        style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px; box-sizing:border-box;">
+                </div>
+
+                <div id="cdm-sup-area" style="margin-bottom: 20px; display:none;">
+                    <label style="font-weight:bold; color:#333; margin-bottom:5px; display:block;">감독 교사 배정:</label>
+                    <select id="cdm-supervisor"
+                        style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px; box-sizing:border-box; font-size:16px;">
+                        <!-- 스크립트로 옵션 채워짐 -->
+                    </select>
+
+                    <!-- 여기에 교사 통계 요약이 들어갑니다 -->
+                    <div id="cdm-sup-stats"
+                        style="margin-top: 10px; background: #f8f9fa; border: 1px dashed #ccc; padding: 10px; border-radius: 5px; font-size: 13px; color: #555;">
+                        교사를 선택하면 이번 달 배정 횟수와 전체 누적 횟수가 표시됩니다.
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" style="width:100%; padding:15px; font-size:16px;"
+                    onclick="saveCdmDate()">💾 이 날짜 설정 저장하기</button>
+            </div>
+        </div>
+
 </body>
 
 </html>
