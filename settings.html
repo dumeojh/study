@@ -643,9 +643,6 @@
         <div
             style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
 
-
-
-
             <!-- ▼ tab-priority 카드 내부의 운영 모드 설정 섹션 수정본 ▼ -->
             <div
                 style="margin-bottom: 20px; padding: 15px; background: #eef2f7; border-radius: 10px; border-left: 5px solid var(--primary);">
@@ -675,33 +672,30 @@
 
         </div>
 
-        <!-- 🔍 검색 및 반별 필터 도구 모음 -->
-        <div
-            style="background: #eef2f7; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #d1d9e6; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
 
-            <!-- 학년반 필터 -->
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-weight: bold; font-size: 14px; color: #444;">반별 필터:</span>
+
+
+        <!-- 🔍 변경된 디자인: 통계 화면과 통일된 파란색 계열 필터 영역 -->
+        <div class="filter-area"
+            style="background: #eef6ff; border: 1px solid #b6d4fe; border-radius: 8px; padding: 15px; display: flex; gap: 20px; align-items: center; margin-bottom: 15px;">
+            <div>
+                <label for="class-filter-select"
+                    style="font-weight: bold; color: #052c65; margin-right: 8px; font-size: 14px;">🏫 반별 검색:</label>
                 <select id="class-filter-select" onchange="filterPriorityTable()"
-                    style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px;">
+                    style="padding: 8px 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; cursor: pointer;">
                     <option value="">전체 보기</option>
                 </select>
             </div>
 
-            <!-- 학생 검색 (너비 제한 적용) -->
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-weight: bold; font-size: 14px; color: #444;">학생 검색:</span>
-                <input type="text" id="priority-search-input" onkeyup="filterPriorityTable()"
-                    placeholder="학번 또는 이름 입력..."
-                    style="width: 220px; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px;">
-            </div>
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                <label for="priority-search-input"
+                    style="font-weight: bold; color: #052c65; margin-right: 8px; font-size: 14px;">🔍 학생 검색:</label>
+                <input type="text" id="priority-search-input" onkeyup="filterPriorityTable()" placeholder="이름 또는 학번 입력"
+                    style="width: 160px; padding: 6px 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; cursor: pointer;">
 
-            <!-- 초기화 버튼을 검색창 옆으로 밀착 -->
-            <button onclick="resetPriorityView()"
-                style="padding: 6px 10px; font-size: 13px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background 0.2s;"
-                onmouseover="this.style.backgroundColor='#5a6268'" onmouseout="this.style.backgroundColor='#6c757d'">
-                🔄 초기화
-            </button>
+                <button onclick="resetPriorityView()" class="btn btn-gray"
+                    style="padding: 6px 10px; font-size: 13px; border-radius: 5px;">🔄 초기화</button>
+            </div>
         </div>
 
 
