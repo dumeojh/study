@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>안성여고 - 야간 자율학습 월간 통계</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 👇 새로 만든 공통 자바스크립트 파일을 연결합니다 👇 -->
+    <script src="common.js"></script>
+
     <style>
         :root {
             --primary: #007bff;
@@ -593,9 +596,6 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let applicationData = [];
         let attendanceLogsData = [];
@@ -729,49 +729,6 @@
             }
         }
 
-        function getRecognizedTimes(log, appliedTimesStr) {
-            if (!log || log.status === "미입실" || log.status === "귀가(누락)") return 0;
-            if (!appliedTimesStr) return 0;
-
-            let appliedArray = appliedTimesStr.split(',').map(v => v.trim()).filter(v => v);
-            let recognizedCount = 0;
-
-            if (log.history) {
-                let manualSet = new Set();
-                log.history.forEach(h => {
-                    appliedArray.forEach(t => {
-                        if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`)) manualSet.add(t);
-                    });
-                });
-                if (manualSet.size > 0) return manualSet.size;
-            }
-
-            if (log.status === "귀가" && log.history) {
-                let lastTimeStr = "";
-                for (let i = log.history.length - 1; i >= 0; i--) {
-                    if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
-                        const match = log.history[i].match(/(\d{2}:\d{2})/);
-                        if (match) { lastTimeStr = match[1]; break; }
-                    }
-                }
-
-                if (lastTimeStr) {
-                    const [h, m] = lastTimeStr.split(':').map(Number);
-                    const finishMin = h * 60 + m;
-                    const timeToMin = (t) => { const [sh, sm] = t.split(':').map(Number); return sh * 60 + sm; };
-
-                    appliedArray.forEach(t => {
-                        const startStr = currentSchedule[`t${t}`];
-                        const reqMin = currentSchedule[`t${t}_req`] || 0;
-                        if (startStr && finishMin >= (timeToMin(startStr) + reqMin)) recognizedCount++;
-                    });
-                }
-            } else if (["입실", "복귀", "외출"].includes(log.status)) {
-                recognizedCount += appliedArray.length;
-            }
-
-            return recognizedCount;
-        }
 
         function renderDailyMatrix(year, month, lastDate) {
             matrixLastDate = lastDate;

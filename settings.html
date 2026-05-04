@@ -7,6 +7,8 @@
     <title>안성여고 - 시스템 환경설정</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 👇 새로 만든 공통 자바스크립트 파일을 연결합니다 👇 -->
+    <script src="common.js"></script>
 
 
 
@@ -776,10 +778,7 @@
 
 
     <script>
-        let allStudentData = [];
-        const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 
 
         // 전역 변수들
