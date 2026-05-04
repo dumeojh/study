@@ -331,18 +331,23 @@
 
         /* 모달 전용 세련된 디자인 속성 */
         .cdm-radio-label {
-            flex: 1;
+            display: block;
+            /* 🌟 가로 배치(flex)에서 세로 배치(block)로 변경 */
+            width: 100%;
             background: #ffffff;
             border: 2px solid #e9ecef;
-            padding: 22px 10px;
+            padding: 20px 15px;
             border-radius: 12px;
-            text-align: center;
+            text-align: left;
+            /* 가운데 정렬에서 좌측 정렬로 변경 */
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             color: #495057;
             transition: all 0.2s ease;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+            margin-bottom: 12px;
+            /* 세로 배치 시 버튼 간 간격 */
         }
 
         .cdm-radio-label:hover {
@@ -491,24 +496,27 @@
                 <div id="calendar-container"></div>
 
 
+
+
                 <!-- 배경을 부드럽게 흐리게(blur) 처리하고 패딩을 늘려 숨통을 틔움 -->
                 <div id="calendar-date-modal" class="modal-overlay"
                     style="position: absolute; top: 0; left: 0; align-items: flex-start; padding-top: 40px; display: none; z-index: 1000; background: rgba(233, 236, 239, 0.85); backdrop-filter: blur(4px);">
 
-                    <!-- 모달 너비를 650px로 최적화, 테두리를 없애고 부드러운 그림자 적용 -->
+                    <!-- 모달 너비를 550px로 최적화 (세로 배치에 맞춰 약간 줄임) -->
                     <div class="modal-content"
-                        style="max-width: 650px; width: 95%; margin: 0 auto; border-radius: 20px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); border: 1px solid #dee2e6; background: #ffffff; padding: 40px;">
+                        style="max-width: 550px; width: 95%; margin: 0 auto; border-radius: 20px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); border: 1px solid #dee2e6; background: #ffffff; padding: 40px;">
 
                         <!-- 헤더 디자인 정돈 -->
                         <div
-                            style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #f1f3f5; padding-bottom: 15px; margin-bottom: 30px;">
+                            style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #f1f3f5; padding-bottom: 15px; margin-bottom: 25px;">
                             <h3 id="cdm-title"
                                 style="margin:0; font-size:22px; color: #1a1a1a; font-weight: 900; border-left: 5px solid var(--primary); padding-left: 12px;">
                                 📅 날짜 설정</h3>
-                            <button class="btn btn-gray"
-                                style="padding: 8px 16px; font-weight: bold; border-radius: 8px; background: #f8f9fa; color: #495057; border: 1px solid #dee2e6; transition: 0.2s;"
-                                onmouseover="this.style.background='#e9ecef'"
-                                onmouseout="this.style.background='#f8f9fa'"
+                            <!-- 🌟 우측 상단 닫기 버튼을 눈에 띄게 수정 (어두운 회색 배경에 흰 글씨) -->
+                            <button class="btn"
+                                style="padding: 8px 16px; font-weight: bold; border-radius: 8px; background: #495057; color: #ffffff; border: none; transition: 0.2s;"
+                                onmouseover="this.style.background='#343a40'"
+                                onmouseout="this.style.background='#495057'"
                                 onclick="document.getElementById('calendar-date-modal').style.display='none'">✕
                                 닫기</button>
                         </div>
@@ -519,16 +527,17 @@
                             <label
                                 style="font-weight:700; color:#495057; margin-bottom:12px; display:block; font-size: 15px;">운영
                                 여부 선택</label>
-                            <div style="display:flex; gap:15px;">
+                            <!-- 🌟 가로 배치(flex)를 없애고 세로로 쌓이도록 변경 -->
+                            <div>
                                 <label class="cdm-radio-label">
                                     <input type="radio" name="cdm-status" value="on" onchange="toggleCdmReason(true)"
-                                        style="transform: scale(1.3); margin-right: 8px; accent-color: var(--primary);">
-                                    🟢 야자 운영
+                                        style="transform: scale(1.4); margin-right: 12px; accent-color: var(--primary);">
+                                    🟢 야간 자율학습 운영
                                 </label>
-                                <label class="cdm-radio-label">
+                                <label class="cdm-radio-label" style="margin-bottom: 0;"> <!-- 마지막 항목은 마진 없앰 -->
                                     <input type="radio" name="cdm-status" value="off" onchange="toggleCdmReason(false)"
-                                        style="transform: scale(1.3); margin-right: 8px; accent-color: var(--danger);">
-                                    🔴 미운영 (휴무)
+                                        style="transform: scale(1.4); margin-right: 12px; accent-color: var(--danger);">
+                                    🔴 미운영 (휴무/공휴일)
                                 </label>
                             </div>
                         </div>
@@ -548,26 +557,24 @@
                                 <!-- 스크립트로 옵션 채워짐 -->
                             </select>
 
-                            <!-- 방금 전에 예쁘게 수정한 통계 영역 -->
+                            <!-- 통계 영역 -->
                             <div id="cdm-sup-stats"
                                 style="margin-top: 15px; background: #ffffff; border: 1px solid #e9ecef; padding: 20px; border-radius: 12px; font-size: 14px; color: #6c757d; box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);">
                                 👨‍🏫 교사를 선택하시면 월별 감독 횟수가 표시됩니다.
                             </div>
                         </div>
 
-                        <!-- 둥글고 세련된 저장 버튼 -->
-                        <button class="btn btn-primary"
-                            style="width:100%; padding: 18px; font-size: 18px; font-weight: bold; border-radius: 12px; margin-top: 10px; box-shadow: 0 4px 12px rgba(0, 123, 255, 0.25); transition: 0.2s;"
-                            onmouseover="this.style.transform='translateY(-2px)'"
-                            onmouseout="this.style.transform='translateY(0)'" onclick="saveCdmDate()">
+                        <!-- 🌟 하단 메인 저장 버튼 디자인 개선 (파란 배경에 선명한 흰 글씨) -->
+                        <button class="btn"
+                            style="width:100%; padding: 18px; font-size: 18px; font-weight: 900; border-radius: 12px; margin-top: 10px; background-color: var(--primary); color: #ffffff; border: none; box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3); transition: 0.2s;"
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.backgroundColor='#0056b3';"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.backgroundColor='var(--primary)';"
+                            onclick="saveCdmDate()">
                             💾 설정 저장 및 닫기
                         </button>
                     </div>
                 </div>
                 <!-- ▲ [디자인 개선] 달력 개별 날짜 설정용 통합 모달 끝 ▲ -->
-
-
-
 
 
 
