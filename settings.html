@@ -1900,53 +1900,65 @@
 
         <!-- 🌟 [신규 추가] 달력 개별 날짜 설정용 통합 모달 -->
         <div id="calendar-date-modal" class="modal-overlay">
-            <div class="modal-content" style="max-width: 500px;">
+            <!-- 🌟 수정됨: max-width를 500px에서 1100px(메인 콘텐츠 폭)로 늘리고 여백 조정 -->
+            <div class="modal-content"
+                style="max-width: 1100px; width: 95%; margin: 20px auto; border-radius: 15px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); border: 1px solid #eee;">
                 <div
                     style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--primary); padding-bottom:10px; margin-bottom: 20px;">
-                    <h3 id="cdm-title" style="margin:0; font-size:18px;">📅 날짜 설정</h3>
-                    <button class="btn btn-gray" style="padding: 5px 10px;"
-                        onclick="document.getElementById('calendar-date-modal').style.display='none'">닫기</button>
+                    <h3 id="cdm-title" style="margin:0; font-size:20px; border-left: none; padding-left: 0;">📅 날짜 설정
+                    </h3>
+                    <button class="btn btn-gray" style="padding: 5px 15px; font-weight: bold;"
+                        onclick="document.getElementById('calendar-date-modal').style.display='none'">닫기 ✕</button>
                 </div>
 
                 <input type="hidden" id="cdm-date-value">
 
-                <div style="margin-bottom: 20px;">
-                    <label style="font-weight:bold; color:#333; margin-bottom:5px; display:block;">운영 여부:</label>
-                    <div style="display:flex; gap:10px;">
+                <div style="margin-bottom: 25px;">
+                    <label style="font-weight:bold; color:#333; margin-bottom:10px; display:block; font-size: 16px;">운영
+                        여부 선택</label>
+                    <div style="display:flex; gap:15px;">
                         <label
-                            style="flex:1; background:#eef6ff; border:1px solid #b6d4fe; padding:10px; border-radius:8px; text-align:center; cursor:pointer;">
-                            <input type="radio" name="cdm-status" value="on" onchange="toggleCdmReason(true)"> 🟢 야자 운영
+                            style="flex:1; background:#eef6ff; border:2px solid #b6d4fe; padding:20px; border-radius:10px; text-align:center; cursor:pointer; font-size: 18px; font-weight: bold; transition: 0.2s;"
+                            onmouseover="this.style.backgroundColor='#d0e2ff'"
+                            onmouseout="this.style.backgroundColor='#eef6ff'">
+                            <input type="radio" name="cdm-status" value="on" onchange="toggleCdmReason(true)"
+                                style="transform: scale(1.5); margin-right: 10px;"> 🟢 야자 운영
                         </label>
                         <label
-                            style="flex:1; background:#fff0f0; border:1px solid #f5c2c7; padding:10px; border-radius:8px; text-align:center; cursor:pointer;">
-                            <input type="radio" name="cdm-status" value="off" onchange="toggleCdmReason(false)"> 🔴 미운영
-                            (휴무)
+                            style="flex:1; background:#fff0f0; border:2px solid #f5c2c7; padding:20px; border-radius:10px; text-align:center; cursor:pointer; font-size: 18px; font-weight: bold; transition: 0.2s;"
+                            onmouseover="this.style.backgroundColor='#ffdada'"
+                            onmouseout="this.style.backgroundColor='#fff0f0'">
+                            <input type="radio" name="cdm-status" value="off" onchange="toggleCdmReason(false)"
+                                style="transform: scale(1.5); margin-right: 10px;"> 🔴 미운영 (휴무)
                         </label>
                     </div>
                 </div>
 
-                <div id="cdm-reason-area" style="margin-bottom: 20px; display:none;">
-                    <label style="font-weight:bold; color:#333; margin-bottom:5px; display:block;">미운영 사유:</label>
+                <div id="cdm-reason-area" style="margin-bottom: 25px; display:none;">
+                    <label style="font-weight:bold; color:#333; margin-bottom:10px; display:block; font-size: 16px;">미운영
+                        사유 기록</label>
                     <input type="text" id="cdm-reason" placeholder="예: 공휴일, 모의고사, 학교행사 등"
-                        style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px; box-sizing:border-box;">
+                        style="width:100%; padding:15px; border:2px solid #ccc; border-radius:8px; box-sizing:border-box; font-size: 16px;">
                 </div>
 
-                <div id="cdm-sup-area" style="margin-bottom: 20px; display:none;">
-                    <label style="font-weight:bold; color:#333; margin-bottom:5px; display:block;">감독 교사 배정:</label>
+                <div id="cdm-sup-area" style="margin-bottom: 25px; display:none;">
+                    <label style="font-weight:bold; color:#333; margin-bottom:10px; display:block; font-size: 16px;">감독
+                        교사 배정</label>
                     <select id="cdm-supervisor"
-                        style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px; box-sizing:border-box; font-size:16px;">
+                        style="width:100%; padding:15px; border:2px solid #ccc; border-radius:8px; box-sizing:border-box; font-size:18px; font-weight: bold; cursor: pointer;">
                         <!-- 스크립트로 옵션 채워짐 -->
                     </select>
 
                     <!-- 여기에 교사 통계 요약이 들어갑니다 -->
                     <div id="cdm-sup-stats"
-                        style="margin-top: 10px; background: #f8f9fa; border: 1px dashed #ccc; padding: 10px; border-radius: 5px; font-size: 13px; color: #555;">
+                        style="margin-top: 15px; background: #f8f9fa; border: 2px dashed #ccc; padding: 20px; border-radius: 8px; font-size: 15px; color: #555;">
                         교사를 선택하면 이번 달 배정 횟수와 전체 누적 횟수가 표시됩니다.
                     </div>
                 </div>
 
-                <button class="btn btn-primary" style="width:100%; padding:15px; font-size:16px;"
-                    onclick="saveCdmDate()">💾 이 날짜 설정 저장하기</button>
+                <button class="btn btn-primary"
+                    style="width:100%; padding:20px; font-size:20px; font-weight: 900; margin-top: 10px; box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);"
+                    onclick="saveCdmDate()">💾 설정 저장 및 닫기</button>
             </div>
         </div>
 
