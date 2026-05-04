@@ -1022,6 +1022,44 @@
             }
 
 
+            // 🌟 [교체] 달력에서 날짜 클릭 시 모달창 열기
+            function toggleDate(dStr) {
+                const data = currentSchedule[dStr] || { active: false, reason: "", supervisor: "" };
+
+                // 모달에 날짜 및 기본값 세팅
+                document.getElementById('cdm-date-value').value = dStr;
+                document.getElementById('cdm-title').innerText = `📅 ${dStr} 설정`;
+
+                const radioOn = document.querySelector('input[name="cdm-status"][value="on"]');
+                const radioOff = document.querySelector('input[name="cdm-status"][value="off"]');
+
+                if (data.active) radioOn.checked = true;
+                else radioOff.checked = true;
+
+                document.getElementById('cdm-reason').value = data.reason || "";
+
+                // 감독 교사 목록 드롭다운 채우기
+                const listRaw = document.getElementById('supervisor-list-input').value.trim();
+                const supervisors = listRaw.split('\n').map(line => line.split(',')[0].trim()).filter(n => n);
+                const supSelect = document.getElementById('cdm-supervisor');
+
+                let options = `<option value="">-- 배정 안 함 --</option>`;
+                supervisors.forEach(s => {
+                    options += `<option value="${s}" ${s === data.supervisor ? 'selected' : ''}>${s}</option>`;
+                });
+                supSelect.innerHTML = options;
+
+                // 드롭다운 변경 시 통계 업데이트 이벤트 연결
+                supSelect.onchange = () => updateCdmSupStats(supSelect.value, dStr);
+
+                // 라디오 버튼 상태에 따라 보여줄 영역 전환
+                toggleCdmReason(data.active);
+                updateCdmSupStats(data.supervisor, dStr);
+
+                // 모달 열기
+                document.getElementById('calendar-date-modal').style.display = 'flex';
+            }
+
             // 라디오 버튼 선택 시 입력란 보여주기/숨기기
             function toggleCdmReason(isActive) {
                 if (isActive) {
@@ -1050,26 +1088,9 @@
                 renderCalendar();
             }
 
-            function toggleDate(dStr) {
-                const data = currentSchedule[dStr] || { active: false };
 
-                // 감독교사 명단 가져오기
-                const listRaw = document.getElementById('supervisor-list-input').value.trim();
-                const supervisors = listRaw.split('\n').map(line => line.split(',')[0].trim()).filter(n => n);
 
-                if (data.active) {
-                    const action = confirm(`[${dStr}] 현재 야자 운영일입니다.\n\n[확인]: 미운영(휴무)으로 변경\n[취소]: 감독교사 변경/통계 확인`);
-                    if (action) {
-                        const reason = prompt("야자 미운영 사유:", "공휴일");
-                        if (reason !== null) currentSchedule[dStr] = { active: false, reason: reason, supervisor: "" };
-                        renderCalendar();
-                    } else {
-                        showSupervisorSelector(dStr, data.supervisor, supervisors);
-                    }
-                } else {
-                    showSupervisorSelector(dStr, "", supervisors);
-                }
-            }
+
 
             // 🌟 드롭다운 선택 팝업창 함수
             function showSupervisorSelector(dStr, currentSup, supervisors) {
@@ -1098,8 +1119,7 @@
                 document.getElementById('pop-sup-select').parentElement.remove();
                 renderCalendar();
             }
-
-
+            //////////////////////////
 
             // 도면 및 시간 계산 기타 로직들
             function saveHistory() { if (historyStack.length >= 20) historyStack.shift(); historyStack.push(JSON.stringify({ rows, cols, grid: seatMapData })); }
