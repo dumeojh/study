@@ -1050,7 +1050,54 @@
                 renderCalendar();
             }
 
+            function toggleDate(dStr) {
+                const data = currentSchedule[dStr] || { active: false };
 
+                // 감독교사 명단 가져오기
+                const listRaw = document.getElementById('supervisor-list-input').value.trim();
+                const supervisors = listRaw.split('\n').map(line => line.split(',')[0].trim()).filter(n => n);
+
+                if (data.active) {
+                    const action = confirm(`[${dStr}] 현재 야자 운영일입니다.\n\n[확인]: 미운영(휴무)으로 변경\n[취소]: 감독교사 변경/통계 확인`);
+                    if (action) {
+                        const reason = prompt("야자 미운영 사유:", "공휴일");
+                        if (reason !== null) currentSchedule[dStr] = { active: false, reason: reason, supervisor: "" };
+                        renderCalendar();
+                    } else {
+                        showSupervisorSelector(dStr, data.supervisor, supervisors);
+                    }
+                } else {
+                    showSupervisorSelector(dStr, "", supervisors);
+                }
+            }
+
+            // 🌟 드롭다운 선택 팝업창 함수
+            function showSupervisorSelector(dStr, currentSup, supervisors) {
+                let options = `<option value="">-- 선택 없음 --</option>`;
+                supervisors.forEach(s => {
+                    options += `<option value="${s}" ${s === currentSup ? 'selected' : ''}>${s}</option>`;
+                });
+
+                // 간단한 커스텀 모달 또는 prompt 대신 사용 가능한 UI 구성
+                const div = document.createElement('div');
+                div.style = "position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:25px; border-radius:15px; box-shadow:0 0 20px rgba(0,0,0,0.3); z-index:10000; text-align:center;";
+                div.innerHTML = `
+        <h3>[${dStr}] 감독교사 선택</h3>
+        <select id="pop-sup-select" style="font-size:18px; padding:10px; width:200px;">${options}</select>
+        <div style="margin-top:20px; display:flex; gap:10px;">
+            <button class="btn" style="background:var(--primary); flex:1;" onclick="applySupSelection('${dStr}')">적용</button>
+            <button class="btn" style="background:var(--gray); flex:1;" onclick="this.parentElement.parentElement.remove()">취소</button>
+        </div>
+    `;
+                document.body.appendChild(div);
+            }
+
+            function applySupSelection(dStr) {
+                const selectedSup = document.getElementById('pop-sup-select').value;
+                currentSchedule[dStr] = { active: true, reason: "", supervisor: selectedSup };
+                document.getElementById('pop-sup-select').parentElement.remove();
+                renderCalendar();
+            }
 
 
 
