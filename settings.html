@@ -1107,45 +1107,45 @@
                 }
 
 
-                // 🌟 [핵심] 달력에서 날짜 클릭 시 신형 모달창 열기
-                function toggleDate(dStr) {
-                    const data = currentSchedule[dStr] || { active: false, reason: "", supervisor: "" };
-
-                    // 모달에 날짜 및 기본값 세팅
-                    document.getElementById('cdm-date-value').value = dStr;
-                    document.getElementById('cdm-title').innerText = `📅 ${dStr} 설정`;
-
-                    const radioOn = document.querySelector('input[name="cdm-status"][value="on"]');
-                    const radioOff = document.querySelector('input[name="cdm-status"][value="off"]');
-
-                    if (data.active) radioOn.checked = true;
-                    else radioOff.checked = true;
-
-                    document.getElementById('cdm-reason').value = data.reason || "";
-
-                    // 감독 교사 목록 드롭다운 채우기
-                    const listRaw = document.getElementById('supervisor-list-input').value.trim();
-                    const supervisors = listRaw.split('\n').map(line => line.split(',')[0].trim()).filter(n => n);
-                    const supSelect = document.getElementById('cdm-supervisor');
-
-                    let options = `<option value="">-- 배정 안 함 --</option>`;
-                    supervisors.forEach(s => {
-                        options += `<option value="${s}" ${s === data.supervisor ? 'selected' : ''}>${s}</option>`;
-                    });
-                    supSelect.innerHTML = options;
-
-                    // 드롭다운 변경 시 통계 업데이트 이벤트 연결
-                    supSelect.onchange = () => updateCdmSupStats(supSelect.value, dStr);
-
-                    // 라디오 버튼 상태에 따라 보여줄 영역 전환
-                    toggleCdmReason(data.active);
-
-                    // 모달 열 때 현재 저장된 교사 통계 바로 보여주기
-                    updateCdmSupStats(data.supervisor, dStr);
-
-                    // 🌟 중요: 모달의 display를 'flex'로 변경하여 화면에 표시
-                    document.getElementById('calendar-date-modal').style.display = 'flex';
-                }
+                /*               // 🌟 [핵심] 달력에서 날짜 클릭 시 신형 모달창 열기
+                               function toggleDate(dStr) {
+                                   const data = currentSchedule[dStr] || { active: false, reason: "", supervisor: "" };
+               
+                                   // 모달에 날짜 및 기본값 세팅
+                                   document.getElementById('cdm-date-value').value = dStr;
+                                   document.getElementById('cdm-title').innerText = `📅 ${dStr} 설정`;
+               
+                                   const radioOn = document.querySelector('input[name="cdm-status"][value="on"]');
+                                   const radioOff = document.querySelector('input[name="cdm-status"][value="off"]');
+               
+                                   if (data.active) radioOn.checked = true;
+                                   else radioOff.checked = true;
+               
+                                   document.getElementById('cdm-reason').value = data.reason || "";
+               
+                                   // 감독 교사 목록 드롭다운 채우기
+                                   const listRaw = document.getElementById('supervisor-list-input').value.trim();
+                                   const supervisors = listRaw.split('\n').map(line => line.split(',')[0].trim()).filter(n => n);
+                                   const supSelect = document.getElementById('cdm-supervisor');
+               
+                                   let options = `<option value="">-- 배정 안 함 --</option>`;
+                                   supervisors.forEach(s => {
+                                       options += `<option value="${s}" ${s === data.supervisor ? 'selected' : ''}>${s}</option>`;
+                                   });
+                                   supSelect.innerHTML = options;
+               
+                                   // 드롭다운 변경 시 통계 업데이트 이벤트 연결
+                                   supSelect.onchange = () => updateCdmSupStats(supSelect.value, dStr);
+               
+                                   // 라디오 버튼 상태에 따라 보여줄 영역 전환
+                                   toggleCdmReason(data.active);
+               
+                                   // 모달 열 때 현재 저장된 교사 통계 바로 보여주기
+                                   updateCdmSupStats(data.supervisor, dStr);
+               
+                                   // 🌟 중요: 모달의 display를 'flex'로 변경하여 화면에 표시
+                                   document.getElementById('calendar-date-modal').style.display = 'flex';
+                               } */
 
 
                 // 라디오 버튼 선택 시 입력란 보여주기/숨기기 전환
