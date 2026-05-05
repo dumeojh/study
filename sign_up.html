@@ -1,427 +1,721 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="color-scheme" content="light">
     <title>안성여고 야간 자율학습 신청</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        :root { --primary: #007bff; --fixed-bg: #e3f2fd; --fixed-text: #1565c0; --flex-bg: #f8f9fa; }
-        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #1a1a1a; margin-bottom: 20px; }
-        .notice { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; line-height: 1.5; border-left: 4px solid #ffeeba; }
-        .input-group { margin-bottom: 12px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        input[readonly] { background-color: #f8f9fa; color: #666; }
-        .btn-main { width: 100%; padding: 15px; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-search { background: #343a40; } .btn-submit { background: var(--primary); } .btn-update { background: #28a745; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
+        :root {
+            --primary: #007bff;
+            --fixed-bg: #e3f2fd;
+            --fixed-text: #1565c0;
+            --flex-bg: #f8f9fa;
+        }
 
-        #apply-section { display: none; margin-top: 25px; border-top: 2px dashed #ddd; padding-top: 20px; }
-        .type-selector { display: flex; gap: 10px; margin-bottom: 20px; }
-        .type-btn { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .type-btn.active[data-type="1"] { background: var(--fixed-bg); border-color: var(--fixed-text); color: var(--fixed-text); }
-        .type-btn.active[data-type="0"] { background: #e8f5e9; border-color: #2e7d32; color: #2e7d32; }
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
 
-        .schedule-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .schedule-table th { background: #f8f9fa; padding: 10px; font-size: 13px; border: 1px solid #eee; }
-        .schedule-table td { padding: 5px; border: 1px solid #eee; text-align: center; }
-        .time-chk { display: none; }
-        .time-label { display: block; padding: 8px 0; border-radius: 5px; background: #eee; font-size: 12px; cursor: pointer; }
-        .time-chk:checked + .time-label { background: var(--primary); color: white; }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+
+        .notice {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            border-left: 4px solid #ffeeba;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        input[readonly] {
+            background-color: #f8f9fa;
+            color: #666;
+        }
+
+        .btn-main {
+            width: 100%;
+            padding: 15px;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-search {
+            background: #343a40;
+        }
+
+        .btn-submit {
+            background: var(--primary);
+        }
+
+        .btn-update {
+            background: #28a745;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #apply-section {
+            display: none;
+            margin-top: 25px;
+            border-top: 2px dashed #ddd;
+            padding-top: 20px;
+        }
+
+        .type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .type-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .type-btn.active[data-type="1"] {
+            background: var(--fixed-bg);
+            border-color: var(--fixed-text);
+            color: var(--fixed-text);
+        }
+
+        .type-btn.active[data-type="0"] {
+            background: #e8f5e9;
+            border-color: #2e7d32;
+            color: #2e7d32;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .schedule-table th {
+            background: #f8f9fa;
+            padding: 10px;
+            font-size: 13px;
+            border: 1px solid #eee;
+        }
+
+        .schedule-table td {
+            padding: 5px;
+            border: 1px solid #eee;
+            text-align: center;
+        }
+
+        .time-chk {
+            display: none;
+        }
+
+        .time-label {
+            display: block;
+            padding: 8px 0;
+            border-radius: 5px;
+            background: #eee;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .time-chk:checked+.time-label {
+            background: var(--primary);
+            color: white;
+        }
 
         /* ★ 학생용 좌석 배치도 CSS */
-        #seat-map-section { display: none; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #dee2e6; }
-        .seat-scroll-container { overflow-x: auto; padding: 10px 0; max-width: 100%; }
-        .student-seat-grid { display: grid; gap: 3px; justify-content: start; }
-        .seat-cell { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border-radius: 4px; box-sizing: border-box; text-align: center; line-height: 1.1; overflow: hidden; border: 1px solid #ccc; padding: 2px; }
-        
-        .seat-empty { background: transparent; border: none; } 
-        .seat-static { opacity: 0.8; } /* 벽, 문, 특수 구역 */
-        .seat-3 { background: #e2e3e5; color: #41464b; } /* 벽 */
-        .seat-4 { background: #cff4fc; color: #055160; } /* 문 */
-        .seat-5 { background: #f8d7da; color: #842029; } /* 특수 */
-        .seat-2 { background: #d1e7dd; color: #0f5132; border-color: #badbcc; } /* 자율석 구역 */
+        #seat-map-section {
+            display: none;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
 
-/* 선택 가능한 고정석 */
-        .seat-available { background: white; color: #0d6efd; border: 2px solid #0d6efd; cursor: pointer; transition: 0.2s; }
-        .seat-available:hover { background: #e3f2fd; transform: scale(1.1); box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10; position: relative; }
-        .seat-selected { background: #0d6efd !important; color: white !important; border-color: #0b5ed7; transform: scale(1.1); box-shadow: 0 4px 8px rgba(13,110,253,0.3); z-index: 10; position: relative; }
-        
+        .seat-scroll-container {
+            overflow-x: auto;
+            padding: 10px 0;
+            max-width: 100%;
+        }
+
+        .student-seat-grid {
+            display: grid;
+            gap: 3px;
+            justify-content: start;
+        }
+
+        .seat-cell {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 4px;
+            box-sizing: border-box;
+            text-align: center;
+            line-height: 1.1;
+            overflow: hidden;
+            border: 1px solid #ccc;
+            padding: 2px;
+        }
+
+        .seat-empty {
+            background: transparent;
+            border: none;
+        }
+
+        .seat-static {
+            opacity: 0.8;
+        }
+
+        /* 벽, 문, 특수 구역 */
+        .seat-3 {
+            background: #e2e3e5;
+            color: #41464b;
+        }
+
+        /* 벽 */
+        .seat-4 {
+            background: #cff4fc;
+            color: #055160;
+        }
+
+        /* 문 */
+        .seat-5 {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        /* 특수 */
+        .seat-2 {
+            background: #d1e7dd;
+            color: #0f5132;
+            border-color: #badbcc;
+        }
+
+        /* 자율석 구역 */
+
+        /* 선택 가능한 고정석 */
+        .seat-available {
+            background: white;
+            color: #0d6efd;
+            border: 2px solid #0d6efd;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .seat-available:hover {
+            background: #e3f2fd;
+            transform: scale(1.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            position: relative;
+        }
+
+        .seat-selected {
+            background: #0d6efd !important;
+            color: white !important;
+            border-color: #0b5ed7;
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+            z-index: 10;
+            position: relative;
+        }
+
         /* 🌟 [추가] 이미 예약이 완료된 좌석 */
-        .seat-taken { background: #e9ecef !important; color: #adb5bd !important; border: 1px solid #ced4da !important; cursor: not-allowed; text-decoration: line-through; opacity: 0.7; }
-        
-        #selected-seat-display { font-size: 16px; font-weight: bold; color: #d63384; text-align: center; margin-top: 15px; padding: 10px; background: white; border-radius: 8px; border: 2px dashed #d63384; }
-    
+        .seat-taken {
+            background: #e9ecef !important;
+            color: #adb5bd !important;
+            border: 1px solid #ced4da !important;
+            cursor: not-allowed;
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        #selected-seat-display {
+            font-size: 16px;
+            font-weight: bold;
+            color: #d63384;
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 2px dashed #d63384;
+        }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <h2>야간 자율학습 신청</h2>
-    <div class="notice">※ <strong>학번, 이름, 신청월</strong>을 선택하고 조회하세요.</div>
+    <div class="container">
+        <h2>야간 자율학습 신청</h2>
+        <div class="notice">※ <strong>학번, 이름, 신청월</strong>을 선택하고 조회하세요.</div>
 
-<div id="search-section">
-        <div class="input-group">
-            <label>신청 대상 월</label>
-            <select id="target-month">
-                <option value="3월">3월 신청</option><option value="4월" selected>4월 신청</option><option value="5월">5월 신청</option><option value="6월">6월 신청</option><option value="7월">7월 신청</option><option value="8월">8월 신청</option><option value="9월">9월 신청</option><option value="10월">10월 신청</option><option value="11월">11월 신청</option><option value="12월">12월 신청</option>
-            </select>
-        </div>
-        
-        <div class="input-group">
-            <label>학번</label>
-            <input type="number" id="stu-id" placeholder="예: 3101" onkeypress="if(event.key === 'Enter') document.getElementById('stu-name').focus()">
-        </div>
-        
-        <div class="input-group">
-            <label>이름</label>
-            <input type="text" id="stu-name" placeholder="실명 입력" lang="ko" autocomplete="off" spellcheck="false" pattern="[가-힣]+" title="한글 이름" onkeypress="if(event.key === 'Enter') verifyStudent()">
-        </div>
-        
-        <button id="search-btn" class="btn-main btn-search" onclick="verifyStudent()">조회하기</button>
-    </div>
-
-
-    
-    <div id="apply-section">
-        <label>신청 종류</label>
-        <div class="type-selector">
-            <button class="type-btn" data-type="1" onclick="selectType(1)">고정석(1)</button>
-            <button class="type-btn" data-type="0" onclick="selectType(0)">자율석(0)</button>
-        </div>
-
-        <div id="seat-map-section">
-            <label style="text-align: center; color: #495057; display:block; margin-bottom:10px;">👇 원하는 자리를 클릭하세요 (노란테두리)</label>
-            <div class="seat-scroll-container">
-                <div id="student-seat-grid" class="student-seat-grid"></div>
+        <div id="search-section">
+            <div class="input-group">
+                <label>신청 대상 월</label>
+                <select id="target-month">
+                    <option value="3월">3월 신청</option>
+                    <option value="4월" selected>4월 신청</option>
+                    <option value="5월">5월 신청</option>
+                    <option value="6월">6월 신청</option>
+                    <option value="7월">7월 신청</option>
+                    <option value="8월">8월 신청</option>
+                    <option value="9월">9월 신청</option>
+                    <option value="10월">10월 신청</option>
+                    <option value="11월">11월 신청</option>
+                    <option value="12월">12월 신청</option>
+                </select>
             </div>
-            <div id="selected-seat-display">선택된 좌석: 없음</div>
+
+            <div class="input-group">
+                <label>학번</label>
+                <input type="number" id="stu-id" placeholder="예: 3101"
+                    onkeypress="if(event.key === 'Enter') document.getElementById('stu-name').focus()">
+            </div>
+
+            <div class="input-group">
+                <label>이름</label>
+                <input type="text" id="stu-name" placeholder="실명 입력" lang="ko" autocomplete="off" spellcheck="false"
+                    pattern="[가-힣]+" title="한글 이름" onkeypress="if(event.key === 'Enter') verifyStudent()">
+            </div>
+
+            <button id="search-btn" class="btn-main btn-search" onclick="verifyStudent()">조회하기</button>
         </div>
 
-        <table class="schedule-table">
-            <thead><tr><th>요일</th><th>1T</th><th>2T</th><th>3T</th></tr></thead>
-            <tbody id="schedule-body"></tbody>
-        </table>
-        <button id="submit-btn" class="btn-main btn-submit" onclick="submitForm()" disabled>신청하기</button>
+
+
+        <div id="apply-section">
+            <label>신청 종류</label>
+            <div class="type-selector">
+                <button class="type-btn" data-type="1" onclick="selectType(1)">고정석(1)</button>
+                <button class="type-btn" data-type="0" onclick="selectType(0)">자율석(0)</button>
+            </div>
+
+            <div id="seat-map-section">
+                <label style="text-align: center; color: #495057; display:block; margin-bottom:10px;">👇 원하는 자리를 클릭하세요
+                    (노란테두리)</label>
+                <div class="seat-scroll-container">
+                    <div id="student-seat-grid" class="student-seat-grid"></div>
+                </div>
+                <div id="selected-seat-display">선택된 좌석: 없음</div>
+            </div>
+
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th>요일</th>
+                        <th>1T</th>
+                        <th>2T</th>
+                        <th>3T</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-body"></tbody>
+            </table>
+            <button id="submit-btn" class="btn-main btn-submit" onclick="submitForm()" disabled>신청하기</button>
+        </div>
     </div>
-</div>
 
-<script>
-// =========================================================
-// 1. Supabase 초기화
-// =========================================================
-const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <script>
+        // =========================================================
+        // 1. Supabase 초기화
+        // =========================================================
+        const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// =========================================================
-// 2. 전역 변수 및 기초 UI 설정
-// =========================================================
-let serverRoster = {}; let selectedType = null; let currentDocId = null; 
-let seatMapData = []; let layoutRows = 0; let layoutCols = 0;
-let selectedSeatId = ""; let previousSavedSeat = "";
-let takenSeats = [];
+        // =========================================================
+        // 2. 전역 변수 및 기초 UI 설정
+        // =========================================================
+        let serverRoster = {}; let selectedType = null; let currentDocId = null;
+        let seatMapData = []; let layoutRows = 0; let layoutCols = 0;
+        let selectedSeatId = ""; let previousSavedSeat = "";
+        let takenSeats = [];
 
-const daysEng = ['mon','tue','wed','thu','fri','sat','sun'];
+        // 🌟 추가: 고정석 권한 설정을 담을 전역 변수
+        let fixedSeatMode = "manual";
+        let priorityStudents = [];
 
-// =========================================================
-// 3. 신청 기간 확인 함수 (수파베이스 연동)
-// =========================================================
-async function checkApplyPeriod() {
-    const searchBtn = document.getElementById('search-btn');
-    const noticeBox = document.querySelector('.notice');
+        const daysEng = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-    try {
-        const { data, error } = await supabaseClient.from("settings").select("value").eq("key", "applyPeriod").maybeSingle();
-        if (data && data.value) {
-            const pData = data.value;
-            
-            // 관리자가 설정한 '신청 대상 월' 강제 적용 및 잠금
-            if (pData.targetMonth) {
-                const monthSelect = document.getElementById('target-month');
-                monthSelect.value = pData.targetMonth;
-                monthSelect.disabled = true; 
-                monthSelect.style.backgroundColor = "#e9ecef";
-                monthSelect.style.color = "#6c757d";
-                monthSelect.style.cursor = "not-allowed";
-                monthSelect.style.border = "1px solid #ced4da";
-            }
+        // =========================================================
+        // 3. 신청 기간 확인 함수 (수파베이스 연동)
+        // =========================================================
+        async function checkApplyPeriod() {
+            const searchBtn = document.getElementById('search-btn');
+            const noticeBox = document.querySelector('.notice');
 
-            // 신청 기간(날짜/시간) 체크 로직
-            const now = new Date();
-            const startTime = new Date(pData.start);
-            const endTime = new Date(pData.end);
+            try {
+                const { data, error } = await supabaseClient.from("settings").select("value").eq("key", "applyPeriod").maybeSingle();
+                if (data && data.value) {
+                    const pData = data.value;
 
-            if (now < startTime || now > endTime) {
-                searchBtn.disabled = true;
-                searchBtn.style.background = "#ccc";
-                searchBtn.innerText = "현재는 신청 기간이 아닙니다";
-                
-                noticeBox.innerHTML = `⚠️ <b>지금은 신청 기간이 아닙니다.</b><br>
+                    // 관리자가 설정한 '신청 대상 월' 강제 적용 및 잠금
+                    if (pData.targetMonth) {
+                        const monthSelect = document.getElementById('target-month');
+                        monthSelect.value = pData.targetMonth;
+                        monthSelect.disabled = true;
+                        monthSelect.style.backgroundColor = "#e9ecef";
+                        monthSelect.style.color = "#6c757d";
+                        monthSelect.style.cursor = "not-allowed";
+                        monthSelect.style.border = "1px solid #ced4da";
+                    }
+
+                    // 신청 기간(날짜/시간) 체크 로직
+                    const now = new Date();
+                    const startTime = new Date(pData.start);
+                    const endTime = new Date(pData.end);
+
+                    if (now < startTime || now > endTime) {
+                        searchBtn.disabled = true;
+                        searchBtn.style.background = "#ccc";
+                        searchBtn.innerText = "현재는 신청 기간이 아닙니다";
+
+                        noticeBox.innerHTML = `⚠️ <b>지금은 신청 기간이 아닙니다.</b><br>
                     신청 가능 기간: ${pData.start.replace('T', ' ')} ~ ${pData.end.replace('T', ' ')}`;
-                noticeBox.style.background = "#f8d7da";
-                noticeBox.style.color = "#721c24";
-                noticeBox.style.borderLeft = "4px solid #dc3545";
-            }
-        }
-    } catch(e) { console.error("기간 확인 중 오류 발생:", e); }
-}
-checkApplyPeriod();
-
-// =========================================================
-// 4. 데이터 불러오기 및 요일 표 생성 (수파베이스 연동)
-// =========================================================
-async function fetchInitialData() {
-    try {
-        const { data: rosterDoc } = await supabaseClient.from("settings").select("value").eq("key", "roster").maybeSingle();
-        if (rosterDoc && rosterDoc.value && rosterDoc.value.list) {
-            serverRoster = JSON.parse(rosterDoc.value.list || "{}");
-        }
-        
-        const { data: layoutDoc } = await supabaseClient.from("settings").select("value").eq("key", "seatLayout").maybeSingle();
-        if (layoutDoc && layoutDoc.value) {
-            const data = layoutDoc.value;
-            layoutRows = data.rows; layoutCols = data.cols;
-            const rawGrid = JSON.parse(data.grid);
-            seatMapData = rawGrid.map(row => row.map(c => typeof c === 'number' ? {type: c, label: ""} : c));
-        }
-
-        const { data: calDoc } = await supabaseClient.from("settings").select("value").eq("key", "calendarSchedule").maybeSingle();
-        let activeDays = [1, 2, 3, 4, 5]; 
-        if (calDoc && calDoc.value && calDoc.value.defaultDays) {
-            activeDays = calDoc.value.defaultDays;
-        }
-
-        const daysMap = [
-            { eng: 'sun', kor: '일', idx: 0 }, { eng: 'mon', kor: '월', idx: 1 },
-            { eng: 'tue', kor: '화', idx: 2 }, { eng: 'wed', kor: '수', idx: 3 },
-            { eng: 'thu', kor: '목', idx: 4 }, { eng: 'fri', kor: '금', idx: 5 },
-            { eng: 'sat', kor: '토', idx: 6 }
-        ];
-
-        const tbody = document.getElementById('schedule-body');
-        tbody.innerHTML = ''; 
-        
-        const displayOrder = [1, 2, 3, 4, 5, 6, 0];
-        
-        displayOrder.forEach(dayIdx => {
-            if (activeDays.includes(dayIdx)) {
-                const dayInfo = daysMap.find(d => d.idx === dayIdx);
-                tbody.innerHTML += `<tr><td><strong>${dayInfo.kor}</strong></td>${[1,2,3].map(t => `<td><input type="checkbox" class="time-chk" id="${dayInfo.eng}-${t}" value="${t}" onchange="validateForm()"><label class="time-label" for="${dayInfo.eng}-${t}">${t}T</label></td>`).join('')}</tr>`;
-            }
-        });
-
-    } catch(e) { console.error("초기 데이터 로딩 에러:", e); }
-}
-fetchInitialData();
-
-// =========================================================
-// 5. 좌석 그리기 및 선택 로직 (수정 없음)
-// =========================================================
-function buildSeatGrid() {
-    const container = document.getElementById('student-seat-grid');
-    container.style.gridTemplateColumns = `repeat(${layoutCols}, 35px)`;
-    container.innerHTML = '';
-
-    for (let r = 0; r < layoutRows; r++) {
-        for (let c = 0; c < layoutCols; c++) {
-            const cellData = seatMapData[r][c];
-            const div = document.createElement('div');
-            div.className = 'seat-cell';
-            
-            if (cellData.type === 0) {
-                div.classList.add('seat-empty');
-            } else if (cellData.type === 1) {
-                const finalLabel = cellData.label || `${r+1}-${c+1}`;
-                div.innerText = finalLabel;
-                
-                if (takenSeats.includes(finalLabel)) {
-                    div.classList.add('seat-taken'); 
-                } else {
-                    div.classList.add('seat-available');
-                    div.onclick = () => pickSeat(finalLabel, div);
-                    if(previousSavedSeat === finalLabel) pickSeat(finalLabel, div);
+                        noticeBox.style.background = "#f8d7da";
+                        noticeBox.style.color = "#721c24";
+                        noticeBox.style.borderLeft = "4px solid #dc3545";
+                    }
                 }
-            } else {
-                div.classList.add(`seat-${cellData.type}`, 'seat-static');
-                div.innerText = cellData.label || "";
-            }
-            container.appendChild(div);
+            } catch (e) { console.error("기간 확인 중 오류 발생:", e); }
         }
-    }
-}
+        checkApplyPeriod();
 
-function pickSeat(label, cellElement) {
-    document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('seat-selected'));
-    cellElement.classList.add('seat-selected');
-    selectedSeatId = label;
-    document.getElementById('selected-seat-display').innerText = `✅ 선택된 좌석: [ ${label} ]`;
-    validateForm();
-}
+        // =========================================================
+        // 4. 데이터 불러오기 및 요일 표 생성 (수파베이스 연동)
+        // =========================================================
+        async function fetchInitialData() {
+            try {
+                const { data: rosterDoc } = await supabaseClient.from("settings").select("value").eq("key", "roster").maybeSingle();
+                if (rosterDoc && rosterDoc.value && rosterDoc.value.list) {
+                    serverRoster = JSON.parse(rosterDoc.value.list || "{}");
+                }
 
-// =========================================================
-// 6. 학생 정보 조회 및 기존 신청 내역 확인 (수파베이스 연동)
-// =========================================================
-async function verifyStudent() {
-    const now = new Date();
-    try {
-        const { data: periodDoc } = await supabaseClient.from("settings").select("value").eq("key", "applyPeriod").maybeSingle();
-        if (periodDoc && periodDoc.value) {
-            const pData = periodDoc.value;
-            if (now < new Date(pData.start) || now > new Date(pData.end)) {
-                alert("죄송합니다. 현재는 신청 기간이 아닙니다.");
-                location.reload(); 
-                return;
-            }
-        }
-    } catch(e) { console.error("기간 확인 오류:", e); }
+                const { data: layoutDoc } = await supabaseClient.from("settings").select("value").eq("key", "seatLayout").maybeSingle();
+                if (layoutDoc && layoutDoc.value) {
+                    const data = layoutDoc.value;
+                    layoutRows = data.rows; layoutCols = data.cols;
+                    const rawGrid = JSON.parse(data.grid);
+                    seatMapData = rawGrid.map(row => row.map(c => typeof c === 'number' ? { type: c, label: "" } : c));
+                }
 
-    const id = document.getElementById('stu-id').value.trim(); 
-    const name = document.getElementById('stu-name').value.trim(); 
-    const month = document.getElementById('target-month').value;
+                const { data: calDoc } = await supabaseClient.from("settings").select("value").eq("key", "calendarSchedule").maybeSingle();
+                let activeDays = [1, 2, 3, 4, 5];
+                if (calDoc && calDoc.value && calDoc.value.defaultDays) {
+                    activeDays = calDoc.value.defaultDays;
+                }
 
-    if (!id || !name) return alert("학번과 이름을 모두 입력해주세요.");
-    if (serverRoster[id] !== name) return alert("학번과 이름이 일치하지 않습니다. 명단을 확인해 주세요.");
+                const daysMap = [
+                    { eng: 'sun', kor: '일', idx: 0 }, { eng: 'mon', kor: '월', idx: 1 },
+                    { eng: 'tue', kor: '화', idx: 2 }, { eng: 'wed', kor: '수', idx: 3 },
+                    { eng: 'thu', kor: '목', idx: 4 }, { eng: 'fri', kor: '금', idx: 5 },
+                    { eng: 'sat', kor: '토', idx: 6 }
+                ];
 
-    document.getElementById('search-btn').innerText = "조회 중...";
-    
-    try {
-        // 내 신청 내역 조회
-        const { data: myApp, error: myErr } = await supabaseClient.from("applications")
-            .select("*").eq("stu_id", id).eq("target_month", month);
-        
-        // 해당 월의 모든 고정석 예약 좌석 조회
-        const { data: takenApps, error: takenErr } = await supabaseClient.from("applications")
-            .select("id, seat_num").eq("target_month", month).eq("type", "고정석");
-        
-        takenSeats = []; 
-        
-        document.getElementById('apply-section').style.display = 'block'; 
-        document.getElementById('search-section').style.display = 'none';
+                // 🌟 추가: 고정석 운영 모드 및 권한 명단 불러오기
+                const { data: modeDoc } = await supabaseClient.from("settings").select("value").eq("key", "fixed_seat_mode").maybeSingle();
+                if (modeDoc && modeDoc.value && modeDoc.value.mode) {
+                    fixedSeatMode = modeDoc.value.mode;
+                }
 
-        if (myApp && myApp.length > 0) {
-            const data = myApp[0]; 
-            currentDocId = data.id; // Supabase의 UUID
-            previousSavedSeat = data.seat_num || "";
-            
-            // 다른 사람의 고정석 추출
-            if (takenApps) {
-                takenApps.forEach(tDoc => {
-                    if (tDoc.id !== currentDocId && tDoc.seat_num) {
-                        takenSeats.push(tDoc.seat_num);
+                const { data: prioDoc } = await supabaseClient.from("settings").select("value").eq("key", "priority_students").maybeSingle();
+                if (prioDoc && prioDoc.value && prioDoc.value.ids) {
+                    priorityStudents = prioDoc.value.ids;
+                }
+
+                const tbody = document.getElementById('schedule-body');
+                tbody.innerHTML = '';
+
+                const displayOrder = [1, 2, 3, 4, 5, 6, 0];
+
+                displayOrder.forEach(dayIdx => {
+                    if (activeDays.includes(dayIdx)) {
+                        const dayInfo = daysMap.find(d => d.idx === dayIdx);
+                        tbody.innerHTML += `<tr><td><strong>${dayInfo.kor}</strong></td>${[1, 2, 3].map(t => `<td><input type="checkbox" class="time-chk" id="${dayInfo.eng}-${t}" value="${t}" onchange="validateForm()"><label class="time-label" for="${dayInfo.eng}-${t}">${t}T</label></td>`).join('')}</tr>`;
                     }
                 });
+
+            } catch (e) { console.error("초기 데이터 로딩 에러:", e); }
+        }
+        fetchInitialData();
+
+        // =========================================================
+        // 5. 좌석 그리기 및 선택 로직 (수정 없음)
+        // =========================================================
+        function buildSeatGrid() {
+            const container = document.getElementById('student-seat-grid');
+            container.style.gridTemplateColumns = `repeat(${layoutCols}, 35px)`;
+            container.innerHTML = '';
+
+            for (let r = 0; r < layoutRows; r++) {
+                for (let c = 0; c < layoutCols; c++) {
+                    const cellData = seatMapData[r][c];
+                    const div = document.createElement('div');
+                    div.className = 'seat-cell';
+
+                    if (cellData.type === 0) {
+                        div.classList.add('seat-empty');
+                    } else if (cellData.type === 1) {
+                        const finalLabel = cellData.label || `${r + 1}-${c + 1}`;
+                        div.innerText = finalLabel;
+
+                        if (takenSeats.includes(finalLabel)) {
+                            div.classList.add('seat-taken');
+                        } else {
+                            div.classList.add('seat-available');
+                            div.onclick = () => pickSeat(finalLabel, div);
+                            if (previousSavedSeat === finalLabel) pickSeat(finalLabel, div);
+                        }
+                    } else {
+                        div.classList.add(`seat-${cellData.type}`, 'seat-static');
+                        div.innerText = cellData.label || "";
+                    }
+                    container.appendChild(div);
+                }
+            }
+        }
+
+        function pickSeat(label, cellElement) {
+            document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('seat-selected'));
+            cellElement.classList.add('seat-selected');
+            selectedSeatId = label;
+            document.getElementById('selected-seat-display').innerText = `✅ 선택된 좌석: [ ${label} ]`;
+            validateForm();
+        }
+
+        // =========================================================
+        // 6. 학생 정보 조회 및 기존 신청 내역 확인 (수파베이스 연동)
+        // =========================================================
+        async function verifyStudent() {
+            const now = new Date();
+            try {
+                const { data: periodDoc } = await supabaseClient.from("settings").select("value").eq("key", "applyPeriod").maybeSingle();
+                if (periodDoc && periodDoc.value) {
+                    const pData = periodDoc.value;
+                    if (now < new Date(pData.start) || now > new Date(pData.end)) {
+                        alert("죄송합니다. 현재는 신청 기간이 아닙니다.");
+                        location.reload();
+                        return;
+                    }
+                }
+            } catch (e) { console.error("기간 확인 오류:", e); }
+
+            const id = document.getElementById('stu-id').value.trim();
+            const name = document.getElementById('stu-name').value.trim();
+            const month = document.getElementById('target-month').value;
+
+            if (!id || !name) return alert("학번과 이름을 모두 입력해주세요.");
+            if (serverRoster[id] !== name) return alert("학번과 이름이 일치하지 않습니다. 명단을 확인해 주세요.");
+
+            document.getElementById('search-btn').innerText = "조회 중...";
+
+            try {
+                // 내 신청 내역 조회
+                const { data: myApp, error: myErr } = await supabaseClient.from("applications")
+                    .select("*").eq("stu_id", id).eq("target_month", month);
+
+                // 해당 월의 모든 고정석 예약 좌석 조회
+                const { data: takenApps, error: takenErr } = await supabaseClient.from("applications")
+                    .select("id, seat_num").eq("target_month", month).eq("type", "고정석");
+
+                takenSeats = [];
+
+                document.getElementById('apply-section').style.display = 'block';
+                document.getElementById('search-section').style.display = 'none';
+
+                if (myApp && myApp.length > 0) {
+                    const data = myApp[0];
+                    currentDocId = data.id; // Supabase의 UUID
+                    previousSavedSeat = data.seat_num || "";
+
+                    // 다른 사람의 고정석 추출
+                    if (takenApps) {
+                        takenApps.forEach(tDoc => {
+                            if (tDoc.id !== currentDocId && tDoc.seat_num) {
+                                takenSeats.push(tDoc.seat_num);
+                            }
+                        });
+                    }
+
+                    selectType(data.type === "고정석" ? 1 : 0);
+
+                    daysEng.forEach(day => {
+                        if (data[day]) {
+                            data[day].split(',').forEach(t => {
+                                const chk = document.getElementById(`${day}-${t}`);
+                                if (chk) chk.checked = true;
+                            });
+                        }
+                    });
+                    document.getElementById('submit-btn').innerText = "정보 수정하기";
+                    document.getElementById('submit-btn').className = "btn-main btn-update";
+                    alert(`기존 신청 내역을 불러왔습니다.`);
+                } else {
+                    currentDocId = null;
+                    previousSavedSeat = "";
+                    if (takenApps) {
+                        takenApps.forEach(tDoc => {
+                            if (tDoc.seat_num) takenSeats.push(tDoc.seat_num);
+                        });
+                    }
+                    alert(`신규 신청을 진행하세요.`);
+                }
+                validateForm();
+            } catch (e) {
+                alert("데이터 로드 오류: " + e.message);
+                document.getElementById('search-btn').innerText = "조회하기";
+            }
+        }
+
+
+        function selectType(type) {
+            // 🌟 추가: 고정석(1) 선택 시 권한 검사 로직
+            if (type === 1) {
+                const stuId = document.getElementById('stu-id').value.trim();
+
+                // 수동 지정 모드이면서, 권한 명단에 학생 학번이 없는 경우 차단
+                if (fixedSeatMode === "manual" && !priorityStudents.includes(stuId)) {
+                    alert("🚫 고정석 신청 권한이 없습니다.\n관리자 선생님께 문의하시거나 '자율석'을 선택해 주세요.");
+                    type = 0; // 강제로 자율석(0)으로 변경
+                }
             }
 
-            selectType(data.type === "고정석" ? 1 : 0);
-            
-            daysEng.forEach(day => { 
-                if (data[day]) { 
-                    data[day].split(',').forEach(t => { 
-                        const chk = document.getElementById(`${day}-${t}`); 
-                        if(chk) chk.checked = true; 
-                    }); 
-                } 
+            selectedType = type;
+            document.querySelectorAll('.type-btn').forEach(btn => btn.classList.toggle('active', parseInt(btn.dataset.type) === type));
+            if (type === 1) { document.getElementById('seat-map-section').style.display = 'block'; buildSeatGrid(); }
+            else { document.getElementById('seat-map-section').style.display = 'none'; selectedSeatId = ""; }
+            validateForm();
+        }
+
+
+
+        function validateForm() {
+            let sc = 0; daysEng.forEach(d => { if (document.querySelectorAll(`[id^="${d}-"]:checked`).length > 0) sc++; });
+            let ok = true; if (selectedType === 1 && (sc < 3 || selectedSeatId === "")) ok = false;
+            document.getElementById('submit-btn').disabled = !(selectedType !== null && ok);
+        }
+
+        // =========================================================
+        // 7. 데이터베이스에 저장하기 (수파베이스 연동 - Upsert 적용)
+        // =========================================================
+        async function submitForm() {
+            const btn = document.getElementById('submit-btn');
+            btn.innerText = "저장 중...";
+            btn.disabled = true;
+
+            const targetMonthVal = document.getElementById('target-month').value;
+            const typeVal = selectedType === 1 ? "고정석" : "자율석";
+            const seatNumVal = selectedType === 1 ? selectedSeatId : "";
+            const stuIdVal = document.getElementById('stu-id').value.trim();
+            const stuNameVal = document.getElementById('stu-name').value.trim();
+
+            const p = {
+                target_month: targetMonthVal,
+                stu_id: stuIdVal,
+                stu_name: stuNameVal,
+                type: typeVal,
+                seat_num: seatNumVal
+            };
+
+            daysEng.forEach(d => {
+                p[d] = Array.from(document.querySelectorAll(`[id^="${d}-"]:checked`)).map(el => el.value).join(',');
             });
-            document.getElementById('submit-btn').innerText = "정보 수정하기";
-            document.getElementById('submit-btn').className = "btn-main btn-update";
-            alert(`기존 신청 내역을 불러왔습니다.`);
-        } else { 
-            currentDocId = null; 
-            previousSavedSeat = ""; 
-            if (takenApps) {
-                takenApps.forEach(tDoc => {
-                    if (tDoc.seat_num) takenSeats.push(tDoc.seat_num);
+
+            try {
+                // 1. 중복 좌석 검사 (내가 아닌 다른 사람이 고정석을 먼저 선점했는지 확인)
+                if (typeVal === "고정석") {
+                    const { data: dupQuery, error: dupErr } = await supabaseClient.from("applications")
+                        .select("stu_id").eq("target_month", targetMonthVal).eq("type", "고정석").eq("seat_num", seatNumVal);
+
+                    let isTaken = false;
+                    if (dupQuery) {
+                        dupQuery.forEach(doc => {
+                            if (doc.stu_id !== stuIdVal) isTaken = true;
+                        });
+                    }
+
+                    if (isTaken) {
+                        throw "이미 다른 학생이 먼저 선택한 좌석입니다.\n새로고침 후 다른 자리를 선택해주세요.";
+                    }
+                }
+
+                // 2. 수파베이스 덮어쓰기(upsert) 사용
+                // target_month와 stu_id가 같으면 기존 데이터를 덮어쓰고, 없으면 새로 저장합니다.
+                const { error: upsertErr } = await supabaseClient.from("applications").upsert(p, {
+                    onConflict: 'target_month, stu_id'
                 });
-            }
-            alert(`신규 신청을 진행하세요.`); 
-        }
-        validateForm(); 
-    } catch(e) { 
-        alert("데이터 로드 오류: " + e.message); 
-        document.getElementById('search-btn').innerText = "조회하기";
-    }
-}
 
-function selectType(type) {
-    selectedType = type;
-    document.querySelectorAll('.type-btn').forEach(btn => btn.classList.toggle('active', parseInt(btn.dataset.type) === type));
-    if(type === 1) { document.getElementById('seat-map-section').style.display = 'block'; buildSeatGrid(); } 
-    else { document.getElementById('seat-map-section').style.display = 'none'; selectedSeatId = ""; }
-    validateForm();
-}
+                if (upsertErr) throw upsertErr.message;
 
-function validateForm() {
-    let sc = 0; daysEng.forEach(d => { if(document.querySelectorAll(`[id^="${d}-"]:checked`).length > 0) sc++; });
-    let ok = true; if (selectedType === 1 && (sc < 3 || selectedSeatId === "")) ok = false;
-    document.getElementById('submit-btn').disabled = !(selectedType !== null && ok);
-}
-
-// =========================================================
-// 7. 데이터베이스에 저장하기 (수파베이스 연동 - Upsert 적용)
-// =========================================================
-async function submitForm() {
-    const btn = document.getElementById('submit-btn'); 
-    btn.innerText = "저장 중..."; 
-    btn.disabled = true;
-
-    const targetMonthVal = document.getElementById('target-month').value;
-    const typeVal = selectedType === 1 ? "고정석" : "자율석";
-    const seatNumVal = selectedType === 1 ? selectedSeatId : "";
-    const stuIdVal = document.getElementById('stu-id').value.trim();
-    const stuNameVal = document.getElementById('stu-name').value.trim();
-
-    const p = { 
-        target_month: targetMonthVal, 
-        stu_id: stuIdVal, 
-        stu_name: stuNameVal, 
-        type: typeVal, 
-        seat_num: seatNumVal
-    };
-
-    daysEng.forEach(d => { 
-        p[d] = Array.from(document.querySelectorAll(`[id^="${d}-"]:checked`)).map(el => el.value).join(','); 
-    });
-
-    try {
-        // 1. 중복 좌석 검사 (내가 아닌 다른 사람이 고정석을 먼저 선점했는지 확인)
-        if (typeVal === "고정석") {
-            const { data: dupQuery, error: dupErr } = await supabaseClient.from("applications")
-                .select("stu_id").eq("target_month", targetMonthVal).eq("type", "고정석").eq("seat_num", seatNumVal);
-            
-            let isTaken = false;
-            if (dupQuery) {
-                dupQuery.forEach(doc => {
-                    if (doc.stu_id !== stuIdVal) isTaken = true; 
-                });
-            }
-
-            if (isTaken) {
-                throw "이미 다른 학생이 먼저 선택한 좌석입니다.\n새로고침 후 다른 자리를 선택해주세요.";
+                alert("신청이 완료되었습니다.");
+                location.reload();
+            } catch (e) {
+                alert("오류: " + (typeof e === 'string' ? e : e.message));
+                btn.innerText = "신청하기";
+                btn.disabled = false;
             }
         }
-
-        // 2. 수파베이스 덮어쓰기(upsert) 사용
-        // target_month와 stu_id가 같으면 기존 데이터를 덮어쓰고, 없으면 새로 저장합니다.
-        const { error: upsertErr } = await supabaseClient.from("applications").upsert(p, {
-            onConflict: 'target_month, stu_id'
-        });
-
-        if(upsertErr) throw upsertErr.message;
-
-        alert("신청이 완료되었습니다."); 
-        location.reload();
-    } catch(e) { 
-        alert("오류: " + (typeof e === 'string' ? e : e.message)); 
-        btn.innerText = "신청하기"; 
-        btn.disabled = false; 
-    }
-}
-</script>
+    </script>
 </body>
+
 </html>
