@@ -1026,7 +1026,8 @@
                     }
                 }
                 html += `</td>`;
-                if ((firstDayIdx + d) % 7 === 0) html += `</tr><tr>`;
+if ((firstDayIdx + d) % 7 === 0 && d !== lastDate) html += `</tr><tr>`;
+    ```
             }
 
             const lastDayIdx = new Date(year, month - 1, lastDate).getDay();
@@ -1249,7 +1250,7 @@
             const searchInput = document.getElementById('search-filter');
             const searchValue = searchInput ? searchInput.value.trim() : "";
 
-            let filteredData = globalPersonalStatsData;
+            let filteredData = [...globalPersonalStatsData];
 
             if (classValue !== "all") {
                 filteredData = filteredData.filter(stat => stat.className === classValue);
