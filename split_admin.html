@@ -900,10 +900,7 @@
     </div>
     <div id="c-comment" style="margin-top:15px; padding:10px; background:#eef6ff; border-radius:8px; font-size:13px;">
     </div>
-    </div>
-    </div>
 
-    </div>
 
 
     <div id="counsel-modal" class="modal-overlay">
@@ -1534,7 +1531,7 @@
             if (sortBy === "id") targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
             else if (sortBy === "seat") targetStudents.sort((a, b) => String(a.seatNum).localeCompare(String(b.seatNum), undefined, { numeric: true }));
 
-            else if (sortBy === "seat") targetStudents.sort((a, b) => String(a.seatNum).localeCompare(String(b.seatNum), undefined, { numeric: true }));
+
 
             let stat = { total: targetStudents.length, present: 0, out: 0, absent: 0, finish: 0 };
 
@@ -1554,7 +1551,7 @@
 
                     if (log.lastUpdateTime) {
                         const dt = new Date(log.lastUpdateTime);
-                        tagTime = dt.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                        let tagTime = dt.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
                     }
 
 
@@ -2146,7 +2143,6 @@
                             if (!matchName && !matchId) return;
                         }
 
-                        // 6. 실제 행(Row) 생성
                         // 6. 실제 행(Row) 생성
                         const tr = document.createElement('tr');
 
