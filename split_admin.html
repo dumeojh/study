@@ -2144,21 +2144,28 @@
                             if (!matchName && !matchId) return;
                         }
 
+
+
+                        ////////////////////////////////////
                         // 6. 실제 행(Row) 생성
                         const tr = document.createElement('tr');
 
                         // 연락처 정보를 가져옵니다 (데이터가 없으면 빈칸)
                         const phone = (typeof rosterPhones !== 'undefined' && rosterPhones[String(d.stuId)]) ? rosterPhones[String(d.stuId)] : '';
 
+                        // 🌟 추가: 달력 조회를 위한 연도와 월(숫자) 추출
+                        const currentYear = new Date().getFullYear();
+                        const targetMonthNum = parseInt(d.targetMonth); // "5월" -> 5
+
                         tr.innerHTML = `
     <td>${d.targetMonth}</td>
     <!-- 학번 클릭 시 수정 폼 호출 -->
     <td onclick="fillEditForm('${d.docId}')" style="cursor:pointer; color:var(--primary); text-decoration:underline;">${d.stuId}</td>
     
-    <!-- 이름 클릭 시 '일일 출결 관리 모달'을 띄우도록 수정 -->
-    <td onclick="openDailyStatus('${d.stuId}', '${d.stuName}', '${d.seatNum || ''}', '${phone}')" 
+    <!-- 🌟 수정됨: 이름 클릭 시 공통 '출결 달력' 띄우기 -->
+    <td onclick="openSharedStudentCalendar('${d.stuId}', '${d.stuName}', ${currentYear}, ${targetMonthNum})" 
         style="cursor:pointer; font-weight:bold; color:var(--primary); text-decoration:underline;">
-        ${d.stuName} 👆
+        ${d.stuName} 📅
     </td>
     
     <td>${d.type}</td>
@@ -2172,6 +2179,9 @@
     <td>${d.sun || ''}</td>
 `;
                         tbody.appendChild(tr);
+                        /////////////////////////////////////////////
+
+
                     });
 
             } catch (err) {
