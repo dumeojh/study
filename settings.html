@@ -835,21 +835,27 @@
                     </p>
                     <span id="opModeIcon" style="color: #666; font-size: 14px; font-weight: bold;">▼</span>
                 </div>
+
+
                 <div id="opModeContent"
                     style="display: none; padding: 0 15px 15px 15px; border-top: 1px dashed #ccc; margin-top: 5px; padding-top: 15px;">
-                    <label><input type="radio" name="opMode" value="manual" checked> <b>수동 지정</b> (체크한 학생만 고정석
-                        신청
-                        가능)</label><br>
-                    <label style="margin-top:5px; display:inline-block; color: #adb5bd; cursor: not-allowed;">
-                        <input type="radio" name="opMode" value="auto" disabled> <span
-                            style="text-decoration: line-through;"><b>자동 분석</b> (전월 참여율 상위 30명 자동 부여)</span>
-                        <small style="color: #dc3545; font-weight: bold; margin-left: 5px;">[기능 개선 중 - 사용
-                            불가]</small>
-                    </label><br>
+                    <label style="display:block; margin-bottom: 8px; cursor: pointer;">
+                        <input type="radio" name="opMode" value="manual" checked>
+                        <b>수동 지정</b> <span style="color:#666;">(아래 목록에서 체크한 권한 있는 학생만 고정석 신청 가능)</span>
+                    </label>
+                    <label style="display:block; cursor: pointer;">
+                        <input type="radio" name="opMode" value="all">
+                        <b style="color: var(--primary);">모두 신청 가능</b> <span style="color:#666;">(명단에 있는 모든 학생이 선착순으로
+                            고정석 신청 가능)</span>
+                    </label>
                     <button onclick="saveOpMode()" class="btn"
-                        style="background: #ccc; margin-top:10px; padding:5px 15px; font-size:12px; cursor: not-allowed;"
-                        disabled>기능 잠김 (수동 모드 고정)</button>
+                        style="background: var(--primary); margin-top:15px; padding:8px 15px; font-size:13px; border-radius: 5px;">
+                        운영 모드 저장
+                    </button>
                 </div>
+
+
+
             </div>
 
             <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
@@ -1555,6 +1561,41 @@
             const { error } = await supabaseClient.from('settings').upsert({ key: 'priority_students', value: { ids: checkedIds } });
             if (!error) alert("고정석 권한 명단이 저장되었습니다.");
         }
+
+        // 🌟 추가: 운영 모드 저장 함수
+        async function saveOpMode() {
+            const selectedMode = document.querySelector('input[name="opMode"]:checked').value;
+            const { error } = await supabaseClient.from('settings').upsert({
+                key: 'fixed_seat_mode',
+                value: { mode: selectedMode }
+            });
+
+            if (error) {
+                alert("운영 모드 저장 실패: " + error.message);
+            } else {
+                alert("고정석 운영 모드가 저장되었습니다.");
+            }
+        }
+
+        // 🌟 수정: 페이지 로드 시 운영 모드 불러오기 (loadAllSettings 함수 내부가 아닌 독립적인 함수로 추가)
+        async function loadOpMode() {
+            try {
+                const { data } = await supabaseClient.from('settings').select('value').eq('key', 'fixed_seat_mode').maybeSingle();
+                if (data && data.value && data.value.mode) {
+                    const radioBtn = document.querySelector(`input[name="opMode"][value="${data.value.mode}"]`);
+                    if (radioBtn) radioBtn.checked = true;
+                }
+            } catch (error) {
+                console.error("운영 모드 로드 중 에러:", error);
+            }
+        }
+
+        // 페이지 렌더링 시 운영 모드 로드 실행
+        document.addEventListener('DOMContentLoaded', () => {
+            loadOpMode();
+        });
+
+
     </script>
 </body>
 
