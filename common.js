@@ -178,6 +178,18 @@ async function openSharedStudentCalendar(stuId, stuName, targetYear, targetMonth
                     ? getRecognizedTimes(dailyLog, appliedStr)
                     : (dailyLog && dailyLog.status !== "미입실" ? appliedTimes.length : 0);
 
+                // 👇 여기서부터 복사해서 기존 [1, 2, 3].forEach(...) 구역을 완전히 교체하세요.
+
+                // [추가] 기록된 타임을 정확히 파악하기 위한 세트
+                let recognizedSet = new Set();
+                if (dailyLog && dailyLog.history) {
+                    dailyLog.history.forEach(h => {
+                        [1, 2, 3].forEach(t => {
+                            if (h.includes(`${t}T`)) recognizedSet.add(String(t));
+                        });
+                    });
+                }
+
                 [1, 2, 3].forEach(t => {
                     const isApplied = appliedTimes.includes(String(t));
                     let leftBg = "transparent", leftCol = "#ccc", borderColor = "#f0f0f0", rightBg = "transparent";
@@ -185,20 +197,44 @@ async function openSharedStudentCalendar(stuId, stuName, targetYear, targetMonth
                     if (isApplied) {
                         tApply++;
                         leftBg = "#f8f9fa"; leftCol = "#333"; borderColor = "#ced4da";
-                        const appliedIndex = appliedTimes.indexOf(String(t)) + 1;
-                        if (appliedIndex <= recognizedCount) {
+
+                        // [수정] 단순히 횟수로 앞에서부터 채우던 로직을 실제 타임 확인 로직으로 변경
+                        let isPresent = false;
+                        const hasSpecificTags = dailyLog && dailyLog.history && dailyLog.history.some(h => h.includes('T'));
+
+                        if (hasSpecificTags) {
+                            // 교사가 1T, 3T 등 특정 타임을 명시해서 승인한 경우 해당 타임만 정확히 인정
+                            if (recognizedSet.has(String(t))) {
+                                isPresent = true;
+                            }
+                        } else {
+                            // 키오스크로 정상 태그한 경우 (기존 방식 유지)
+                            const appliedIndex = appliedTimes.indexOf(String(t)) + 1;
+                            if (appliedIndex <= recognizedCount) {
+                                isPresent = true;
+                            }
+                        }
+
+                        if (isPresent) {
                             rightBg = "#007bff";
                             tPresent++;
                         } else {
                             rightBg = "#ff9999";
                         }
                     }
+
                     slotHtml += `
-                    <div style="display:flex; width:100%; height:18px; font-size:10px; font-weight:bold; border-radius:3px; overflow:hidden; border:1px solid ${borderColor}; margin-bottom:1px;">
-                        <div style="flex:2; display:flex; justify-content:center; align-items:center; background:${leftBg}; color:${leftCol};">${t}T</div>
-                        <div style="flex:1; background:${rightBg}; border-left:1px solid ${borderColor};"></div>
-                    </div>`;
+            <div style="display:flex; width:100%; height:18px; font-size:10px; font-weight:bold; border-radius:3px; overflow:hidden; border:1px solid ${borderColor}; margin-bottom:1px;">
+                <div style="flex:2; display:flex; justify-content:center; align-items:center; background:${leftBg}; color:${leftCol};">${t}T</div>
+                <div style="flex:1; background:${rightBg}; border-left:1px solid ${borderColor};"></div>
+            </div>`;
                 });
+
+                // 👆 여기까지 교체하시면 됩니다.
+
+
+
+
             }
             slotHtml += `</div>`;
 
