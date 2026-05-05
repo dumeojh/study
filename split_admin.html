@@ -928,8 +928,12 @@
         let rosterPhones = {};
         let currentSchedule = { t1: "16:00", t2: "18:50", t3: "20:10" };
 
-        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
-        document.getElementById('daily-date').value = todayStr;
+        // 👇 수정된 부분: getTodayString()을 사용하여 오늘 날짜를 가져오고, 변수 선언 시점을 명확히 합니다.
+        // const todayStr 을 지우고 함수를 직접 호출합니다.
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('daily-date').value = getTodayString();
+        });
+        // 👆 수정 끝
 
 
 
