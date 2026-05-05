@@ -884,36 +884,15 @@
                         }
                     });
 
-                    let currentPresent = 0;
-                    let finalResult = 0;
-                    let absent = 0;
 
                     const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
-
-                    dayLogs.forEach(log => {
-                        if (log.status === "입실" || log.status === "복귀" || log.status === "외출") {
-                            currentPresent++;
-                        } else if (log.status === "귀가") {
-                            finalResult++;
-                        } else {
-                            absent++;
-                        }
-                    });
 
                     if ((t0 + t1 + t2 + t3) === 0 && dayLogs.length === 0) {
                         html += `<div style="text-align:center; color:#adb5bd; font-size:11px; margin-top:20px;">신청 데이터 없음</div>`;
                     } else {
-                        const todayStr = new Date().toLocaleDateString('en-CA');
-                        let row3Label = "현재";
-                        let row3Color = "#198754";
-
-                        if (dateStr < todayStr) {
-                            row3Label = "결과";
-                            row3Color = "#6c757d";
-                        } else if (dateStr > todayStr) {
-                            row3Label = "대기";
-                            row3Color = "#adb5bd";
-                        }
+                        // 🌟 '대기', '현재' 구분을 없애고 무조건 '결과'로 통일
+                        let row3Label = "결과";
+                        let row3Color = "#198754"; // 결과 강조 색상 (초록색 톤)
 
                         let c0 = 0, c1 = 0, c2 = 0, c3 = 0;
                         let err0 = 0, err1 = 0, err2 = 0, err3 = 0;
@@ -936,6 +915,7 @@
                         let c2Class = err2 > 0 ? "status-error" : "status-val";
                         let c3Class = err3 > 0 ? "status-error" : "status-val";
 
+                        // 🌟 하단의 '진행', '귀가' 박스 완전 삭제
                         html += `
                         <div class="stat-box">
                             <div class="apply-grid">
@@ -951,24 +931,16 @@
                                 <div class="grid-item val">${t2}</div>
                                 <div class="grid-item val">${t3}</div>
 
-                                <div class="grid-title" style="color:${row3Color};">${row3Label}</div>
+                                <div class="grid-title" style="color:${row3Color}; font-weight:900;">${row3Label}</div>
                                 <div class="grid-item ${c0Class}">${c0}</div> 
                                 <div class="grid-item ${c1Class}">${c1}</div>
                                 <div class="grid-item ${c2Class}">${c2}</div>
                                 <div class="grid-item ${c3Class}">${c3}</div>
                             </div>
-                            
-                            <div style="display:flex; justify-content:space-between; margin-top:2px;">
-                                <div class="box-current" style="flex:1; margin-right:2px; font-size:10px;">
-                                    🏃 진행: ${currentPresent}명
-                                </div>
-                                <div class="box-result" style="flex:1; margin-left:2px; font-size:10px;">
-                                    ✅ 귀가: ${finalResult}명
-                                </div>
-                            </div>
                         </div>
                     `;
                     }
+
                 }
                 html += `</td>`;
                 if ((firstDayIdx + d) % 7 === 0 && d !== lastDate) html += `</tr><tr>`;
