@@ -1663,105 +1663,112 @@
 
 
 
-
-
+                // 👇👇 [수정] 여기서부터 교체하세요 👇👇
                 let appliedBadges = "";
                 let currentBadges = "";
-                let resultBadges = ""; // 🌟 (추가) 결과 표시용 뱃지
+                let resultBadges = "";
+
+                // ★ 공통 함수 getRecognizedTimes 로직을 개별 타임별로 판단하도록 분리 적용 ★
+                let recognizedSet = new Set();
+                if (log && log.history) {
+                    // 1. 수동 인정 (교사) 체크
+                    log.history.forEach(h => {
+                        [1, 2, 3].forEach(t => {
+                            if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`) || h.includes(`${t}T입실(교사)`)) {
+                                recognizedSet.add(t);
+                            }
+                        });
+                    });
+
+                    // 2. 키오스크 태그 기록 분석 (수동 인정이 없는 타임들에 대해)
+                    if (log.status === "귀가" || log.status === "귀가(누락)") {
+                        let lastTimeStr = "";
+                        for (let i = log.history.length - 1; i >= 0; i--) {
+                            if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
+                                const match = log.history[i].match(/(\d{2}:\d{2})/);
+                                if (match) { lastTimeStr = match[1]; break; }
+                            }
+                        }
+
+                        if (lastTimeStr) {
+                            const [h, m] = lastTimeStr.split(':').map(Number);
+                            const finishMin = h * 60 + m;
+                            const timeToMin = (tmStr) => { const [sh, sm] = tmStr.split(':').map(Number); return sh * 60 + sm; };
+
+                            [1, 2, 3].forEach(t => {
+                                if (st.rawTimes.includes(String(t)) && !recognizedSet.has(t)) {
+                                    const startStr = currentSchedule[`t${t}`];
+                                    const reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0;
+                                    if (startStr && finishMin >= (timeToMin(startStr) + reqMin)) {
+                                        recognizedSet.add(t);
+                                    }
+                                }
+                            });
+                        }
+                    } else if (log.status === "입실" || log.status === "복귀" || log.status === "외출") {
+                        // 아직 야자가 진행 중(귀가 전)이라면, 신청한 모든 타임을 일단 '인정'으로 간주 (최종 귀가 시점에 다시 계산됨)
+                        [1, 2, 3].forEach(t => {
+                            if (st.rawTimes.includes(String(t))) {
+                                recognizedSet.add(t);
+                            }
+                        });
+                    }
+                }
+
+                // 총 인정 타임 횟수 업데이트
+                recTimes = recognizedSet.size;
 
                 [0, 1, 2, 3].forEach(t => {
                     const isApplied = st.rawTimes.includes(String(t));
                     const isCurrentSlot = (t === currentSlot);
-                    const hasLogs = groupedHistory[t] && groupedHistory[t].length > 0;
+                    const isRecognized = recognizedSet.has(t);
 
-                    // 1. [신청] 박스 로직
+                    // 1. [신청] 박스 로직 (변경 없음)
                     if (isApplied) {
                         appliedBadges += `<span style="background:#6c757d; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:bold;">${t}T</span>`;
                     } else {
                         appliedBadges += `<span style="border:1px dashed #adb5bd; color:#adb5bd; background:transparent; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px;">${t}T</span>`;
                     }
 
-                    // 2. [현재] 박스 로직
+                    // 2. [현재] 박스 로직 (직관적으로 간소화)
                     let cBg = "transparent", cBorder = "1px dashed #adb5bd", cFontCol = "#adb5bd", cFontWeight = "normal";
-                    if (isCurrentSlot) {
-                        cFontWeight = "bold";
-                        if (status === "미입실") {
-                            if (isApplied) { cBg = "#fff0f0"; cBorder = "2px dashed #dc3545"; cFontCol = "#dc3545"; }
-                        } else if (status === "외출") {
-                            if (isApplied || hasLogs || status === "외출") { cBg = "#e0d4f7"; cBorder = "2px dashed #6f42c1"; cFontCol = "#4a2785"; }
-                        } else if (status === "귀가" || status === "귀가(누락)") {
-                            if (isApplied) {
-                                if (status === "귀가(누락)") { cBg = "#fff3cd"; cBorder = "3px solid #fd7e14"; cFontCol = "#fd7e14"; }
-                                else { cBg = "#f8f9fa"; cBorder = "2px solid #6c757d"; cFontCol = "#6c757d"; }
-                            }
-                        } else if (status === "입실" || status === "복귀") {
-                            if (isApplied) {
-                                if (st.type === "고정석") { cBg = "#fff3cd"; cBorder = "2px solid #ffc107"; cFontCol = "#856404"; }
-                                else { cBg = "#d1e7dd"; cBorder = "2px solid #2e7d32"; cFontCol = "#0f5132"; }
+
+                    if (isApplied) {
+                        if (isCurrentSlot) {
+                            cFontWeight = "bold";
+                            if (status === "미입실" || status === "귀가(누락)") {
+                                cBg = "#fff0f0"; cBorder = "2px dashed #dc3545"; cFontCol = "#dc3545"; // 현재 앉아있어야 하는데 없는 경우 (결석/도망)
+                            } else if (status === "외출") {
+                                cBg = "#e0d4f7"; cBorder = "2px dashed #6f42c1"; cFontCol = "#4a2785"; // 정당한 외출
                             } else {
-                                cBg = "#ffe8d6"; cBorder = "2px solid #fd7e14"; cFontCol = "#e65100";
+                                cBg = "#d1e7dd"; cBorder = "2px solid #2e7d32"; cFontCol = "#0f5132"; // 정상 진행 중
                             }
+                        } else {
+                            // 현재 타임이 아닌 신청 타임 (과거/미래)
+                            cBg = "#e9ecef"; cBorder = "1px solid #6c757d"; cFontCol = "#495057";
                         }
-                    } else if (t < currentSlot) {
-                        if (isApplied) {
-                            if (status !== "미입실") { cBg = "#e9ecef"; cBorder = "1px solid #6c757d"; cFontCol = "#495057"; cFontWeight = "bold"; }
-                            else { cBg = "#fff0f0"; cBorder = "1px dashed #dc3545"; cFontCol = "#dc3545"; }
-                        } else if (hasLogs) {
-                            cBg = "#ffe8d6"; cBorder = "1px solid #fd7e14"; cFontCol = "#e65100"; cFontWeight = "bold";
-                        }
-                    } else {
-                        if (isApplied) { cBg = "transparent"; cBorder = "1px solid #adb5bd"; cFontCol = "#6c757d"; }
                     }
                     currentBadges += `<span style="background:${cBg}; color:${cFontCol}; border:${cBorder}; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:${cFontWeight};">${t}T</span>`;
 
 
-
-
-                    // 🌟 3. [결과] 박스 로직 (수정됨)
-                    const isPast = (t < currentSlot) || (status === "귀가" || status === "귀가(누락)");
-                    let isPresent = false;
-
-                    if (manualRecognized.has(t)) {
-                        isPresent = true;
-                    } else if (status === "미입실" || status === "귀가(누락)") {
-                        isPresent = false;
-                    } else {
-                        let hasLogsThisSlot = groupedHistory[t] && groupedHistory[t].length > 0;
-                        let lastLogBefore = null;
-                        for (let i = t - 1; i >= 0; i--) {
-                            if (groupedHistory[i] && groupedHistory[i].length > 0) {
-                                lastLogBefore = groupedHistory[i][groupedHistory[i].length - 1];
-                                break;
-                            }
-                        }
-                        let wasInRoom = lastLogBefore && (lastLogBefore.includes("입실") || lastLogBefore.includes("복귀"));
-
-                        if (hasLogsThisSlot || wasInRoom) {
-                            isPresent = true;
-                        } else if (t === currentSlot && (status === "입실" || status === "복귀")) {
-                            isPresent = true;
-                        }
-                    }
-
+                    // 3. [결과] 박스 로직 (오직 인정 여부로만 판단)
                     let rBg = "transparent", rBorder = "1px dashed #adb5bd", rColor = "#adb5bd", rWeight = "normal";
-                    if (isPast) {
+
+                    if (isApplied) {
                         rWeight = "bold";
-                        if (isApplied) {
-                            if (isPresent) {
-                                rBg = "var(--primary)"; rColor = "white"; rBorder = "1px solid var(--primary)";
-                            } else {
-                                rBg = "#fff0f0"; rColor = "var(--danger)"; rBorder = "1px solid var(--danger)";
-                            }
+                        if (isRecognized) {
+                            rBg = "var(--primary)"; rColor = "white"; rBorder = "1px solid var(--primary)"; // 깔끔하게 인정!
+                        } else if (t < currentSlot || status === "귀가" || status === "귀가(누락)") {
+                            // 시간은 지났는데 인정받지 못한 경우 (미인정/결석)
+                            rBg = "#fff0f0"; rColor = "var(--danger)"; rBorder = "1px solid var(--danger)";
                         } else {
-                            if (hasLogs) { rBg = "#ffe8d6"; rColor = "#fd7e14"; rBorder = "1px solid #fd7e14"; }
-                            else { rBg = "transparent"; rColor = "#dee2e6"; rBorder = "1px dashed #dee2e6"; }
+                            // 아직 오지 않은 미래 타임
+                            rBg = "transparent"; rColor = "#6c757d"; rBorder = "1px dashed #6c757d";
                         }
-                    } else {
-                        if (isApplied) { rBg = "transparent"; rColor = "#adb5bd"; rBorder = "1px dashed #adb5bd"; }
-                        else { rBg = "transparent"; rColor = "#dee2e6"; rBorder = "1px dashed #dee2e6"; }
                     }
                     resultBadges += `<span style="background:${rBg}; color:${rColor}; border:${rBorder}; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:${rWeight};">${t}T</span>`;
                 });
+                // 👆👆 [수정] 여기까지 교체하세요 👆👆
 
                 // 🌟 4. HTML 조합
                 let timeBoxHtml = `
