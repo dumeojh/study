@@ -1051,7 +1051,6 @@
 
 
 
-
         async function manualSessionCredit() {
             const stuId = document.getElementById('ds-current-stu-id').value;
             const stuName = document.getElementById('ds-current-stu-name').value;
@@ -1063,23 +1062,24 @@
                 .map(cb => parseInt(cb.value))
                 .sort((a, b) => a - b);
 
-            if (selectedSlots.length === 0) return alert("인정할 타임을 하나 이상 선택해 주세요.");
+            let newHistory = [];
+            let currentStatus = "미입실"; // 초기 상태 설정
 
-            if (!confirm(`[주의] 선택한 타임(${selectedSlots.join(',')}T)에 대해서만 교사 인정 기록을 추가합니다.\n계속하시겠습니까?`)) return;
+            // 🌟 [추가됨] 아무것도 체크하지 않았을 때 -> 전체 기록 강제 취소
+            if (selectedSlots.length === 0) {
+                if (!confirm(`[주의] 선택된 타임이 없습니다.\n${stuName} 학생의 오늘 출결 기록을 모두 '강제 취소(초기화)' 하시겠습니까?`)) return;
 
+                // 요청하신 기록 문구 반영 및 상태를 '미입실'로 되돌림
+                newHistory = ["🚨 교사가 모든 내용 강제로 취소시킴"];
+                currentStatus = "미입실";
+            }
+            // 기존 기능: 체크한 타임이 있을 때 -> 강제 교정 적용
+            else {
+                if (!confirm(`[주의] 선택한 타임(${selectedSlots.join(',')}T)에 대해서만 교사 인정 기록을 추가합니다.\n계속하시겠습니까?`)) return;
 
+                newHistory = ["🛠️ 관리자 강제 교정"];
+                currentStatus = "귀가"; // 부분 인정 후 다시 바뀌지 않도록 귀가 마감
 
-            try {
-
-                // 👇 여기서부터 복사해서 기존 부분을 교체하세요.
-
-                // 1. 안내 문구에 맞게 기존 꼬인 기록을 완전히 초기화합니다.
-                let newHistory = ["🛠️ 관리자 강제 교정"];
-
-                // 출결이 다음 타임으로 자동 연장되는 것을 막기 위해 상태를 '귀가'로 고정합니다.
-                let currentStatus = "귀가";
-
-                // 2. 선택된 타임에 대해서만 정확하게 '교사인정' 태그 추가
                 selectedSlots.forEach(t => {
                     const startStr = currentSchedule[`t${t}`];
                     let endStr = currentSchedule[`t${t}_end`];
@@ -1094,26 +1094,33 @@
                     newHistory.push(`${t}T입실(교사) (${startStr})`);
                     newHistory.push(`${t}T외출(교사) (${endStr})`);
                 });
+            }
 
-                // 👆 여기까지 복사하세요.
-                // 3. 서버에 저장
+            try {
+                // 서버에 저장
                 const { error } = await supabaseClient.from('attendance_logs').upsert({
                     id: logId,
                     date: targetDate,
                     stu_id: stuId,
                     stu_name: stuName,
-                    status: currentStatus, // 상태를 강제로 귀가로 바꾸지 않음!
+                    status: currentStatus,
                     last_update_time: new Date().toISOString(),
                     history: newHistory
                 });
 
                 if (error) throw error;
-                alert("선택한 타임에 대한 인정 처리가 완료되었습니다.");
+
+                // 상황에 맞는 알림창 띄우기
+                if (selectedSlots.length === 0) {
+                    alert("모든 출결 기록이 강제 취소(초기화) 되었습니다.");
+                } else {
+                    alert("선택한 타임에 대한 인정 처리가 완료되었습니다.");
+                }
+
                 document.getElementById('daily-status-modal').style.display = 'none';
                 loadDailyDataAndRender();
             } catch (e) { alert("저장 오류: " + e.message); }
         }
-
 
 
 
