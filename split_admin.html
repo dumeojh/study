@@ -1067,18 +1067,19 @@
 
             if (!confirm(`[주의] 선택한 타임(${selectedSlots.join(',')}T)에 대해서만 교사 인정 기록을 추가합니다.\n계속하시겠습니까?`)) return;
 
+
+
             try {
-                // 1. 기존 출결 기록 불러오기 (기존 기록을 지우지 않고 유지)
-                const { data: currentData } = await supabaseClient
-                    .from('attendance_logs')
-                    .select('history, status')
-                    .eq('id', logId)
-                    .maybeSingle();
 
-                let newHistory = (currentData && currentData.history) ? [...currentData.history] : [];
-                let currentStatus = (currentData && currentData.status) ? currentData.status : "미입실";
+                // 👇 여기서부터 복사해서 기존 부분을 교체하세요.
 
-                // 2. 선택된 타임에 대해서만 독립적인 '교사인정' 태그 추가
+                // 1. 안내 문구에 맞게 기존 꼬인 기록을 완전히 초기화합니다.
+                let newHistory = ["🛠️ 관리자 강제 교정"];
+
+                // 출결이 다음 타임으로 자동 연장되는 것을 막기 위해 상태를 '귀가'로 고정합니다.
+                let currentStatus = "귀가";
+
+                // 2. 선택된 타임에 대해서만 정확하게 '교사인정' 태그 추가
                 selectedSlots.forEach(t => {
                     const startStr = currentSchedule[`t${t}`];
                     let endStr = currentSchedule[`t${t}_end`];
@@ -1090,21 +1091,11 @@
                         endStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
                     }
 
-                    // 해당 타임이 이미 인정된 적이 있는지 중복 방지 체크
-                    const alreadyRecognized = newHistory.some(h => h.includes(`${t}T입실(교사)`));
-
-                    if (!alreadyRecognized) {
-                        newHistory.push(`${t}T입실(교사) (${startStr})`);
-                        // 모든 인정 타임은 '외출(교사)'로 통일하여 개별 타임으로만 인식되게 함 (전체 귀가로 덮어쓰기 방지)
-                        newHistory.push(`${t}T외출(교사) (${endStr})`);
-                    }
+                    newHistory.push(`${t}T입실(교사) (${startStr})`);
+                    newHistory.push(`${t}T외출(교사) (${endStr})`);
                 });
 
-                // 만약 기존 상태가 '미입실'이었다면 최소한 '외출' 상태로 변경해 화면에 표시되게 함
-                if (currentStatus === "미입실" || currentStatus === "귀가(누락)") {
-                    currentStatus = "외출";
-                }
-
+                // 👆 여기까지 복사하세요.
                 // 3. 서버에 저장
                 const { error } = await supabaseClient.from('attendance_logs').upsert({
                     id: logId,
