@@ -833,6 +833,10 @@
             }
         }
 
+
+
+
+        /////////////////////////////////    
         function renderCalendar(year, month, lastDate) {
             const firstDayIdx = new Date(year, month - 1, 1).getDay();
             const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -894,26 +898,76 @@
                         let row3Label = "결과";
                         let row3Color = "#198754"; // 결과 강조 색상 (초록색 톤)
 
-                        let c0 = 0, c1 = 0, c2 = 0, c3 = 0;
-                        let err0 = 0, err1 = 0, err2 = 0, err3 = 0;
 
-                        applicationData.forEach(app => {
-                            if (app[dayKey]) {
-                                const studentLog = dayLogs.find(log => String(log.stu_id) === String(app.stu_id));
-                                if (studentLog && studentLog.status !== "미입실") {
-                                    const isError = (studentLog.status === "귀가(누락)");
-                                    if (app[dayKey].includes('0')) { c0++; if (isError) err0++; }
-                                    if (app[dayKey].includes('1')) { c1++; if (isError) err1++; }
-                                    if (app[dayKey].includes('2')) { c2++; if (isError) err2++; }
-                                    if (app[dayKey].includes('3')) { c3++; if (isError) err3++; }
+
+                        let c0 = 0, c1 = 0, c2 = 0, c3 = 0;
+
+                        // ★ 일일 현황과 완벽히 동일한 깐깐한 결과(인정) 계산 로직 ★
+                        dayLogs.forEach(log => {
+                            let recognizedSet = new Set();
+                            const app = applicationData.find(a => String(a.stu_id) === String(log.stu_id));
+                            const appliedTimes = (app && app[dayKey]) ? app[dayKey].split(',').map(v => v.trim()).filter(v => v) : [];
+
+                            if (log.history) {
+                                // 1. 수동 인정 (교사) 체크
+                                log.history.forEach(h => {
+                                    [0, 1, 2, 3].forEach(t => {
+                                        if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`) || h.includes(`${t}T입실(교사)`)) {
+                                            recognizedSet.add(t);
+                                        }
+                                    });
+                                });
+
+                                // 2. 키오스크 태그 기록 분석 (수동 인정이 없는 타임들에 대해)
+                                if (log.status === "귀가" || log.status === "귀가(누락)") {
+                                    let lastTimeStr = "";
+                                    for (let i = log.history.length - 1; i >= 0; i--) {
+                                        if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
+                                            const match = log.history[i].match(/(\d{2}:\d{2})/);
+                                            if (match) { lastTimeStr = match[1]; break; }
+                                        }
+                                    }
+
+                                    if (lastTimeStr) {
+                                        const [h, m] = lastTimeStr.split(':').map(Number);
+                                        const finishMin = h * 60 + m;
+                                        const timeToMin = (tmStr) => { const [sh, sm] = tmStr.split(':').map(Number); return sh * 60 + sm; };
+
+                                        [1, 2, 3].forEach(t => {
+                                            if (appliedTimes.includes(String(t)) && !recognizedSet.has(t)) {
+                                                const startStr = currentSchedule[`t${t}`];
+                                                const reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0;
+                                                if (startStr && finishMin >= (timeToMin(startStr) + reqMin)) {
+                                                    recognizedSet.add(t);
+                                                }
+                                            }
+                                        });
+                                    }
+                                } else if (log.status === "입실" || log.status === "복귀" || log.status === "외출") {
+                                    // 아직 자리에 있는 경우 신청 타임은 모두 인정으로 잠정 계산
+                                    [1, 2, 3].forEach(t => {
+                                        if (appliedTimes.includes(String(t))) {
+                                            recognizedSet.add(t);
+                                        }
+                                    });
                                 }
                             }
+
+                            // 최종 인정된 타임만 1씩 합산
+                            if (recognizedSet.has(0)) c0++;
+                            if (recognizedSet.has(1)) c1++;
+                            if (recognizedSet.has(2)) c2++;
+                            if (recognizedSet.has(3)) c3++;
                         });
 
-                        let c0Class = err0 > 0 ? "status-error" : "status-val";
-                        let c1Class = err1 > 0 ? "status-error" : "status-val";
-                        let c2Class = err2 > 0 ? "status-error" : "status-val";
-                        let c3Class = err3 > 0 ? "status-error" : "status-val";
+                        // 빨간색 에러 칠하기는 삭제 (오직 정확한 결과만 보여줌)
+                        let c0Class = "status-val";
+                        let c1Class = "status-val";
+                        let c2Class = "status-val";
+                        let c3Class = "status-val";
+
+
+
 
                         // 🌟 하단의 '진행', '귀가' 박스 완전 삭제
                         html += `
