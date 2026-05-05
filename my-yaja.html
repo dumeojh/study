@@ -199,6 +199,7 @@
                     .like('date', `${month}%`)
                     .order('date', { ascending: false });
 
+
                 // UI 업데이트
                 document.getElementById('result_area').classList.remove('hidden');
                 document.getElementById('user_name').innerText = `${userData?.stu_name || '학생'}님의 ${month.split('-')[1]}월 현황`;
@@ -207,28 +208,33 @@
                 document.getElementById('rank_title').innerText = `${month.split('-')[1]}월 등수`;
 
                 const logList = document.getElementById('log_list');
+
+                // 🌟 CSS 클래스를 5칸 그리드(grid-cols-5)로 완전히 변경합니다.
+                logList.className = "grid grid-cols-5 gap-2 mt-3";
+
                 logList.innerHTML = logs.map(log => {
                     const slots = getTimeSlots(log.status, log.history);
 
-                    // 상태 및 타임 수에 따른 디자인 분기
-                    const isSuccess = ['입실', '복귀', '귀가', '외출', '출석'].includes(log.status);
-                    const statusColor = isSuccess ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600';
-                    const slotBadge = slots > 0
-                        ? `<span class="ml-2 text-[11px] font-extrabold text-purple-600 border border-purple-200 bg-purple-50 px-2 py-0.5 rounded-full">${slots}타임 인정</span>`
-                        : '';
+                    if (slots === 0) {
+                        // 타임 횟수가 0인 날은 화면에 아무것도 보이지 않도록 빈 칸으로 둡니다.
+                        return `<li class="h-14 bg-transparent"></li>`;
+                    }
+
+                    // 날짜 표시 변환 (예: 2026-05-12 -> 12일)
+                    const dayStr = parseInt(log.date.split('-')[2]) + '일';
 
                     return `
-                    <li class="flex justify-between items-center py-3">
-                        <div class="flex items-center">
-                            <span class="font-medium text-gray-700">${log.date}</span>
-                            ${slotBadge}
-                        </div>
-                        <span class="px-2 py-1 rounded text-xs font-bold ${statusColor}">${log.status}</span>
+                    <li class="flex flex-col items-center justify-center bg-purple-50 border border-purple-200 rounded-lg h-14 shadow-sm transform transition hover:scale-105">
+                        <span class="text-[10px] text-gray-500 font-medium">${dayStr}</span>
+                        <span class="font-black text-purple-700 text-sm mt-0.5">${slots}T</span>
                     </li>
                     `;
                 }).join('');
 
                 const alertBox = document.getElementById('fixed_seat_alert');
+                // ... (이하 기존 코드 동일)
+
+
                 if (rank <= 40) {
                     alertBox.className = "card p-4 mb-4 border-l-4 border-green-500 bg-green-50";
                     alertBox.innerHTML = `<p class="text-sm text-green-800 font-medium">🎉 현재 <strong>고정석 안정권</strong>(${rank}위)입니다!</p>`;
