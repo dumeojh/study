@@ -2108,16 +2108,59 @@
                     };
                 });
 
+
+
                 // 전역 변수 갱신
                 applicationData = freshData;
+
+                // 🌟 [추가] DB 데이터 기반으로 반(Class) 목록을 자동 추출하여 셀렉트 박스 생성
+                let classSet = new Set();
+                Object.values(applicationData).forEach(d => {
+                    const stuIdStr = String(d.stuId);
+                    if (stuIdStr.length >= 4 && !isNaN(stuIdStr)) {
+                        // 예: 3701 -> 앞 2자리(37), 31001 -> 앞 3자리(310)를 가져온 후 학년을 제외한 뒷부분을 반으로 추출
+                        const classCode = stuIdStr.slice(0, -2);
+                        const classNum = classCode.substring(1);
+                        if (classNum) classSet.add(classNum);
+                    } else {
+                        // 학번이 아닌 '토끼반' 같은 텍스트일 경우 그대로 추가
+                        classSet.add(stuIdStr);
+                    }
+                });
+
+                const sortedClasses = Array.from(classSet).sort((a, b) => {
+                    // 숫자면 숫자 순서대로 정렬하고, '토끼' 같은 문자면 가나다순으로 자동 정렬
+                    if (!isNaN(a) && !isNaN(b)) return parseInt(a) - parseInt(b);
+                    return String(a).localeCompare(String(b));
+                });
+
+                const filterSelect = document.getElementById('filter-class');
+                const currentFilterVal = filterSelect.value;
+
+                let optionsHtml = '<option value="all">전체 반</option>';
+                sortedClasses.forEach(c => {
+                    // 숫자면 뒤에 '반'을 붙여주고, 글자면 그대로 출력
+                    const label = isNaN(c) ? c : `${c}반`;
+                    optionsHtml += `<option value="${c}">${label}</option>`;
+                });
+                filterSelect.innerHTML = optionsHtml;
+
+                // 기존에 선택해둔 값(예: 3반 보던 중 새로고침)을 유지
+                if (sortedClasses.includes(currentFilterVal)) {
+                    filterSelect.value = currentFilterVal;
+                } else {
+                    filterSelect.value = "all";
+                }
+                // 👆 [자동 추출 로직 끝] 👆
+
 
                 // 4. 화면 초기화 및 필터링 시작
                 tbody.innerHTML = "";
                 const month = document.getElementById('filter-month').value;
-                const classFilter = document.getElementById('filter-class').value;
+                const classFilter = document.getElementById('filter-class').value; // 업데이트된 값 가져오기
                 const searchKeyword = document.getElementById('search-status-list').value.trim();
 
-                // 5. 데이터를 순회하며 테이블 행 생성 (기존 필터 로직 유지)
+                // 5. 데이터를 순회하며 테이블 행 생성
                 Object.keys(applicationData)
                     .map(id => applicationData[id])
                     .sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)))
@@ -2125,12 +2168,22 @@
                         // 월 필터링
                         if (month !== "all" && d.targetMonth !== month) return;
 
-                        // 반 필터링
+                        // 반 필터링 (자동화 로직에 맞게 추출 방식 개선)
                         if (classFilter !== "all") {
                             const stuIdStr = String(d.stuId);
-                            const classNum = stuIdStr.length >= 2 ? stuIdStr.substring(1, 2) : "";
+                            let classNum = "";
+                            if (stuIdStr.length >= 4 && !isNaN(stuIdStr)) {
+                                classNum = stuIdStr.slice(0, -2).substring(1);
+                            } else {
+                                classNum = stuIdStr;
+                            }
+
                             if (classNum !== classFilter) return;
                         }
+
+
+
+
 
                         // 이름 또는 학번 검색 필터링
                         if (searchKeyword !== "") {
