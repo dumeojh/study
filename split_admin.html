@@ -1617,84 +1617,66 @@
                 if (statusFilter !== "all" && mappedGroup !== statusFilter) return;
 
 
-                // 🌟 (추가) 학생이 '정상 귀가'를 누른 타임 계산
-                let finishSlot = 99;
-                if (status === "귀가" && log && log.history) {
+
+                // 🌟 [수정] 수동 인정 태그 세트 초기화 (전역적으로 사용)
+                let manualRecognized = new Set();
+                if (log && log.history) {
                     log.history.forEach(h => {
-                        if (h.includes("귀가") && !h.includes("누락")) {
-                            const tmMatch = h.match(/(\d{2}:\d{2})/);
-                            if (tmMatch) {
-                                const timeStr = tmMatch[1];
-                                if (timeStr < currentSchedule.t1) finishSlot = 0;
-                                else if (timeStr < currentSchedule.t2) finishSlot = 1;
-                                else if (timeStr < currentSchedule.t3) finishSlot = 2;
-                                else finishSlot = 3;
+                        [1, 2, 3].forEach(t => {
+                            if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`)) {
+                                manualRecognized.add(t);
                             }
-                        }
+                        });
                     });
                 }
 
-
-
-
-                // 👇👇 [여기부터 타임 횟수 계산 로직 추가] 👇👇
+                // 👇👇 [수정] 타임 횟수(recTimes) 계산 로직 👇👇
                 let recTimes = 0;
                 if (status === "미입실" || status === "귀가(누락)") {
                     recTimes = 0;
                 } else {
-                    // 🌟 [핵심 변경] 수동 인정된 태그가 있는지 먼저 확인
-                    let manualRecognized = new Set();
-                    if (log && log.history) {
-                        log.history.forEach(h => {
-                            [1, 2, 3].forEach(t => {
-                                if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`)) {
-                                    manualRecognized.add(t);
-                                }
-                            });
-                        });
-                    }
-
-                    // 교사가 수동으로 인정한 기록이 있다면 그 개수를 우선 적용!
                     if (manualRecognized.size > 0) {
                         recTimes = manualRecognized.size;
                     } else {
-                        // 수동 인정 기록이 없다면 기존 시간 기반 계산법 적용
-                        let finishMin = 9999;
-                        if (status === "귀가" && log && log.history) {
-                            for (let i = log.history.length - 1; i >= 0; i--) {
-                                if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
-                                    const match = log.history[i].match(/(\d{2}:\d{2})/);
-                                    if (match) {
-                                        const [h, m] = match[1].split(':').map(Number);
-                                        finishMin = h * 60 + m;
-                                        break;
-                                    }
-                                }
-                            }
-                        } else {
-                            const now = new Date();
-                            finishMin = now.getHours() * 60 + now.getMinutes();
-                        }
-
-                        const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+                        const timeToMin = (tmStr) => { const [h, m] = tmStr.split(':').map(Number); return h * 60 + m; };
 
                         [1, 2, 3].forEach(t => {
                             if (st.rawTimes.includes(String(t))) {
-                                let startStr = currentSchedule[`t${t}`];
-                                let reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0;
-                                if (startStr && !isNaN(reqMin)) {
-                                    let passMin = timeToMin(startStr) + reqMin;
-                                    if (finishMin >= passMin) recTimes++;
+                                let hasLogsThisSlot = groupedHistory[t] && groupedHistory[t].length > 0;
+                                let lastLogBefore = null;
+                                for (let i = t - 1; i >= 0; i--) {
+                                    if (groupedHistory[i] && groupedHistory[i].length > 0) {
+                                        lastLogBefore = groupedHistory[i][groupedHistory[i].length - 1];
+                                        break;
+                                    }
+                                }
+                                let wasInRoom = lastLogBefore && (lastLogBefore.includes("입실") || lastLogBefore.includes("복귀"));
+
+                                if (hasLogsThisSlot || wasInRoom) {
+                                    let valid = true;
+                                    if (hasLogsThisSlot) {
+                                        let lastLogThisSlot = groupedHistory[t][groupedHistory[t].length - 1];
+                                        if (lastLogThisSlot.includes("외출") || lastLogThisSlot.includes("귀가")) {
+                                            const match = lastLogThisSlot.match(/(\d{2}:\d{2})/);
+                                            if (match) {
+                                                let logMin = timeToMin(match[1]);
+                                                let startStr = currentSchedule[`t${t}`];
+                                                let reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0;
+                                                if (startStr && !isNaN(reqMin)) {
+                                                    let passMin = timeToMin(startStr) + reqMin;
+                                                    if (logMin < passMin) valid = false;
+                                                }
+                                            }
+                                        }
+                                    } else if (t === currentSlot && status === "외출") {
+                                        valid = false;
+                                    }
+                                    if (valid) recTimes++;
                                 }
                             }
                         });
                     }
                 }
-
-
-
-
-
 
                 if (recTimes > 0) {
                     recText = `<b style="color:var(--primary); font-size:15px;">${recTimes}</b>타임`;
@@ -1702,7 +1684,10 @@
                     if (status === "귀가(누락)") recText = `<span style="color:#dc3545; font-weight:bold;">0타임 (누락)</span>`;
                     else recText = `<span style="color:#dc3545; font-weight:bold;">0타임</span>`;
                 }
-                // 👆👆 [여기까지 추가] 👆👆
+
+
+
+
 
 
                 let appliedBadges = "";
@@ -1754,20 +1739,36 @@
                     }
                     currentBadges += `<span style="background:${cBg}; color:${cFontCol}; border:${cBorder}; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:${cFontWeight};">${t}T</span>`;
 
-                    // 🌟 3. [결과] 박스 로직 (새로 추가됨)
+
+
+
+                    // 🌟 3. [결과] 박스 로직 (수정됨)
                     const isPast = (t < currentSlot) || (status === "귀가" || status === "귀가(누락)");
                     let isPresent = false;
 
-                    if (status === "미입실" || status === "귀가(누락)") {
-                        isPresent = false;
-                    } else if (status === "입실" || status === "복귀" || status === "외출") {
+                    if (manualRecognized.has(t)) {
                         isPresent = true;
-                    } else if (status === "귀가") {
-                        isPresent = (t <= finishSlot);
+                    } else if (status === "미입실" || status === "귀가(누락)") {
+                        isPresent = false;
+                    } else {
+                        let hasLogsThisSlot = groupedHistory[t] && groupedHistory[t].length > 0;
+                        let lastLogBefore = null;
+                        for (let i = t - 1; i >= 0; i--) {
+                            if (groupedHistory[i] && groupedHistory[i].length > 0) {
+                                lastLogBefore = groupedHistory[i][groupedHistory[i].length - 1];
+                                break;
+                            }
+                        }
+                        let wasInRoom = lastLogBefore && (lastLogBefore.includes("입실") || lastLogBefore.includes("복귀"));
+
+                        if (hasLogsThisSlot || wasInRoom) {
+                            isPresent = true;
+                        } else if (t === currentSlot && (status === "입실" || status === "복귀")) {
+                            isPresent = true;
+                        }
                     }
 
                     let rBg = "transparent", rBorder = "1px dashed #adb5bd", rColor = "#adb5bd", rWeight = "normal";
-
                     if (isPast) {
                         rWeight = "bold";
                         if (isApplied) {
