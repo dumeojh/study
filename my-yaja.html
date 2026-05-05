@@ -134,21 +134,43 @@
             await checkMyStatus(targetMonth);
         }
 
+
+        // 타임 횟수를 계산하는 헬퍼 함수 추가
+        function getTimeSlots(status, history) {
+            if (status === '미입실' || status === '귀가(누락)') return 0;
+
+            let count = 0;
+            if (history && Array.isArray(history)) {
+                let slots = new Set();
+                history.forEach(h => {
+                    // 기록(history) 배열 안에 1T, 2타임 등의 키워드가 포함되어 있는지 확인
+                    if (h.includes('1T') || h.includes('1타임')) slots.add(1);
+                    if (h.includes('2T') || h.includes('2타임')) slots.add(2);
+                    if (h.includes('3T') || h.includes('3타임')) slots.add(3);
+                });
+                count = slots.size;
+            }
+            // 정상 입실 기록은 있지만 타임 정보가 명확히 파악되지 않는 경우 기본 1타임 인정
+            return count > 0 ? count : 1;
+        }
+
         async function checkMyStatus(month) {
             const msgElement = document.getElementById('msg');
             try {
                 msgElement.classList.add('hidden');
 
-                // 1. 해당 월의 모든 데이터를 가져옴 (랭킹 계산용)
+                // 1. 전체 데이터 가져오기 (history 포함)
                 const { data: allData, error: rankError } = await supabaseClient
                     .from('attendance_logs')
-                    .select('stu_id, date')
-                    .like('date', `${month}%`); // 날짜가 선택한 달로 시작하는 데이터만 검색
+                    .select('stu_id, date, status, history')
+                    .like('date', `${month}%`);
 
                 if (rankError) throw rankError;
 
+                // 단순 일수가 아닌 '타임 횟수'를 기준으로 합산하도록 수정
                 const counts = allData.reduce((acc, curr) => {
-                    acc[curr.stu_id] = (acc[curr.stu_id] || 0) + 1;
+                    const slots = getTimeSlots(curr.status, curr.history);
+                    acc[curr.stu_id] = (acc[curr.stu_id] || 0) + slots;
                     return acc;
                 }, {});
 
@@ -163,7 +185,7 @@
                     return;
                 }
 
-                // 2. 학생 정보 및 상세 로그 가져오기
+                // 2. 학생 정보 및 상세 로그 가져오기 (history 포함)
                 const { data: userData } = await supabaseClient
                     .from('applications')
                     .select('stu_name')
@@ -172,7 +194,7 @@
 
                 const { data: logs } = await supabaseClient
                     .from('attendance_logs')
-                    .select('date, status')
+                    .select('date, status, history')
                     .eq('stu_id', currentStuId)
                     .like('date', `${month}%`)
                     .order('date', { ascending: false });
@@ -185,12 +207,26 @@
                 document.getElementById('rank_title').innerText = `${month.split('-')[1]}월 등수`;
 
                 const logList = document.getElementById('log_list');
-                logList.innerHTML = logs.map(log => `
-                <li class="flex justify-between items-center py-3">
-                    <span class="font-medium text-gray-700">${log.date}</span>
-                    <span class="px-2 py-1 rounded text-xs font-bold ${log.status === '출석' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">${log.status}</span>
-                </li>
-            `).join('');
+                logList.innerHTML = logs.map(log => {
+                    const slots = getTimeSlots(log.status, log.history);
+
+                    // 상태 및 타임 수에 따른 디자인 분기
+                    const isSuccess = ['입실', '복귀', '귀가', '외출', '출석'].includes(log.status);
+                    const statusColor = isSuccess ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600';
+                    const slotBadge = slots > 0
+                        ? `<span class="ml-2 text-[11px] font-extrabold text-purple-600 border border-purple-200 bg-purple-50 px-2 py-0.5 rounded-full">${slots}타임 인정</span>`
+                        : '';
+
+                    return `
+                    <li class="flex justify-between items-center py-3">
+                        <div class="flex items-center">
+                            <span class="font-medium text-gray-700">${log.date}</span>
+                            ${slotBadge}
+                        </div>
+                        <span class="px-2 py-1 rounded text-xs font-bold ${statusColor}">${log.status}</span>
+                    </li>
+                    `;
+                }).join('');
 
                 const alertBox = document.getElementById('fixed_seat_alert');
                 if (rank <= 40) {
