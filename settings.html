@@ -1413,12 +1413,6 @@
             } catch (error) { console.error("데이터 로딩 중 에러 발생:", error); }
         }
 
-        function addMinutesToTime(timeStr, minsToAdd) {
-            if (!timeStr) return "22:00";
-            const [hh, mm] = timeStr.split(':').map(Number);
-            const date = new Date(); date.setHours(hh); date.setMinutes(mm + minsToAdd);
-            return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-        }
 
         async function handleExcelUpload() {
             const file = document.getElementById('excel-input').files[0];

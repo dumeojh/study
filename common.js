@@ -309,3 +309,28 @@ function openSharedDailyDetail(dateStr, status, historyList) {
     document.getElementById('shared-dd-history').innerHTML = historyHtml;
     document.getElementById('shared-daily-detail-modal').style.display = 'flex';
 }
+
+// =======================================================
+// 🌟 [공통 유틸리티] 날짜 및 시간 계산 함수
+// =======================================================
+
+/**
+ * 한국 시간(KST) 기준 오늘 날짜 문자열 반환 (YYYY-MM-DD 형식)
+ */
+function getTodayString() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+}
+
+/**
+ * 특정 시간 문자열(HH:MM)에 지정된 분(minutes)을 더하여 새로운 시간 문자열 반환
+ * @param {string} timeStr - 기준 시간 (예: "16:00")
+ * @param {number} minsToAdd - 더할 분 (예: 30)
+ */
+function addMinutesToTime(timeStr, minsToAdd) {
+    if (!timeStr) return "22:00"; // 값이 없을 경우의 기본값
+    const [hh, mm] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hh);
+    date.setMinutes(mm + minsToAdd);
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}

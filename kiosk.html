@@ -635,7 +635,7 @@
                 const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
                 if (schedDoc && schedDoc.value && schedDoc.value.autoClose === false) return;
 
-                const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+                const todayStr = getTodayString();
 
 
 
