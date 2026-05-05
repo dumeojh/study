@@ -806,8 +806,7 @@
                     <td style="position:sticky; left:0; background:white; z-index:1; white-space:nowrap;">${stat.className}</td>
                     <td style="position:sticky; left:85px; background:white; z-index:1; font-weight:bold; white-space:nowrap;">${stat.stu_id}</td>
           
-                    <td style="position:sticky; left:135px; background:white; z-index:1; font-weight:bold; border-right:2px solid #eee; cursor:pointer; color:var(--primary); text-decoration:underline; white-space:nowrap;" onclick="openStudentCalendar('${stat.stu_id}', '${stat.stu_name}')">${stat.stu_name} 🔍</td>`;
-
+<td style="position:sticky; left:135px; background:white; z-index:1; font-weight:bold; border-right:2px solid #eee; cursor:pointer; color:var(--primary); text-decoration:underline; white-space:nowrap;" onclick="const [y, m] = document.getElementById('month-picker').value.split('-'); openSharedStudentCalendar('${stat.stu_id}', '${stat.stu_name}', parseInt(y), parseInt(m))">${stat.stu_name} 🔍</td>`;
                     for (let i = 0; i < matrixLastDate; i++) {
                         const count = stat.dailyCounts[i];
                         const display = count > 0 ? `<b style="color:#333;">${count}</b>` : `<span style="color:#ddd;">-</span>`;
