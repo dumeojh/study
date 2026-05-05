@@ -889,8 +889,10 @@
                     <input type="text" id="priority-search-input" onkeyup="filterPriorityTable()"
                         placeholder="이름 또는 학번 입력"
                         style="width: 160px; padding: 6px 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; cursor: text;">
-                    <button onclick="resetPriorityView()" class="btn btn-gray"
-                        style="padding: 6px 10px; font-size: 13px; border-radius: 5px;">🔄 초기화</button>
+                    <button onclick="resetPriorityView()" class="btn"
+                        style="padding: 6px 12px; font-size: 13px; border-radius: 5px; background: #ffffff; color: var(--primary); border: 2px solid var(--primary); font-weight: bold; transition: 0.2s;"
+                        onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='#ffffff'">🔄
+                        초기화</button>
                 </div>
             </div>
 
