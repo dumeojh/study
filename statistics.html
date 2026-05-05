@@ -1026,8 +1026,8 @@
                     }
                 }
                 html += `</td>`;
-if ((firstDayIdx + d) % 7 === 0 && d !== lastDate) html += `</tr><tr>`;
-    ```
+                if ((firstDayIdx + d) % 7 === 0 && d !== lastDate) html += `</tr><tr>`;
+
             }
 
             const lastDayIdx = new Date(year, month - 1, lastDate).getDay();
