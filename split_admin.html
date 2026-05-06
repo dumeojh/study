@@ -779,8 +779,17 @@
                             <option value="자율석">자율석</option>
                         </select>
                     </div>
-                    <div class="input-group-item"><label>좌석 번호</label><input type="text" id="m-seatNum"
-                            placeholder="예: A-1"></div>
+
+                    <div class="input-group-item">
+                        <label>좌석 번호
+                            <button type="button" onclick="showEmptySeats()"
+                                style="margin-left: 5px; padding: 2px 8px; font-size: 11px; background: #198754; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🔍
+                                빈자리 보기</button>
+                        </label>
+                        <input type="text" id="m-seatNum" placeholder="예: A-1">
+                    </div>
+
+
                 </div>
                 <div class="time-input-row">
                     <div class="time-item"><label>월</label><input type="text" id="m-mon"></div>
@@ -2307,6 +2316,52 @@
         }
 
 
+        // 🌟 선택한 달의 남은 고정석 빈자리를 계산해서 팝업으로 보여주는 함수
+        function showEmptySeats() {
+            const targetMonth = document.getElementById('m-month').value;
+            if (!targetMonth) {
+                alert("적용 월을 먼저 선택해주세요.");
+                return;
+            }
+
+            // 1. 도면에서 실제 존재하는 모든 좌석 번호 추출
+            let allSeats = [];
+            if (seatMapData && seatMapData.length > 0) {
+                seatMapData.forEach(row => {
+                    row.forEach(cell => {
+                        const c = typeof cell === 'number' ? { type: cell, label: "" } : cell;
+                        // type이 1이나 2이고 라벨(번호)이 있는 좌석만 수집
+                        if ((c.type === 1 || c.type === 2) && c.label) {
+                            allSeats.push(c.label);
+                        }
+                    });
+                });
+            }
+
+            // 2. 선택한 월에 이미 배정 완료된 고정석 번호 추출
+            let usedSeats = new Set();
+            Object.values(applicationData).forEach(app => {
+                if (app.targetMonth === targetMonth && app.type === "고정석" && app.seatNum) {
+                    usedSeats.add(app.seatNum);
+                }
+            });
+
+            // 3. 전체 좌석에서 사용 중인 좌석을 제외하여 빈자리 도출
+            let emptySeats = allSeats.filter(seat => !usedSeats.has(seat));
+
+            // 4. 결과 출력
+            if (emptySeats.length === 0) {
+                alert(`🚨 ${targetMonth}에는 남은 빈자리가 하나도 없습니다!`);
+            } else {
+                // 보기 좋게 정렬 (A-1, A-2 순으로)
+                emptySeats.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                alert(`✅ ${targetMonth} 배정 가능한 빈자리 (총 ${emptySeats.length}석)\n\n${emptySeats.join(', ')}`);
+            }
+        }
+
+
+
+
         // --- 수정된 데이터 저장 로직 ---
         async function saveManualEntry() {
             // 1. 입력 필드에서 데이터 가져오기
@@ -2341,6 +2396,23 @@
                 alert("고정석은 좌석 번호가 필수입니다.");
                 return; // 실행 중단
             }
+
+            // 👇👇 [여기에 추가] 중복 좌석 저장 방지 로직 👇👇
+            if (type === "고정석") {
+                const isDuplicate = Object.values(applicationData).some(app => {
+                    // 자기 자신의 데이터는 제외하고, 같은 달, 고정석, 같은 좌석번호가 있는지 검사
+                    return String(app.docId) !== String(id) &&
+                        app.targetMonth === target_month &&
+                        app.type === "고정석" &&
+                        app.seatNum === seat_num_val;
+                });
+
+                if (isDuplicate) {
+                    alert(`⚠️ 오류: [${seat_num_val}] 좌석은 ${target_month}에 이미 다른 학생이 사용 중입니다.\n빈자리를 확인하고 다른 좌석을 배정해 주세요.`);
+                    return; // 실행 중단 (저장 안 됨)
+                }
+            }
+            // 👆👆 여기까지 👆👆
 
             try {
                 // 3. 보안 체크: 기존 데이터와 이름 일치 여부 확인 (실수 방지)
