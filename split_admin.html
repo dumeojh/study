@@ -2315,8 +2315,7 @@
             document.querySelectorAll('#tab-manual input').forEach(i => i.value = "");
         }
 
-
-        // 🌟 선택한 달의 남은 고정석 빈자리를 계산해서 팝업으로 보여주는 함수
+        // 🌟 선택한 달의 남은 빈자리를 고정석/자율석 구분하여 팝업으로 보여주는 함수
         function showEmptySeats() {
             const targetMonth = document.getElementById('m-month').value;
             if (!targetMonth) {
@@ -2324,41 +2323,67 @@
                 return;
             }
 
-            // 1. 도면에서 실제 존재하는 모든 좌석 번호 추출
-            let allSeats = [];
+            // 1. 도면에서 좌석 번호 추출 (타입별로 분리)
+            let allFixedSeats = []; // 고정석 전용 자리 (도면 type: 2 가정)
+            let allAutoSeats = [];  // 자율석 전용 자리 (도면 type: 1 가정)
+
             if (seatMapData && seatMapData.length > 0) {
                 seatMapData.forEach(row => {
                     row.forEach(cell => {
                         const c = typeof cell === 'number' ? { type: cell, label: "" } : cell;
-                        // type이 1이나 2이고 라벨(번호)이 있는 좌석만 수집
-                        if ((c.type === 1 || c.type === 2) && c.label) {
-                            allSeats.push(c.label);
+                        if (c.label) {
+                            // 도면 설정에 따라 type 2를 고정석 구역으로, type 1을 자율석 구역으로 가정합니다.
+                            if (c.type === 2) {
+                                allFixedSeats.push(c.label);
+                            } else if (c.type === 1) {
+                                allAutoSeats.push(c.label);
+                            }
                         }
                     });
                 });
             }
 
-            // 2. 선택한 월에 이미 배정 완료된 고정석 번호 추출
+            // 2. 선택한 월에 이미 배정 완료된 좌석 번호 추출
             let usedSeats = new Set();
             Object.values(applicationData).forEach(app => {
-                if (app.targetMonth === targetMonth && app.type === "고정석" && app.seatNum) {
+                // 고정석, 자율석 상관없이 일단 이번 달에 배정된 자리는 모두 수집
+                if (app.targetMonth === targetMonth && app.seatNum) {
                     usedSeats.add(app.seatNum);
                 }
             });
 
             // 3. 전체 좌석에서 사용 중인 좌석을 제외하여 빈자리 도출
-            let emptySeats = allSeats.filter(seat => !usedSeats.has(seat));
+            let emptyFixedSeats = allFixedSeats.filter(seat => !usedSeats.has(seat));
+            let emptyAutoSeats = allAutoSeats.filter(seat => !usedSeats.has(seat));
+
+            // 보기 좋게 정렬 (A-1, A-2 순으로)
+            emptyFixedSeats.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+            emptyAutoSeats.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
             // 4. 결과 출력
-            if (emptySeats.length === 0) {
+            let message = `✅ ${targetMonth} 배정 가능한 빈자리 현황\n`;
+            message += `=======================================\n\n`;
+
+            if (emptyFixedSeats.length > 0) {
+                message += `[ 🟡 고정석 구역 빈자리 ] (총 ${emptyFixedSeats.length}석)\n`;
+                message += `${emptyFixedSeats.join(', ')}\n\n`;
+            } else if (allFixedSeats.length > 0) {
+                message += `[ 🟡 고정석 구역 빈자리 ]\n남은 자리가 없습니다.\n\n`;
+            }
+
+            if (emptyAutoSeats.length > 0) {
+                message += `[ 🟢 자율석 구역 빈자리 ] (총 ${emptyAutoSeats.length}석)\n`;
+                message += `${emptyAutoSeats.join(', ')}\n`;
+            } else if (allAutoSeats.length > 0) {
+                message += `[ 🟢 자율석 구역 빈자리 ]\n남은 자리가 없습니다.\n`;
+            }
+
+            if (emptyFixedSeats.length === 0 && emptyAutoSeats.length === 0) {
                 alert(`🚨 ${targetMonth}에는 남은 빈자리가 하나도 없습니다!`);
             } else {
-                // 보기 좋게 정렬 (A-1, A-2 순으로)
-                emptySeats.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-                alert(`✅ ${targetMonth} 배정 가능한 빈자리 (총 ${emptySeats.length}석)\n\n${emptySeats.join(', ')}`);
+                alert(message);
             }
         }
-
 
 
 
