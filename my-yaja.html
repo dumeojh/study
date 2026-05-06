@@ -140,23 +140,33 @@
         }
 
 
-        // 타임 횟수를 계산하는 헬퍼 함수 추가
-        function getTimeSlots(status, history) {
+        // 타임 횟수를 계산하는 헬퍼 함수 추가 (새로 교체된 강력한 계산 로직)
+        function getTimeSlots(status, history, currentSchedule) {
             if (status === '미입실' || status === '귀가(누락)') return 0;
 
             let count = 0;
-            if (history && Array.isArray(history)) {
-                let slots = new Set();
-                history.forEach(h => {
-                    // 기록(history) 배열 안에 1T, 2타임 등의 키워드가 포함되어 있는지 확인
-                    if (h.includes('1T') || h.includes('1타임')) slots.add(1);
-                    if (h.includes('2T') || h.includes('2타임')) slots.add(2);
-                    if (h.includes('3T') || h.includes('3타임')) slots.add(3);
-                });
-                count = slots.size;
+            // 정상 귀가했을 경우, 마지막 귀가 시간을 추출하여 몇 타임까지 했는지 자동 계산
+            if (status === '귀가' && history) {
+                let lastTimeStr = "";
+                for (let i = history.length - 1; i >= 0; i--) {
+                    if (history[i].includes("귀가")) {
+                        const match = history[i].match(/(\d{2}:\d{2})/);
+                        if (match) { lastTimeStr = match[1]; break; }
+                    }
+                }
+
+                if (lastTimeStr) {
+                    const [h, m] = lastTimeStr.split(':').map(Number);
+                    const finishMin = h * 60 + m;
+                    const timeToMin = (tStr) => { const [sh, sm] = tStr.split(':').map(Number); return sh * 60 + sm; };
+
+                    // 귀가 찍은 시간이 각 타임 시작 시간을 넘었는지 확인하여 횟수 누적
+                    if (currentSchedule.t1 && finishMin >= timeToMin(currentSchedule.t1)) count = 1;
+                    if (currentSchedule.t2 && finishMin >= timeToMin(currentSchedule.t2)) count = 2;
+                    if (currentSchedule.t3 && finishMin >= timeToMin(currentSchedule.t3)) count = 3;
+                }
             }
-            // 정상 입실 기록은 있지만 타임 정보가 명확히 파악되지 않는 경우 기본 1타임 인정
-            return count > 0 ? count : 1;
+            return count > 0 ? count : 1; // 기록이 애매해도 최소 1타임은 보장
         }
 
         async function checkMyStatus(month) {
@@ -205,7 +215,8 @@
                     }
 
                     // common.js의 함수를 이용해 정확한 타임 횟수 계산
-                    const slots = getRecognizedTimes(log, appliedStr, currentSchedule);
+                    // 내부에 만든 똑똑한 함수를 이용해 정확한 타임 횟수 계산
+                    const slots = getTimeSlots(log.status, log.history, currentSchedule);
                     acc[log.stu_id] = (acc[log.stu_id] || 0) + slots;
                     return acc;
                 }, {});
@@ -261,8 +272,7 @@
                     const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][logDate.getDay()];
 
                     let appliedStr = "1,2,3"; // 기록 출력 시 기준값
-                    const slots = getRecognizedTimes(log, appliedStr, currentSchedule);
-
+                    const slots = getTimeSlots(log.status, log.history, currentSchedule);
                     // 👇 날짜 변환을 먼저 하도록 위로 올렸습니다.
                     const dayStr = parseInt(log.date.split('-')[2]) + '일';
 
