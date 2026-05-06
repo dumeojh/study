@@ -251,8 +251,23 @@
                 // 🌟 CSS 클래스를 5칸 그리드(grid-cols-5)로 완전히 변경합니다.
                 logList.className = "grid grid-cols-5 gap-2 mt-3";
 
+
+
+
                 logList.innerHTML = logs.map(log => {
-                    const slots = getTimeSlots(log.status, log.history);
+                    // 👇👇 [수정] 개별 화면 출력 시에도 공통 함수 사용 👇👇
+                    const logDate = new Date(log.date);
+                    const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][logDate.getDay()];
+
+                    let appliedStr = "1,2,3"; // 기본값
+                    // 이미 위에서 불러온 userData 객체에 신청 타임 정보가 없다면 다시 불러와야 하지만, 
+                    // 편의상 이 학생의 기록이므로 "1,2,3"을 넘겨주면 시간 계산 로직에 의해 
+                    // 실제 인정된 횟수(최대 3)가 반환됩니다.
+
+                    const slots = getRecognizedTimes(log, appliedStr, currentSchedule);
+                    // 👆👆 [수정 끝] 👆👆
+
+
 
                     if (slots === 0) {
                         // 타임 횟수가 0인 날은 화면에 아무것도 보이지 않도록 빈 칸으로 둡니다.
