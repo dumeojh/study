@@ -1,391 +1,657 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <title>안성여고 - 다중 구역 도면 설계기 (Sandbox)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #007bff; --danger: #dc3545; --gray: #6c757d; --wood: #d4a373; --wood-dark: #bcaaa4; --save: #198754; }
-        body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; background: #f8f9fa; user-select: none; }
-        .designer-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 1300px; margin: 0 auto; }
-        
-        .room-tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding: 5px; }
-        .tab-btn { padding: 10px 20px; border-radius: 8px; border: 1px solid #ddd; background: white; cursor: pointer; font-weight: bold; font-size: 15px; transition: 0.2s; }
-        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 8px rgba(0,123,255,0.2); }
-        
-        .seat-grid { display: grid; gap: 4px; background: #e9ecef; padding: 20px; border-radius: 10px; justify-content: start; margin-top: 15px; border: 1px solid #ced4da; }
-        .seat-cell { 
-            width: 100%; height: 100%; min-width: 35px; min-height: 35px; 
-            border: 1px dashed #ccc; background: transparent; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 11px; border-radius: 4px; transition: 0.1s;
-            text-align: center; line-height: 1.2; word-break: keep-all;
+        :root {
+            --primary: #007bff;
+            --danger: #dc3545;
+            --gray: #6c757d;
+            --wood: #d4a373;
+            --wood-dark: #bcaaa4;
+            --save: #198754;
         }
-        
-        .seat-cell[draggable="true"] { cursor: grab; }
-        .seat-cell[draggable="true"]:active { cursor: grabbing; opacity: 0.8; transform: scale(0.95); }
-        .highlight-draw { background-color: rgba(13, 110, 253, 0.3) !important; border: 2px dashed #0d6efd !important; }
 
-        .seat-1 { background: var(--wood); border: 2px solid #8d6e63; border-radius: 8px; box-shadow: 2px 3px 5px rgba(0,0,0,0.2); color: #3e2723; font-weight: 900; }
-        .seat-2 { background: var(--wood-dark); border: 2px solid #8d6e63; border-radius: 8px; box-shadow: 2px 3px 5px rgba(0,0,0,0.2); color: #3e2723; font-weight: 900; }
-        
-        .seat-3 { background: #495057; border: 2px solid #212529; color: white; border-radius: 0; }
-        .seat-4 { background: #cff4fc; border: 2px dashed #0dcaf0; color: #055160; font-weight: bold; border-radius: 0; }
-        .seat-5 { background: #f8d7da; border: 2px solid #dc3545; color: #842029; font-weight: bold; border-radius: 8px; }
-        .seat-6 { background: #e0f7fa; border-right: 5px solid #00acc1; border-left: 1px solid #b2ebf2; color: #006064; font-weight: bold; }
-        .seat-7 { background: #f3e5f5; border: 2px solid #ab47bc; color: #4a148c; font-weight: bold; border-radius: 4px; }
-
-        .tool-bar { display: flex; gap: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; flex-wrap: wrap; }
-        .tool-btn { padding: 10px 15px; border: 1px solid #ced4da; border-radius: 6px; cursor: pointer; background: white; font-size: 14px; transition: 0.2s; }
-        .tool-btn.active { border: 2px solid #000; font-weight: bold; background: #eef6ff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transform: scale(1.05); }
-        .btn { padding: 10px 20px; border-radius: 6px; border: none; color: white; cursor: pointer; font-weight: bold; font-size: 14px; }
-
-        .save-status { font-size: 12px; color: #666; display: flex; align-items: center; gap: 5px; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; display: inline-block; }
-        .dot.saved { background: #198754; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-    </style>
-</head>
-<body>
-
-<div class="designer-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #007bff; padding-bottom: 15px; margin-bottom: 20px;">
-        <h2 style="margin: 0; color: #1a1a1a;">🎨 야간 자율학습실 도면 설계 (안전 백업 모드)</h2>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <div class="save-status"><span id="save-dot" class="dot"></span> <span id="save-text">임시 저장 없음</span></div>
-            <button class="btn" style="background: #6c757d;" onclick="location.href='index.html'">메인으로</button>
-        </div>
-    </div>
-
-    <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ffeeba; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <b style="color: #856404;">💾 도면 파일로 백업/복구하기</b>
-            <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">만일의 사태(수정 실수)를 대비해 오늘 완성한 도면을 선생님의 PC에 파일로 보관해두세요.</p>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn" style="background: #fd7e14;" onclick="exportToFile()">⬇️ 내 PC에 파일로 다운로드</button>
-            <button class="btn" style="background: #20c997;" onclick="importFromFile()">📂 백업 파일 불러오기(복구)</button>
-        </div>
-    </div>
-    
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <div id="tab-container" class="room-tabs"></div>
-        <div style="display: flex; gap: 5px;">
-            <button class="btn" style="background: var(--primary);" onclick="addRoom()">+ 구역 추가</button>
-            <button class="btn" style="background: var(--danger);" onclick="deleteRoom()">- 구역 삭제</button>
-        </div>
-    </div>
-
-    <div style="background: #eef6ff; padding: 15px; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; border: 1px solid #b6d4fe;">
-        <b style="color: #052c65;">현재 구역 크기:</b>
-        <div>가로 <input type="number" id="inp-cols" value="20" style="width:50px; text-align:center; padding:5px;"> 칸</div>
-        <div>세로 <input type="number" id="inp-rows" value="15" style="width:50px; text-align:center; padding:5px;"> 칸</div>
-        <button class="btn" style="background: #0d6efd; padding: 6px 12px;" onclick="resizeGrid()">크기 적용</button>
-        
-        <div style="margin-left: auto; display: flex; gap: 10px;">
-            <button class="btn" style="background: #6c757d; font-size: 11px; padding: 5px 10px;" onclick="clearDraft()">🗑️ 임시 저장 비우기</button>
-            <div style="font-size: 12px; color: #052c65; background: #fff; padding: 8px 15px; border-radius: 20px; border: 1px dashed #b6d4fe; font-weight: bold;">
-                🖱️ 드래그: 생성 | 🤚 잡고 드래그: 이동 | 🖱️ 더블클릭: 수정
-            </div>
-        </div>
-    </div>
-
-    <div class="tool-bar">
-        <b style="line-height: 40px; margin-right: 10px;">🛠️ 도구:</b>
-        <button class="tool-btn active" onclick="setTool(0, this)">⬜ 빈 통로</button>
-        <button class="tool-btn seat-1" style="border-color:#8d6e63;" onclick="setTool(1, this)">🟨 고정석</button>
-        <button class="tool-btn seat-2" style="border-color:#8d6e63;" onclick="setTool(2, this)">🟩 자율석</button>
-        <div style="width: 2px; background: #ddd; margin: 0 5px;"></div>
-        <button class="tool-btn" onclick="setTool(3, this)">⬛ 벽</button>
-        <button class="tool-btn" onclick="setTool(4, this)">🚪 출입구</button>
-        <button class="tool-btn" onclick="setTool(5, this)">👩‍🏫 교사석</button>
-        <button class="tool-btn" onclick="setTool(6, this)">🪟 창가</button>
-        <button class="tool-btn" onclick="setTool(7, this)">🗄️ 사물함</button>
-    </div>
-
-    <div style="overflow-x: auto; max-width: 100%;">
-        <div id="grid-container" class="seat-grid"></div>
-    </div>
-
-    <button class="btn" style="background: #198754; width: 100%; margin-top: 20px; padding: 18px; font-size: 18px; box-shadow: 0 4px 10px rgba(25,135,84,0.3);" onclick="saveToSupabase()">🌐 설계 완료! 전체 구역 서버 배포하기</button>
-</div>
-
-<script>
-    const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let rooms = ['A실', 'B실', 'C실', 'D실', 'E실'].map(name => ({
-        name: name, rows: 15, cols: 20,
-        grid: Array.from({length: 15}, () => Array.from({length: 20}, () => ({type: 0, label: "", w: 1, h: 1})))
-    }));
-    
-    let currentIdx = 0;
-    let currentTool = 0;
-    let isDrawing = false, drawStart = null, drawEnd = null;
-
-    // 🌟 PC 백업 (내보내기) 기능 🌟
-    function exportToFile() {
-        const dataStr = JSON.stringify(rooms, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        
-        // 오늘 날짜로 파일명 생성 (예: 안성여고_도면백업_20260428.json)
-        const dateStr = new Date().toISOString().slice(0,10).replace(/-/g, "");
-        a.href = url;
-        a.download = `안성여고_도면백업_${dateStr}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    // 🌟 PC 복구 (불러오기) 기능 🌟
-    function importFromFile() {
-        if(!confirm("파일을 불러오면 현재 화면에 있는 도면은 덮어쓰기 됩니다. 계속하시겠습니까?")) return;
-        
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const importedRooms = JSON.parse(event.target.result);
-                    // 파일 구조 검증 (간단히 배열이고 grid 데이터가 있는지 확인)
-                    if (Array.isArray(importedRooms) && importedRooms[0] && importedRooms[0].grid) {
-                        rooms = importedRooms;
-                        currentIdx = 0;
-                        saveLocalDraft(); // 불러온 데이터로 로컬 임시저장 덮어쓰기
-                        renderTabs();
-                        drawGrid();
-                        alert("✅ 성공적으로 백업 도면을 복구했습니다!");
-                    } else {
-                        alert("🚨 호환되지 않는 파일 형식입니다. 도면 백업 파일이 맞는지 확인해주세요.");
-                    }
-                } catch (err) {
-                    alert("🚨 파일 읽기 오류가 발생했습니다: " + err.message);
-                }
-            };
-            reader.readAsText(file);
-        };
-        input.click();
-    }
-
-    // 로컬 저장소 기능들
-    function loadLocalDraft() {
-        const draft = localStorage.getItem('seat_designer_draft');
-        if (draft) {
-            try {
-                const savedData = JSON.parse(draft);
-                rooms = savedData.rooms;
-                currentIdx = savedData.currentIdx || 0;
-                updateSaveStatus("임시 저장된 도면을 불러왔습니다.");
-            } catch (e) { console.error("드래프트 로딩 에러", e); }
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            padding: 20px;
+            background: #f8f9fa;
+            user-select: none;
         }
-    }
 
-    function saveLocalDraft() {
-        const dataToSave = { rooms: rooms, currentIdx: currentIdx, lastSaved: new Date().toLocaleTimeString() };
-        localStorage.setItem('seat_designer_draft', JSON.stringify(dataToSave));
-        updateSaveStatus(`임시 저장됨 (${dataToSave.lastSaved})`);
-    }
-
-    function updateSaveStatus(msg) {
-        document.getElementById('save-dot').classList.add('saved');
-        document.getElementById('save-text').innerText = msg;
-    }
-
-    function clearDraft() {
-        if (confirm("브라우저에 임시 저장된 데이터를 모두 삭제하고 초기화하시겠습니까? (서버에 이미 배포된 데이터는 삭제되지 않습니다.)")) {
-            localStorage.removeItem('seat_designer_draft');
-            location.reload();
+        .designer-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 1300px;
+            margin: 0 auto;
         }
-    }
 
-    function renderTabs() {
-        const container = document.getElementById('tab-container');
-        container.innerHTML = '';
-        rooms.forEach((r, i) => {
-            const btn = document.createElement('button');
-            btn.className = `tab-btn ${i === currentIdx ? 'active' : ''}`;
-            btn.innerText = r.name;
-            btn.onclick = () => { switchRoom(i); };
-            btn.ondblclick = () => {
-                const n = prompt("구역 이름 변경:", r.name);
-                if(n && n.trim()) { r.name = n.trim(); renderTabs(); saveLocalDraft(); }
-            };
-            container.appendChild(btn);
-        });
-    }
-
-    function switchRoom(idx) {
-        currentIdx = idx;
-        renderTabs();
-        drawGrid();
-        saveLocalDraft();
-    }
-
-    function addRoom() {
-        const n = prompt("새 구역 이름:", "F실");
-        if(!n) return;
-        rooms.push({
-            name: n, rows: 15, cols: 20,
-            grid: Array.from({length: 15}, () => Array.from({length: 20}, () => ({type: 0, label: "", w: 1, h: 1})))
-        });
-        switchRoom(rooms.length - 1);
-    }
-
-    function deleteRoom() {
-        if(rooms.length <= 1) return;
-        if(confirm(`[${rooms[currentIdx].name}] 구역을 삭제하시겠습니까?`)) {
-            rooms.splice(currentIdx, 1);
-            switchRoom(0);
+        .room-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            overflow-x: auto;
+            padding: 5px;
         }
-    }
 
-    function drawGrid() {
-        const r = rooms[currentIdx];
-        const g = document.getElementById('grid-container');
-        g.style.gridTemplateColumns = `repeat(${r.cols}, 40px)`;
-        g.style.gridTemplateRows = `repeat(${r.rows}, 40px)`;
-        g.innerHTML = '';
-        
-        document.getElementById('inp-rows').value = r.rows;
-        document.getElementById('inp-cols').value = r.cols;
-
-        r.grid.forEach((row, ri) => {
-            row.forEach((cell, ci) => {
-                if (cell.type === -1) return;
-                const div = document.createElement('div');
-                div.className = `seat-cell seat-${cell.type}`;
-                div.innerText = cell.label || "";
-                div.dataset.r = ri; div.dataset.c = ci;
-
-                if (cell.w > 1) div.style.gridColumn = `span ${cell.w}`;
-                if (cell.h > 1) div.style.gridRow = `span ${cell.h}`;
-
-                if (cell.type !== 0) {
-                    div.draggable = true;
-                    div.ondragstart = (e) => {
-                        if (isDrawing) { e.preventDefault(); return; }
-                        e.dataTransfer.setData('application/json', JSON.stringify({r: ri, c: ci}));
-                    };
-                    div.ondblclick = () => {
-                        const nl = prompt("라벨 수정:", cell.label);
-                        if (nl !== null) { r.grid[ri][ci].label = nl; drawGrid(); saveLocalDraft(); }
-                    };
-                }
-                div.ondragover = (e) => e.preventDefault();
-                div.ondrop = (e) => {
-                    e.preventDefault();
-                    const data = JSON.parse(e.dataTransfer.getData('application/json'));
-                    moveCell(data.r, data.c, ri, ci);
-                };
-                div.onmousedown = (e) => {
-                    if ([1, 2].includes(currentTool) && cell.type === 0) {
-                        isDrawing = true; drawStart = { r: ri, c: ci }; drawEnd = { r: ri, c: ci };
-                        highlightArea(drawStart.r, drawStart.c, drawEnd.r, drawEnd.c);
-                    } else applyClickTool(ri, ci);
-                };
-                div.onmouseenter = () => {
-                    if (isDrawing) { drawEnd = { r: ri, c: ci }; highlightArea(drawStart.r, drawStart.c, drawEnd.r, drawEnd.c); }
-                };
-                g.appendChild(div);
-            });
-        });
-    }
-
-    document.addEventListener('mouseup', () => {
-        if (isDrawing) {
-            isDrawing = false;
-            finalizeDraw(drawStart.r, drawStart.c, drawEnd.r, drawEnd.c);
-            drawStart = null; drawEnd = null;
+        .tab-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+            transition: 0.2s;
         }
-    });
 
-    function highlightArea(r1, c1, r2, c2) {
-        document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('highlight-draw'));
-        const minR = Math.min(r1, r2), maxR = Math.max(r1, r2), minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
-        for(let i = minR; i <= maxR; i++) {
-            for(let j = minC; j <= maxC; j++) {
-                const el = document.querySelector(`.seat-cell[data-r="${i}"][data-c="${j}"]`);
-                if(el && rooms[currentIdx].grid[i][j].type === 0) el.classList.add('highlight-draw');
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+        }
+
+        .seat-grid {
+            display: grid;
+            gap: 4px;
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 10px;
+            justify-content: start;
+            margin-top: 15px;
+            border: 1px solid #ced4da;
+        }
+
+        .seat-cell {
+            width: 100%;
+            height: 100%;
+            min-width: 35px;
+            min-height: 35px;
+            border: 1px dashed #ccc;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            border-radius: 4px;
+            transition: 0.1s;
+            text-align: center;
+            line-height: 1.2;
+            word-break: keep-all;
+        }
+
+        .seat-cell[draggable="true"] {
+            cursor: grab;
+        }
+
+        .seat-cell[draggable="true"]:active {
+            cursor: grabbing;
+            opacity: 0.8;
+            transform: scale(0.95);
+        }
+
+        .highlight-draw {
+            background-color: rgba(13, 110, 253, 0.3) !important;
+            border: 2px dashed #0d6efd !important;
+        }
+
+        .seat-1 {
+            background: var(--wood);
+            border: 2px solid #8d6e63;
+            border-radius: 8px;
+            box-shadow: 2px 3px 5px rgba(0, 0, 0, 0.2);
+            color: #3e2723;
+            font-weight: 900;
+        }
+
+        .seat-2 {
+            background: var(--wood-dark);
+            border: 2px solid #8d6e63;
+            border-radius: 8px;
+            box-shadow: 2px 3px 5px rgba(0, 0, 0, 0.2);
+            color: #3e2723;
+            font-weight: 900;
+        }
+
+        .seat-3 {
+            background: #495057;
+            border: 2px solid #212529;
+            color: white;
+            border-radius: 0;
+        }
+
+        .seat-4 {
+            background: #cff4fc;
+            border: 2px dashed #0dcaf0;
+            color: #055160;
+            font-weight: bold;
+            border-radius: 0;
+        }
+
+        .seat-5 {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #842029;
+            font-weight: bold;
+            border-radius: 8px;
+        }
+
+        .seat-6 {
+            background: #e0f7fa;
+            border-right: 5px solid #00acc1;
+            border-left: 1px solid #b2ebf2;
+            color: #006064;
+            font-weight: bold;
+        }
+
+        .seat-7 {
+            background: #f3e5f5;
+            border: 2px solid #ab47bc;
+            color: #4a148c;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        .tool-bar {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            flex-wrap: wrap;
+        }
+
+        .tool-btn {
+            padding: 10px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            cursor: pointer;
+            background: white;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .tool-btn.active {
+            border: 2px solid #000;
+            font-weight: bold;
+            background: #eef6ff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transform: scale(1.05);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .save-status {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ccc;
+            display: inline-block;
+        }
+
+        .dot.saved {
+            background: #198754;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
             }
         }
-    }
+    </style>
+</head>
 
-    function finalizeDraw(r1, c1, r2, c2) {
-        const minR = Math.min(r1, r2), maxR = Math.max(r1, r2), minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
-        const w = maxC - minC + 1, h = maxR - minR + 1, r = rooms[currentIdx];
-        let clear = true;
-        for(let i = minR; i <= maxR; i++) for(let j = minC; j <= maxC; j++) if(r.grid[i][j].type !== 0) clear = false;
-        if(!clear) { drawGrid(); return; }
+<body>
 
-        let lbl = prompt(`[${w}x${h}] 좌석 번호:`);
-        if(lbl === null) { drawGrid(); return; }
-        r.grid[minR][minC] = { type: currentTool, label: lbl, w: w, h: h };
-        for(let i = minR; i <= maxR; i++) for(let j = minC; j <= maxC; j++) if(i !== minR || j !== minC) r.grid[i][j] = { type: -1, label: "", w: 1, h: 1 };
-        drawGrid(); saveLocalDraft();
-    }
+    <div class="designer-card">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #007bff; padding-bottom: 15px; margin-bottom: 20px;">
+            <h2 style="margin: 0; color: #1a1a1a;">🎨 야간 자율학습실 도면 설계 (안전 백업 모드)</h2>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="save-status"><span id="save-dot" class="dot"></span> <span id="save-text">임시 저장 없음</span>
+                </div>
+                <button class="btn" style="background: #6c757d;" onclick="location.href='index.html'">메인으로</button>
+            </div>
+        </div>
 
-    function moveCell(sr, sc, tr, tc) {
-        const r = rooms[currentIdx], obj = r.grid[sr][sc];
-        if (sr === tr && sc === tc) return;
-        if (tr + obj.h > r.rows || tc + obj.w > r.cols) return;
-        for (let i = 0; i < obj.h; i++) for (let j = 0; j < obj.w; j++) {
-            const isSelf = (tr + i >= sr && tr + i < sr + obj.h && tc + j >= sc && tc + j < sc + obj.w);
-            if (!isSelf && r.grid[tr + i][tc + j].type !== 0) return;
+        <div
+            style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ffeeba; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <b style="color: #856404;">💾 도면 파일로 백업/복구하기</b>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">만일의 사태(수정 실수)를 대비해 오늘 완성한 도면을 선생님의 PC에 파일로
+                    보관해두세요.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="background: #fd7e14;" onclick="exportToFile()">⬇️ 내 PC에 파일로 다운로드</button>
+                <button class="btn" style="background: #20c997;" onclick="importFromFile()">📂 백업 파일 불러오기(복구)</button>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div id="tab-container" class="room-tabs"></div>
+            <div style="display: flex; gap: 5px;">
+                <button class="btn" style="background: var(--primary);" onclick="addRoom()">+ 구역 추가</button>
+                <button class="btn" style="background: var(--danger);" onclick="deleteRoom()">- 구역 삭제</button>
+            </div>
+        </div>
+
+        <div
+            style="background: #eef6ff; padding: 15px; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; border: 1px solid #b6d4fe;">
+            <b style="color: #052c65;">현재 구역 크기:</b>
+            <div>가로 <input type="number" id="inp-cols" value="20" style="width:50px; text-align:center; padding:5px;"> 칸
+            </div>
+            <div>세로 <input type="number" id="inp-rows" value="15" style="width:50px; text-align:center; padding:5px;"> 칸
+            </div>
+            <button class="btn" style="background: #0d6efd; padding: 6px 12px;" onclick="resizeGrid()">크기 적용</button>
+
+            <div style="margin-left: auto; display: flex; gap: 10px;">
+                <button class="btn" style="background: #6c757d; font-size: 11px; padding: 5px 10px;"
+                    onclick="clearDraft()">🗑️ 임시 저장 비우기</button>
+                <div
+                    style="font-size: 12px; color: #052c65; background: #fff; padding: 8px 15px; border-radius: 20px; border: 1px dashed #b6d4fe; font-weight: bold;">
+                    🖱️ 드래그: 생성 | 🤚 잡고 드래그: 이동 | 🖱️ 더블클릭: 수정
+                </div>
+            </div>
+        </div>
+
+        <div class="tool-bar">
+            <b style="line-height: 40px; margin-right: 10px;">🛠️ 도구:</b>
+            <!-- 👇 버튼 이름 변경 및 기능 분리 👇 -->
+            <button class="tool-btn active" onclick="setTool(0, this)"
+                style="border-color: #dc3545; color: #dc3545; background: #fff0f0;">🗑️ 지우개 (삭제)</button>
+            <button class="tool-btn seat-1" style="border-color:#8d6e63;" onclick="setTool(1, this)">🟨 고정석</button>
+            <button class="tool-btn seat-2" style="border-color:#8d6e63;" onclick="setTool(2, this)">🟩 자율석</button>
+            <div style="width: 2px; background: #ddd; margin: 0 5px;"></div>
+            <button class="tool-btn" onclick="setTool(3, this)">⬛ 벽</button>
+            <button class="tool-btn" onclick="setTool(4, this)">🚪 출입구</button>
+            <button class="tool-btn" onclick="setTool(5, this)">👩‍🏫 교사석</button>
+            <button class="tool-btn" onclick="setTool(6, this)">🪟 창가</button>
+            <button class="tool-btn" onclick="setTool(7, this)">🗄️ 사물함</button>
+        </div>
+
+        <div style="overflow-x: auto; max-width: 100%;">
+            <div id="grid-container" class="seat-grid"></div>
+        </div>
+
+        <button class="btn"
+            style="background: #198754; width: 100%; margin-top: 20px; padding: 18px; font-size: 18px; box-shadow: 0 4px 10px rgba(25,135,84,0.3);"
+            onclick="saveToSupabase()">🌐 설계 완료! 전체 구역 서버 배포하기</button>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let rooms = ['A실', 'B실', 'C실', 'D실', 'E실'].map(name => ({
+            name: name, rows: 15, cols: 20,
+            grid: Array.from({ length: 15 }, () => Array.from({ length: 20 }, () => ({ type: 0, label: "", w: 1, h: 1 })))
+        }));
+
+        let currentIdx = 0;
+        let currentTool = 0;
+        let isDrawing = false, drawStart = null, drawEnd = null;
+        let isDragging = false, justDrawn = false; // 🌟 드래그/클릭 충돌 방지 변수 추가
+
+        function exportToFile() {
+            const dataStr = JSON.stringify(rooms, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+            a.href = url;
+            a.download = `안성여고_도면백업_${dateStr}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
-        for (let i = 0; i < obj.h; i++) for (let j = 0; j < obj.w; j++) r.grid[sr + i][sc + j] = { type: 0, label: "", w: 1, h: 1 };
-        r.grid[tr][tc] = { type: obj.type, label: obj.label, w: obj.w, h: obj.h };
-        for (let i = 0; i < obj.h; i++) for (let j = 0; j < obj.w; j++) if (i !== 0 || j !== 0) r.grid[tr + i][tc + j] = { type: -1, label: "", w: 1, h: 1 };
-        drawGrid(); saveLocalDraft();
-    }
 
-    function applyClickTool(ri, ci) {
-        const r = rooms[currentIdx]; let cell = r.grid[ri][ci];
-        if (cell.w > 1 || cell.h > 1) {
-            for(let i=0; i<cell.h; i++) for(let j=0; j<cell.w; j++) if(r.grid[ri+i] && r.grid[ri+i][ci+j]) r.grid[ri+i][ci+j] = {type: 0, label: "", w: 1, h: 1};
+        function importFromFile() {
+            if (!confirm("파일을 불러오면 현재 화면에 있는 도면은 덮어쓰기 됩니다. 계속하시겠습니까?")) return;
+
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedRooms = JSON.parse(event.target.result);
+                        if (Array.isArray(importedRooms) && importedRooms[0] && importedRooms[0].grid) {
+                            rooms = importedRooms;
+                            currentIdx = 0;
+                            saveLocalDraft();
+                            renderTabs();
+                            drawGrid();
+                            alert("✅ 성공적으로 백업 도면을 복구했습니다!");
+                        } else {
+                            alert("🚨 호환되지 않는 파일 형식입니다. 도면 백업 파일이 맞는지 확인해주세요.");
+                        }
+                    } catch (err) { alert("🚨 파일 읽기 오류가 발생했습니다: " + err.message); }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
         }
-        if (currentTool !== 0) {
-            let icon = "";
-            if(currentTool === 4) icon = "🚪\n출입구"; else if(currentTool === 5) icon = "👩‍🏫\n교사석"; else if(currentTool === 6) icon = "🪟\n창가"; else if(currentTool === 7) icon = "🗄️\n사물함";
-            r.grid[ri][ci] = { type: currentTool, label: icon, w: 1, h: 1 };
+
+        function loadLocalDraft() {
+            const draft = localStorage.getItem('seat_designer_draft');
+            if (draft) {
+                try {
+                    const savedData = JSON.parse(draft);
+                    rooms = savedData.rooms;
+                    currentIdx = savedData.currentIdx || 0;
+                    updateSaveStatus("임시 저장된 도면을 불러왔습니다.");
+                } catch (e) { console.error("드래프트 로딩 에러", e); }
+            }
         }
-        drawGrid(); saveLocalDraft();
-    }
 
-    function setTool(t, btn) {
-        currentTool = t;
-        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
+        function saveLocalDraft() {
+            const dataToSave = { rooms: rooms, currentIdx: currentIdx, lastSaved: new Date().toLocaleTimeString() };
+            localStorage.setItem('seat_designer_draft', JSON.stringify(dataToSave));
+            updateSaveStatus(`임시 저장됨 (${dataToSave.lastSaved})`);
+        }
 
-    function resizeGrid() {
-        const nr = parseInt(document.getElementById('inp-rows').value), nc = parseInt(document.getElementById('inp-cols').value);
-        if(confirm(`가로 ${nc} x 세로 ${nr} 로 변경하시겠습니까?`)) {
-            let newGrid = Array.from({length: nr}, (_, i) => Array.from({length: nc}, (_, j) => (rooms[currentIdx].grid[i] && rooms[currentIdx].grid[i][j]) || {type: 0, label: "", w: 1, h: 1}));
-            rooms[currentIdx].rows = nr; rooms[currentIdx].cols = nc; rooms[currentIdx].grid = newGrid;
+        function updateSaveStatus(msg) {
+            document.getElementById('save-dot').classList.add('saved');
+            document.getElementById('save-text').innerText = msg;
+        }
+
+        function clearDraft() {
+            if (confirm("브라우저에 임시 저장된 데이터를 모두 삭제하고 초기화하시겠습니까? (서버에 이미 배포된 데이터는 삭제되지 않습니다.)")) {
+                localStorage.removeItem('seat_designer_draft');
+                location.reload();
+            }
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('tab-container');
+            container.innerHTML = '';
+            rooms.forEach((r, i) => {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn ${i === currentIdx ? 'active' : ''}`;
+                btn.innerText = r.name;
+                btn.onclick = () => { switchRoom(i); };
+                btn.ondblclick = () => {
+                    const n = prompt("구역 이름 변경:", r.name);
+                    if (n && n.trim()) { r.name = n.trim(); renderTabs(); saveLocalDraft(); }
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function switchRoom(idx) {
+            currentIdx = idx;
+            renderTabs();
+            drawGrid();
+            saveLocalDraft();
+        }
+
+        function addRoom() {
+            const n = prompt("새 구역 이름:", "F실");
+            if (!n) return;
+            rooms.push({
+                name: n, rows: 15, cols: 20,
+                grid: Array.from({ length: 15 }, () => Array.from({ length: 20 }, () => ({ type: 0, label: "", w: 1, h: 1 })))
+            });
+            switchRoom(rooms.length - 1);
+        }
+
+        function deleteRoom() {
+            if (rooms.length <= 1) return;
+            if (confirm(`[${rooms[currentIdx].name}] 구역을 삭제하시겠습니까?`)) {
+                rooms.splice(currentIdx, 1);
+                switchRoom(0);
+            }
+        }
+
+        function drawGrid() {
+            const r = rooms[currentIdx];
+            const g = document.getElementById('grid-container');
+            g.style.gridTemplateColumns = `repeat(${r.cols}, 40px)`;
+            g.style.gridTemplateRows = `repeat(${r.rows}, 40px)`;
+            g.innerHTML = '';
+
+            document.getElementById('inp-rows').value = r.rows;
+            document.getElementById('inp-cols').value = r.cols;
+
+            r.grid.forEach((row, ri) => {
+                row.forEach((cell, ci) => {
+                    if (cell.type === -1) return; // 병합된 칸의 하위 셀은 그리지 않음
+                    const div = document.createElement('div');
+                    div.className = `seat-cell seat-${cell.type}`;
+                    div.innerText = cell.label || "";
+                    div.dataset.r = ri; div.dataset.c = ci;
+
+                    if (cell.w > 1) div.style.gridColumn = `span ${cell.w}`;
+                    if (cell.h > 1) div.style.gridRow = `span ${cell.h}`;
+
+                    // 🌟 마우스/드래그 충돌 완전 분리 🌟
+                    if (cell.type !== 0 && cell.type !== -1) {
+                        div.draggable = true;
+                        div.ondragstart = (e) => {
+                            if (isDrawing) { e.preventDefault(); return; }
+                            isDragging = true;
+                            e.dataTransfer.setData('application/json', JSON.stringify({ r: ri, c: ci }));
+                        };
+                        div.ondragend = () => {
+                            setTimeout(() => isDragging = false, 100);
+                        };
+                        div.ondblclick = () => {
+                            const nl = prompt("라벨 수정:", cell.label);
+                            if (nl !== null) { r.grid[ri][ci].label = nl; drawGrid(); saveLocalDraft(); }
+                        };
+                    }
+
+                    div.ondragover = (e) => e.preventDefault();
+                    div.ondrop = (e) => {
+                        e.preventDefault();
+                        if (!e.dataTransfer.getData('application/json')) return;
+                        const data = JSON.parse(e.dataTransfer.getData('application/json'));
+                        moveCell(data.r, data.c, ri, ci);
+                    };
+
+                    div.onmousedown = (e) => {
+                        // 고정석, 자율석 도구를 선택하고 빈 공간을 누를 때만 그리기 시작
+                        if ([1, 2].includes(currentTool) && cell.type === 0) {
+                            isDrawing = true; drawStart = { r: ri, c: ci }; drawEnd = { r: ri, c: ci };
+                            highlightArea(drawStart.r, drawStart.c, drawEnd.r, drawEnd.c);
+                        }
+                    };
+
+                    div.onclick = (e) => {
+                        // 드래그 중이거나, 방금 그리기를 끝냈으면 클릭 무시
+                        if (isDragging || justDrawn) return;
+                        applyClickTool(ri, ci);
+                    };
+
+                    div.onmouseenter = () => {
+                        if (isDrawing) { drawEnd = { r: ri, c: ci }; highlightArea(drawStart.r, drawStart.c, drawEnd.r, drawEnd.c); }
+                    };
+                    g.appendChild(div);
+                });
+            });
+        }
+
+        // 그리기(합치기) 종료 이벤트
+        document.addEventListener('mouseup', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                justDrawn = true;
+                setTimeout(() => justDrawn = false, 100);
+                finalizeDraw(drawStart.r, drawStart.c, drawEnd.r, drawEnd.c);
+                drawStart = null; drawEnd = null;
+            }
+        });
+
+        function highlightArea(r1, c1, r2, c2) {
+            document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('highlight-draw'));
+            const minR = Math.min(r1, r2), maxR = Math.max(r1, r2), minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
+            for (let i = minR; i <= maxR; i++) {
+                for (let j = minC; j <= maxC; j++) {
+                    const el = document.querySelector(`.seat-cell[data-r="${i}"][data-c="${j}"]`);
+                    if (el && rooms[currentIdx].grid[i][j].type === 0) el.classList.add('highlight-draw');
+                }
+            }
+        }
+
+        function finalizeDraw(r1, c1, r2, c2) {
+            const minR = Math.min(r1, r2), maxR = Math.max(r1, r2), minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
+            const w = maxC - minC + 1, h = maxR - minR + 1, r = rooms[currentIdx];
+
+            let clear = true;
+            for (let i = minR; i <= maxR; i++) for (let j = minC; j <= maxC; j++) if (r.grid[i][j].type !== 0) clear = false;
+            if (!clear) { drawGrid(); return; }
+
+            let lbl = prompt(`[${w}x${h} 크기] 좌석 번호를 입력하세요:`);
+            if (lbl === null) { drawGrid(); return; } // 취소 시 무시
+
+            r.grid[minR][minC] = { type: currentTool, label: lbl, w: w, h: h };
+            for (let i = minR; i <= maxR; i++) {
+                for (let j = minC; j <= maxC; j++) {
+                    if (i !== minR || j !== minC) r.grid[i][j] = { type: -1, label: "", w: 1, h: 1 };
+                }
+            }
             drawGrid(); saveLocalDraft();
         }
-    }
 
-    async function saveToSupabase() {
-        if(!confirm("서버에 배포하시겠습니까? 임시 저장 데이터는 삭제되지 않습니다.")) return;
-        const payload = rooms.map(r => ({ name: r.name, rows: r.rows, cols: r.cols, grid: JSON.stringify(r.grid) }));
-        const { error } = await supabaseClient.from('settings').upsert({ key: 'seatLayout', value: { version: 2, rooms: payload } });
-        if(error) alert("저장 실패: " + error.message);
-        else alert("성공적으로 배포되었습니다!");
-    }
+        // 🌟 병합된 칸을 통째로 옮기도록 보장하는 함수 🌟
+        function moveCell(sr, sc, tr, tc) {
+            const r = rooms[currentIdx], obj = r.grid[sr][sc];
+            if (sr === tr && sc === tc) return;
 
-    // 실행 시작
-    loadLocalDraft();
-    renderTabs();
-    drawGrid();
-</script>
+            // 목표 위치가 도면 밖으로 나가는지 검사
+            if (tr + obj.h > r.rows || tc + obj.w > r.cols) return;
+
+            // 목표 위치에 이미 다른 것이 있는지 겹침 검사
+            for (let i = 0; i < obj.h; i++) {
+                for (let j = 0; j < obj.w; j++) {
+                    const isSelf = (tr + i >= sr && tr + i < sr + obj.h && tc + j >= sc && tc + j < sc + obj.w);
+                    if (!isSelf && r.grid[tr + i][tc + j].type !== 0) return; // 겹치면 이동 취소
+                }
+            }
+
+            // 원본 지우기
+            for (let i = 0; i < obj.h; i++) for (let j = 0; j < obj.w; j++) r.grid[sr + i][sc + j] = { type: 0, label: "", w: 1, h: 1 };
+
+            // 새 위치에 할당하기
+            r.grid[tr][tc] = { type: obj.type, label: obj.label, w: obj.w, h: obj.h };
+            for (let i = 0; i < obj.h; i++) {
+                for (let j = 0; j < obj.w; j++) {
+                    if (i !== 0 || j !== 0) r.grid[tr + i][tc + j] = { type: -1, label: "", w: 1, h: 1 };
+                }
+            }
+            drawGrid(); saveLocalDraft();
+        }
+
+        // 🌟 지우개/벽 등 도구 적용 함수 (병합된 칸을 확실히 삭제함) 🌟
+        function applyClickTool(ri, ci) {
+            const r = rooms[currentIdx];
+
+            // 클릭한 곳의 '부모 칸' 찾기 (병합된 하위 칸을 눌렀을 경우를 대비)
+            let rootR = ri, rootC = ci;
+            if (r.grid[ri][ci].type === -1) {
+                for (let i = ri; i >= 0; i--) {
+                    for (let j = ci; j >= 0; j--) {
+                        let root = r.grid[i][j];
+                        if (root.type !== 0 && root.type !== -1) {
+                            if (ri >= i && ri < i + root.h && ci >= j && ci < j + root.w) {
+                                rootR = i; rootC = j;
+                            }
+                        }
+                    }
+                }
+            }
+
+            const rootCell = r.grid[rootR][rootC];
+
+            // 1. 선택된 칸 지우기 (병합된 칸이면 전체를 초기화)
+            if (rootCell.w > 1 || rootCell.h > 1 || rootCell.type !== 0) {
+                for (let i = 0; i < rootCell.h; i++) {
+                    for (let j = 0; j < rootCell.w; j++) {
+                        if (r.grid[rootR + i] && r.grid[rootR + i][rootC + j]) {
+                            r.grid[rootR + i][rootC + j] = { type: 0, label: "", w: 1, h: 1 };
+                        }
+                    }
+                }
+            }
+
+            // 2. 만약 선택한 도구가 지우개(0)가 아니면 새 도구 덮어쓰기
+            if (currentTool !== 0) {
+                let icon = "";
+                if (currentTool === 4) icon = "🚪\n출입구"; else if (currentTool === 5) icon = "👩‍🏫\n교사석"; else if (currentTool === 6) icon = "🪟\n창가"; else if (currentTool === 7) icon = "🗄️\n사물함";
+
+                // 고정석, 자율석은 드래그로 그리므로 클릭 적용 제외
+                if (![1, 2].includes(currentTool)) {
+                    r.grid[rootR][rootC] = { type: currentTool, label: icon, w: 1, h: 1 };
+                }
+            }
+
+            drawGrid(); saveLocalDraft();
+        }
+
+        function setTool(t, btn) {
+            currentTool = t;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function resizeGrid() {
+            const nr = parseInt(document.getElementById('inp-rows').value), nc = parseInt(document.getElementById('inp-cols').value);
+            if (confirm(`가로 ${nc} x 세로 ${nr} 로 변경하시겠습니까?`)) {
+                let newGrid = Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => (rooms[currentIdx].grid[i] && rooms[currentIdx].grid[i][j]) || { type: 0, label: "", w: 1, h: 1 }));
+                rooms[currentIdx].rows = nr; rooms[currentIdx].cols = nc; rooms[currentIdx].grid = newGrid;
+                drawGrid(); saveLocalDraft();
+            }
+        }
+
+        async function saveToSupabase() {
+            if (!confirm("서버에 배포하시겠습니까? 임시 저장 데이터는 삭제되지 않습니다.")) return;
+            const payload = rooms.map(r => ({ name: r.name, rows: r.rows, cols: r.cols, grid: JSON.stringify(r.grid) }));
+            const { error } = await supabaseClient.from('settings').upsert({ key: 'seatLayout', value: { version: 2, rooms: payload } });
+            if (error) alert("저장 실패: " + error.message);
+            else alert("성공적으로 배포되었습니다!");
+        }
+
+        // 실행 시작
+        loadLocalDraft();
+        renderTabs();
+        drawGrid();
+    </script>
 </body>
+
 </html>
