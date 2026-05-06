@@ -55,10 +55,27 @@ function getRecognizedTimes(log, appliedTimesStr, currentScheduleData) {
             });
         }
     } else if (["입실", "복귀", "외출"].includes(log.status)) {
-        // 진행 중인 상태
-        recognizedCount += appliedArray.length;
-    }
+        // 현재 진행 중인 상태일 때는 '현재 시간'을 기준으로 인정 타임을 계산합니다.
+        const now = new Date();
+        const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
 
+        // 오늘 날짜의 기록인 경우에만 실시간 시간 체크 진행
+        if (log.date === todayStr) {
+            const currentMin = now.getHours() * 60 + now.getMinutes();
+            const timeToMin = (t) => { const [sh, sm] = t.split(':').map(Number); return sh * 60 + sm; };
+
+            appliedArray.forEach(t => {
+                const startStr = schedule[`t${t}`];
+                const reqMin = parseInt(schedule[`t${t}_req`]) || 0; // 설정된 필수 체류 시간 (예: 30분)
+
+                // 현재 시간이 (타임 시작 시간 + 필수 체류 시간)을 지났을 때만 1회 인정
+                if (startStr && currentMin >= (timeToMin(startStr) + reqMin)) {
+                    recognizedCount++;
+                }
+            });
+        }
+        // (과거 날짜인데 귀가 태그를 하지 않아 '입실' 상태로 남아있는 경우 0회 처리됨)
+    }
     return recognizedCount;
 }
 
