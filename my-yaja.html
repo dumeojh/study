@@ -106,21 +106,27 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let currentStuId = "";
-        let thisMonthStr = ""; // YYYY-MM
-        let lastMonthStr = ""; // YYYY-MM
+        let thisMonthStr = "";
+        let lastMonthStr = "";
 
-        // 초기 날짜 설정
-        const now = new Date();
-        thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        lastMonthStr = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
+        // 🌟 수정: 페이지 로딩 시 날짜를 계산하는 로직을 DOMContentLoaded 이벤트 안으로 이동
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-        document.getElementById('btn_this_month').innerText = `${now.getMonth() + 1}월 현황`;
-        document.getElementById('btn_last_month').innerText = `${lastMonthDate.getMonth() + 1}월 현황`;
+            const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            lastMonthStr = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
+
+            document.getElementById('btn_this_month').innerText = `${now.getMonth() + 1}월 현황`;
+            document.getElementById('btn_last_month').innerText = `${lastMonthDate.getMonth() + 1}월 현황`;
+        });
 
         function initCheck() {
             const input = document.getElementById('stu_id').value.trim();
-            if (!input) return alert("학번을 입력하세요.");
+            if (!input) {
+                alert("학번을 입력하세요.");
+                return;
+            }
             currentStuId = input;
             document.getElementById('month_selector').classList.remove('hidden');
             selectMonth('this'); // 인증 시 이번 달 기본 선택
@@ -223,61 +229,61 @@
                     .select('stu_name')
                     .eq('stu_id', currentStuId)
                     .maybeSingle();
+                <script
+                    const { data: logs } = await supabaseClient
+                        .from('attendance_logs')
+                        .select('date, status, history')
+                        .eq('stu_id', currentStuId)
+                        .like('date', `${month}%`)
+                        .order('date', { ascending: false });
 
-                const { data: logs } = await supabaseClient
-                    .from('attendance_logs')
-                    .select('date, status, history')
-                    .eq('stu_id', currentStuId)
-                    .like('date', `${month}%`)
-                    .order('date', { ascending: false });
+            // UI 업데이트
+            document.getElementById('result_area').classList.remove('hidden');
+            document.getElementById('user_name').innerText = `${userData?.stu_name || '학생'}님의 ${month.split('-')[1]}월 현황`;
+            document.getElementById('my_rank').innerText = rank;
+            document.getElementById('total_count').innerText = myCount;
+            document.getElementById('rank_title').innerText = `${month.split('-')[1]}월 등수`;
 
-                // UI 업데이트
-                document.getElementById('result_area').classList.remove('hidden');
-                document.getElementById('user_name').innerText = `${userData?.stu_name || '학생'}님의 ${month.split('-')[1]}월 현황`;
-                document.getElementById('my_rank').innerText = rank;
-                document.getElementById('total_count').innerText = myCount;
-                document.getElementById('rank_title').innerText = `${month.split('-')[1]}월 등수`;
+            const logList = document.getElementById('log_list');
+            logList.className = "grid grid-cols-5 gap-2 mt-3";
 
-                const logList = document.getElementById('log_list');
-                logList.className = "grid grid-cols-5 gap-2 mt-3";
+            logList.innerHTML = logs.map(log => {
+                const logDate = new Date(log.date);
+                const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][logDate.getDay()];
 
-                logList.innerHTML = logs.map(log => {
-                    const logDate = new Date(log.date);
-                    const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][logDate.getDay()];
+                let appliedStr = "1,2,3"; // 기록 출력 시 기준값
+                const slots = getRecognizedTimes(log, appliedStr, currentSchedule);
 
-                    let appliedStr = "1,2,3"; // 기록 출력 시 기준값
-                    const slots = getRecognizedTimes(log, appliedStr, currentSchedule);
+                if (slots === 0) {
+                    return `<li class="h-14 bg-transparent"></li>`;
+                }
 
-                    if (slots === 0) {
-                        return `<li class="h-14 bg-transparent"></li>`;
-                    }
+                // 날짜 변환 (예: 2026-05-12 -> 12일)
+                const dayStr = parseInt(log.date.split('-')[2]) + '일';
 
-                    // 날짜 변환 (예: 2026-05-12 -> 12일)
-                    const dayStr = parseInt(log.date.split('-')[2]) + '일';
-
-                    return `
+                return `
                     <li class="flex flex-col items-center justify-center bg-purple-50 border border-purple-200 rounded-lg h-14 shadow-sm transform transition hover:scale-105">
                         <span class="text-[10px] text-gray-500 font-medium">${dayStr}</span>
                         <span class="font-black text-purple-700 text-sm mt-0.5">${slots}T</span>
                     </li>
                     `;
-                }).join('');
+            }).join('');
 
-                // 👇 알림 메시지 부분 (주석이 아닌 실제 코드)
-                const alertBox = document.getElementById('fixed_seat_alert');
+            // 👇 알림 메시지 부분 (주석이 아닌 실제 코드)
+            const alertBox = document.getElementById('fixed_seat_alert');
 
-                if (rank <= 40) {
-                    alertBox.className = "card p-4 mb-4 border-l-4 border-green-500 bg-green-50";
-                    alertBox.innerHTML = `<p class="text-sm text-green-800 font-medium">🎉 현재 <strong>고정석 안정권</strong>(${rank}위)입니다!</p>`;
-                } else {
-                    alertBox.className = "card p-4 mb-4 border-l-4 border-orange-500 bg-orange-50";
-                    alertBox.innerHTML = `<p class="text-sm text-orange-800 font-medium">💪 고정석(40위)까지 조금만 더! (현재 ${rank}위)</p>`;
-                }
-
-            } catch (error) {
-                console.error(error);
-                alert("조회 중 오류가 발생했습니다.");
+            if (rank <= 40) {
+                alertBox.className = "card p-4 mb-4 border-l-4 border-green-500 bg-green-50";
+                alertBox.innerHTML = `<p class="text-sm text-green-800 font-medium">🎉 현재 <strong>고정석 안정권</strong>(${rank}위)입니다!</p>`;
+            } else {
+                alertBox.className = "card p-4 mb-4 border-l-4 border-orange-500 bg-orange-50";
+                alertBox.innerHTML = `<p class="text-sm text-orange-800 font-medium">💪 고정석(40위)까지 조금만 더! (현재 ${rank}위)</p>`;
             }
+
+        } catch (error) {
+            console.error(error);
+            alert("조회 중 오류가 발생했습니다.");
+        }
         }
     </script>
 </body>
