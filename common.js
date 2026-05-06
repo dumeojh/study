@@ -8,6 +8,52 @@ const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// 👇👇 [여기에 추가] 공통 관리자 인증 함수 👇👇
+async function requireAdminAuth() {
+    try {
+        // 1. 현재 브라우저에 로그인된 세션(사용자)이 있는지 확인
+        const { data: { session } } = await supabaseClient.auth.getSession();
+
+        // 2. 이미 로그인되어 있고, 그 계정이 선생님 계정이라면 프리패스!
+        if (session && session.user.email === 'teacher@anseong.kr') {
+            document.getElementById('main-content').style.display = 'block';
+            return true; // 인증 성공
+        }
+
+        // 3. 로그인이 안 되어 있다면 팝업으로 비밀번호를 물어봄
+        const pwd = prompt("관리자(teacher@anseong.kr) 비밀번호를 입력하세요:");
+
+        if (!pwd) {
+            // 취소를 누른 경우 화면 차단
+            document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; color:#dc3545;'>접근이 차단되었습니다. (새로고침하여 다시 로그인하세요)</h2>";
+            return false;
+        }
+
+        // 4. 입력받은 비밀번호로 수파베이스에 정식 로그인 요청
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: 'teacher@anseong.kr',
+            password: pwd
+        });
+
+        if (error) {
+            alert("비밀번호가 틀렸습니다. 다시 시도해주세요.");
+            location.reload(); // 새로고침하여 다시 잠금
+            return false;
+        } else {
+            // 로그인 성공 시 숨겨둔 화면을 보여줌
+            document.getElementById('main-content').style.display = 'block';
+            return true;
+        }
+    } catch (err) {
+        alert("인증 처리 중 오류가 발생했습니다.");
+        console.error(err);
+        return false;
+    }
+}
+// 👆👆 [추가 끝] 👆👆
+
+
+
 // 2. 공통 타임 인정 계산 함수
 // (statistics.html, split_admin.html, settings.html 등에서 공통 사용)
 function getRecognizedTimes(log, appliedTimesStr, currentScheduleData) {
