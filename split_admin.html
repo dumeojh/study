@@ -1707,96 +1707,110 @@
                             });
                         }
                     } else if (log.status === "입실" || log.status === "복귀" || log.status === "외출") {
-                        // 아직 야자가 진행 중(귀가 전)이라면, 신청한 모든 타임을 일단 '인정'으로 간주 (최종 귀가 시점에 다시 계산됨)
-                        [1, 2, 3].forEach(t => {
-                            if (st.rawTimes.includes(String(t))) {
-                                recognizedSet.add(t);
-                            }
-                        });
-                    }
-                }
+                        // 현재 진행 중인 상태일 때는 '현재 시각'을 기준으로 깐깐하게 인정 타임을 계산합니다.
+                        const now = new Date();
+                        const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
 
-                // 총 인정 타임 횟수 업데이트
-                recTimes = recognizedSet.size;
+                        // 오늘 날짜의 기록인 경우에만 실시간 시간 체크 진행
+                        if (log.date === todayStr) {
+                            const currentMin = now.getHours() * 60 + now.getMinutes();
+                            const timeToMin = (tmStr) => { const [sh, sm] = tmStr.split(':').map(Number); return sh * 60 + sm; };
 
-                [0, 1, 2, 3].forEach(t => {
-                    const isApplied = st.rawTimes.includes(String(t));
-                    const isCurrentSlot = (t === currentSlot);
-                    const isRecognized = recognizedSet.has(t);
+                            [1, 2, 3].forEach(t => {
+                                if (st.rawTimes.includes(String(t))) {
+                                    const startStr = currentSchedule[`t${t}`];
+                                    const reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0;
 
-                    // 1. [신청] 박스 로직 (변경 없음)
-                    if (isApplied) {
-                        appliedBadges += `<span style="background:#6c757d; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:bold;">${t}T</span>`;
-                    } else {
-                        appliedBadges += `<span style="border:1px dashed #adb5bd; color:#adb5bd; background:transparent; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px;">${t}T</span>`;
-                    }
-
-
-
-                    // 2. [현재] 박스 로직 (진행 중인 타임만 분홍색 표시)
-                    let cBg = "transparent", cBorder = "1px dashed #adb5bd", cFontCol = "#adb5bd", cFontWeight = "normal";
-
-                    if (isApplied) {
-                        // 학생이 현재 '입실' 상태이고, 이번 타임이 현재 시스템 운영 타임일 경우에만 분홍색 표시
-                        if (isCurrentSlot && (status === "입실" || status === "복귀")) {
-                            cFontWeight = "900";
-                            cBg = "#ffe5ec";          // 연한 분홍색 배경
-                            cBorder = "2px solid #d63384"; // 진한 분홍색 테두리
-                            cFontCol = "#d63384";     // 진한 분홍색 글씨
-                        }
-                        // 학생이 '미입실' 또는 '외출' 상태인데 신청한 시간이면 기존 로직 (빨간불/노란불) 유지
-                        else if (isCurrentSlot && (status === "미입실" || status === "귀가(누락)")) {
-                            cFontWeight = "bold";
-                            cBg = "#fff0f0"; cBorder = "2px dashed #dc3545"; cFontCol = "#dc3545";
-                        }
-                        else if (isCurrentSlot && status === "외출") {
-                            cFontWeight = "bold";
-                            cBg = "#e0d4f7"; cBorder = "2px dashed #6f42c1"; cFontCol = "#4a2785";
-                        }
-                        // 과거/미래에 신청한 타임이거나 귀가한 경우
-                        else {
-                            cBg = "#e9ecef"; cBorder = "1px solid #6c757d"; cFontCol = "#495057";
+                                    // 현재 시간이 (타임 시작 시간 + 필수 체류 시간)을 넘겼을 때만 해당 타임을 인정
+                                    if (startStr && currentMin >= (timeToMin(startStr) + reqMin)) {
+                                        recognizedSet.add(t);
+                                    }
+                                }
+                            });
                         }
                     }
-                    currentBadges += `<span style="background:${cBg}; color:${cFontCol}; border:${cBorder}; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:${cFontWeight};">${t}T</span>`;
 
+                    // 총 인정 타임 횟수 업데이트
+                    recTimes = recognizedSet.size;
 
+                    [0, 1, 2, 3].forEach(t => {
+                        const isApplied = st.rawTimes.includes(String(t));
+                        const isCurrentSlot = (t === currentSlot);
+                        const isRecognized = recognizedSet.has(t);
 
-
-
-                    // 3. [결과] 박스 로직 (신청 여부 무관하게 실제 인정받았다면 파란색 표시)
-                    let rBg = "transparent", rBorder = "1px dashed #adb5bd", rColor = "#adb5bd", rWeight = "normal";
-
-                    // 신청 여부와 상관없이 인정(Recognized)된 타임은 파란색으로 확정
-                    if (isRecognized) {
-                        rWeight = "bold";
-                        rBg = "var(--primary)";
-                        rColor = "white";
-                        rBorder = "1px solid var(--primary)";
-                    }
-                    // 인정을 못 받았는데, 애초에 신청했던 타임이라면 빨간색 결석 처리
-                    else if (isApplied) {
-                        rWeight = "bold";
-                        if (t < currentSlot || status === "귀가" || status === "귀가(누락)") {
-                            rBg = "#fff0f0";
-                            rColor = "var(--danger)";
-                            rBorder = "1px solid var(--danger)";
+                        // 1. [신청] 박스 로직 (변경 없음)
+                        if (isApplied) {
+                            appliedBadges += `<span style="background:#6c757d; color:white; padding:2px 6px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:bold;">${t}T</span>`;
                         } else {
-                            rBg = "transparent";
-                            rColor = "#6c757d";
-                            rBorder = "1px dashed #6c757d";
+                            appliedBadges += `<span style="border:1px dashed #adb5bd; color:#adb5bd; background:transparent; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px;">${t}T</span>`;
                         }
-                    }
-                    // 신청도 안 했고, 인정도 못 받은 타임은 기본 회색 흐린 테두리로 유지됨
-
-                    resultBadges += `<span style="background:${rBg}; color:${rColor}; border:${rBorder}; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:${rWeight};">${t}T</span>`;
 
 
-                });
-                // 👆👆 [수정] 여기까지 교체하세요 👆👆
 
-                // 🌟 4. HTML 조합
-                let timeBoxHtml = `
+                        // 2. [현재] 박스 로직 (진행 중인 타임만 분홍색 표시)
+                        let cBg = "transparent", cBorder = "1px dashed #adb5bd", cFontCol = "#adb5bd", cFontWeight = "normal";
+
+                        if (isApplied) {
+                            // 학생이 현재 '입실' 상태이고, 이번 타임이 현재 시스템 운영 타임일 경우에만 분홍색 표시
+                            if (isCurrentSlot && (status === "입실" || status === "복귀")) {
+                                cFontWeight = "900";
+                                cBg = "#ffe5ec";          // 연한 분홍색 배경
+                                cBorder = "2px solid #d63384"; // 진한 분홍색 테두리
+                                cFontCol = "#d63384";     // 진한 분홍색 글씨
+                            }
+                            // 학생이 '미입실' 또는 '외출' 상태인데 신청한 시간이면 기존 로직 (빨간불/노란불) 유지
+                            else if (isCurrentSlot && (status === "미입실" || status === "귀가(누락)")) {
+                                cFontWeight = "bold";
+                                cBg = "#fff0f0"; cBorder = "2px dashed #dc3545"; cFontCol = "#dc3545";
+                            }
+                            else if (isCurrentSlot && status === "외출") {
+                                cFontWeight = "bold";
+                                cBg = "#e0d4f7"; cBorder = "2px dashed #6f42c1"; cFontCol = "#4a2785";
+                            }
+                            // 과거/미래에 신청한 타임이거나 귀가한 경우
+                            else {
+                                cBg = "#e9ecef"; cBorder = "1px solid #6c757d"; cFontCol = "#495057";
+                            }
+                        }
+                        currentBadges += `<span style="background:${cBg}; color:${cFontCol}; border:${cBorder}; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:${cFontWeight};">${t}T</span>`;
+
+
+
+
+
+                        // 3. [결과] 박스 로직 (신청 여부 무관하게 실제 인정받았다면 파란색 표시)
+                        let rBg = "transparent", rBorder = "1px dashed #adb5bd", rColor = "#adb5bd", rWeight = "normal";
+
+                        // 신청 여부와 상관없이 인정(Recognized)된 타임은 파란색으로 확정
+                        if (isRecognized) {
+                            rWeight = "bold";
+                            rBg = "var(--primary)";
+                            rColor = "white";
+                            rBorder = "1px solid var(--primary)";
+                        }
+                        // 인정을 못 받았는데, 애초에 신청했던 타임이라면 빨간색 결석 처리
+                        else if (isApplied) {
+                            rWeight = "bold";
+                            if (t < currentSlot || status === "귀가" || status === "귀가(누락)") {
+                                rBg = "#fff0f0";
+                                rColor = "var(--danger)";
+                                rBorder = "1px solid var(--danger)";
+                            } else {
+                                rBg = "transparent";
+                                rColor = "#6c757d";
+                                rBorder = "1px dashed #6c757d";
+                            }
+                        }
+                        // 신청도 안 했고, 인정도 못 받은 타임은 기본 회색 흐린 테두리로 유지됨
+
+                        resultBadges += `<span style="background:${rBg}; color:${rColor}; border:${rBorder}; padding:1px 5px; border-radius:4px; font-size:10px; margin-right:3px; display:inline-block; text-align:center; min-width:14px; font-weight:${rWeight};">${t}T</span>`;
+
+
+                    });
+                    // 👆👆 [수정] 여기까지 교체하세요 👆👆
+
+                    // 🌟 4. HTML 조합
+                    let timeBoxHtml = `
                 <div style="text-align: left; margin-top: 8px; font-size: 11px; background: #f8f9fa; padding: 6px; border-radius: 6px; border: 1px solid #e9ecef; width: max-content; margin-left: auto; margin-right: auto;">
                     <div style="margin-bottom: 5px;"><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">신청:</span>${appliedBadges}</div>
                     <div style="margin-bottom: 5px;"><span style="color: #555; font-weight: bold; display: inline-block; width: 35px;">현재:</span>${currentBadges}</div>
@@ -1808,9 +1822,9 @@
 
 
 
-                // renderDailyList() 함수 내부의 tr 생성 부분 수정
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
+                    // renderDailyList() 함수 내부의 tr 생성 부분 수정
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
     <td style="vertical-align: middle;">${st.stuId}</td>
     <td style="font-weight:bold; cursor:pointer; color:var(--primary); text-decoration:underline; vertical-align: middle;" 
         onclick="openDailyStatus('${st.stuId}', '${st.stuName}', '${st.seatNum}', '${st.phone || ''}')">
@@ -1830,8 +1844,8 @@
     <td style="font-weight:900; color:${statusColor}; vertical-align: middle;">${status}</td>
     <td style="color:#555; vertical-align: middle;">${recText}</td> 
 `;
-                tbody.appendChild(tr);
-            });
+                    tbody.appendChild(tr);
+                });
 
 
 
