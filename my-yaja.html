@@ -175,7 +175,8 @@
                 const { data: allData, error: rankError } = await supabaseClient
                     .from('attendance_logs')
                     .select('stu_id, date, status, history')
-                    .like('date', `${month}%`);
+                    .like('date', `${month}%`)
+                    .limit(10000); // 👈 추가: 1,000건 제한을 10,000건으로 넉넉하게 확장
 
                 if (rankError) throw rankError;
 
@@ -213,7 +214,10 @@
                 const rank = sortedIds.indexOf(currentStuId) + 1;
                 const myCount = counts[currentStuId] || 0;
 
-                if (myCount === 0) {
+
+
+                // 👈 수정: 계산된 횟수가 아닌 실제 로그 개수를 기준으로 판별
+                if (!logs || logs.length === 0) {
                     msgElement.innerText = `${month}월의 참여 기록이 없습니다.`;
                     msgElement.classList.remove('hidden');
                     document.getElementById('result_area').classList.add('hidden');
@@ -234,6 +238,9 @@
                     .like('date', `${month}%`)
                     .order('date', { ascending: false });
 
+
+
+
                 // UI 업데이트
                 document.getElementById('result_area').classList.remove('hidden');
                 document.getElementById('user_name').innerText = `${userData?.stu_name || '학생'}님의 ${month.split('-')[1]}월 현황`;
@@ -244,6 +251,9 @@
                 const logList = document.getElementById('log_list');
                 logList.className = "grid grid-cols-5 gap-2 mt-3";
 
+
+
+
                 logList.innerHTML = logs.map(log => {
                     const logDate = new Date(log.date);
                     const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][logDate.getDay()];
@@ -251,12 +261,18 @@
                     let appliedStr = "1,2,3"; // 기록 출력 시 기준값
                     const slots = getRecognizedTimes(log, appliedStr, currentSchedule);
 
-                    if (slots === 0) {
-                        return `<li class="h-14 bg-transparent"></li>`;
-                    }
-
-                    // 날짜 변환 (예: 2026-05-12 -> 12일)
+                    // 👇 날짜 변환을 먼저 하도록 위로 올렸습니다.
                     const dayStr = parseInt(log.date.split('-')[2]) + '일';
+
+                    if (slots === 0) {
+                        // 👇 0타임일 때 투명해지지 않고 회색 네모로 0T가 표시되게 수정
+                        return `
+                        <li class="flex flex-col items-center justify-center bg-gray-100 border border-gray-200 rounded-lg h-14 shadow-sm opacity-70">
+                            <span class="text-[10px] text-gray-500 font-medium">${dayStr}</span>
+                            <span class="font-bold text-gray-500 text-sm mt-0.5">0T</span>
+                        </li>
+                        `;
+                    }
 
                     return `
                     <li class="flex flex-col items-center justify-center bg-purple-50 border border-purple-200 rounded-lg h-14 shadow-sm transform transition hover:scale-105">
@@ -265,6 +281,11 @@
                     </li>
                     `;
                 }).join('');
+
+
+
+
+
 
                 // 👇 알림 메시지 부분 (주석이 아닌 실제 코드)
                 const alertBox = document.getElementById('fixed_seat_alert');
