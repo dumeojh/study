@@ -2332,10 +2332,10 @@
                     row.forEach(cell => {
                         const c = typeof cell === 'number' ? { type: cell, label: "" } : cell;
                         if (c.label) {
-                            // 도면 설정에 따라 type 2를 고정석 구역으로, type 1을 자율석 구역으로 가정합니다.
-                            if (c.type === 2) {
+                            // 도면 설정에 따라 type 1를 고정석 구역으로, type 2을 자율석 구역으로 가정합니다.
+                            if (c.type === 1) {
                                 allFixedSeats.push(c.label);
-                            } else if (c.type === 1) {
+                            } else if (c.type === 2) {
                                 allAutoSeats.push(c.label);
                             }
                         }
