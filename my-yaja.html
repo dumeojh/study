@@ -191,11 +191,11 @@
                 if (rankError) throw rankError;
 
                 // 👇 전체 학생의 신청 데이터 가져오기 (정확한 시간 계산 목적)
+                const targetMonthNum = parseInt(month.split('-')[1], 10); // "05"를 5로 변환
                 const { data: allApps } = await supabaseClient
                     .from('applications')
                     .select('stu_id, mon, tue, wed, thu, fri, sat, sun')
-                    .eq('target_month', month.split('-')[1] + "월");
-
+                    .eq('target_month', targetMonthNum + "월"); // "5월"로 정확히 일치시킴
                 let appsMap = {};
                 if (allApps) {
                     allApps.forEach(app => appsMap[String(app.stu_id)] = app);
@@ -255,11 +255,12 @@
 
 
                 // UI 업데이트
+                // UI 업데이트
                 document.getElementById('result_area').classList.remove('hidden');
-                document.getElementById('user_name').innerText = `${userData?.stu_name || '학생'}님의 ${month.split('-')[1]}월 현황`;
+                document.getElementById('user_name').innerText = `${userData?.stu_name || '학생'}님의 ${targetMonthNum}월 현황`;
                 document.getElementById('my_rank').innerText = rank;
                 document.getElementById('total_count').innerText = myCount;
-                document.getElementById('rank_title').innerText = `${month.split('-')[1]}월 등수`;
+                document.getElementById('rank_title').innerText = `${targetMonthNum}월 등수`;
 
                 const logList = document.getElementById('log_list');
                 logList.className = "grid grid-cols-5 gap-2 mt-3";
