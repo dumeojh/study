@@ -6,12 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>학생 바코드 자동 생성기</title>
 
-    <!-- Supabase 연동 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- 기존 환경설정과 동일하게 공통 자바스크립트 파일 연결 -->
     <script src="common.js"></script>
 
-    <!-- 바코드 생성 라이브러리 (JsBarcode) -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
     <style>
@@ -241,6 +238,11 @@
             grid-column: 1 / -1;
         }
 
+        /* 인쇄 전용 제목 스타일 (화면에서는 숨김) */
+        .print-header-title {
+            display: none;
+        }
+
         /* 인쇄 시 레이아웃 최적화 */
         @media print {
             body {
@@ -250,6 +252,17 @@
 
             .no-print {
                 display: none !important;
+            }
+
+            /* 🌟 인쇄할 때만 나타나는 상단 제목 */
+            .print-header-title {
+                display: block;
+                text-align: center;
+                font-size: 22px;
+                font-weight: 900;
+                margin-top: 10px;
+                margin-bottom: 20px;
+                color: #000;
             }
 
             .layout-wrapper {
@@ -302,13 +315,11 @@
         </div>
     </div>
 
-    <!-- 반별 검색 및 선택 도구 -->
     <div class="tools-container no-print" id="tools-panel" style="display: none;">
         <div class="filter-group">
             <label>🏫 반별 보기:</label>
             <select id="class-filter" onchange="filterCards()">
                 <option value="all">전체 보기</option>
-                <!-- 자바스크립트로 옵션이 채워집니다 -->
             </select>
         </div>
         <div style="display: flex; gap: 8px;">
@@ -317,8 +328,9 @@
         </div>
     </div>
 
+    <div class="print-header-title">(2026년 3학년 자기주도학습)</div>
+
     <div class="layout-wrapper">
-        <!-- 🌟 좌측: 학생 명단 리스트 -->
         <div class="list-container no-print" id="list-panel" style="display: none;">
             <h3 style="margin-top: 0; color: #052c65;">📋 학생 명단</h3>
             <p style="font-size: 12px; color: #666; margin-top: -10px;">명단에서 선택해도 반영됩니다.</p>
@@ -333,13 +345,11 @@
                         </tr>
                     </thead>
                     <tbody id="student-list-body">
-                        <!-- JS로 채워집니다 -->
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- 우측: 바코드 그리드 -->
         <div class="barcode-section">
             <div id="barcode-container">
                 <div class="loading-text">⏳ 기초 명단 데이터를 불러오는 중입니다...</div>
