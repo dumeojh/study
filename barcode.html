@@ -8,10 +8,10 @@
 
     <!-- Supabase 연동 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- 기존 환경설정과 동일하게 공통 자바스크립트 파일 연결 -->
+    <!-- 공통 자바스크립트 파일 연결 -->
     <script src="common.js"></script>
 
-    <!-- 바코드 생성 라이브러리 (JsBarcode) -->
+    <!-- 바코드 생성 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
     <style>
@@ -27,6 +27,46 @@
             background-color: #f4f7f9;
             margin: 0;
             padding: 20px;
+        }
+
+        /* 🌟 관리자 인증(로그인) 오버레이 스타일 */
+        #auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .auth-box {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            width: 90%;
+            max-width: 380px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+
+        .auth-box input {
+            width: 100%;
+            padding: 15px;
+            font-size: 20px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin: 15px 0;
+            box-sizing: border-box;
+        }
+
+        /* 메인 콘텐츠 기본 숨김 */
+        #main-content {
+            display: none;
         }
 
         .header {
@@ -107,14 +147,13 @@
             cursor: pointer;
         }
 
-        /* 🌟 좌우 레이아웃 (명단 리스트 / 바코드) */
+        /* 좌우 레이아웃 (명단 리스트 / 바코드) */
         .layout-wrapper {
             display: flex;
             gap: 20px;
             align-items: flex-start;
         }
 
-        /* 좌측 학생 명단 리스트 */
         .list-container {
             width: 320px;
             background: white;
@@ -169,7 +208,6 @@
             accent-color: var(--primary);
         }
 
-        /* 우측 바코드가 담길 그리드 */
         .barcode-section {
             flex: 1;
             min-width: 0;
@@ -199,7 +237,6 @@
             display: none !important;
         }
 
-        /* 체크 해제된 카드는 시각적으로 흐리게 처리 */
         .barcode-card:not(.print-active) {
             opacity: 0.4;
             background: #f8f9fa;
@@ -228,7 +265,6 @@
             margin-bottom: 5px;
         }
 
-        /* 🌟 바코드에 추가될 작은 글씨 스타일 */
         .barcode-label-text {
             font-size: 12px;
             color: #555;
@@ -249,12 +285,10 @@
             grid-column: 1 / -1;
         }
 
-        /* 인쇄 전용 제목 스타일 (화면에서는 숨김) */
         .print-header-title {
             display: none;
         }
 
-        /* 인쇄 시 레이아웃 최적화 */
         @media print {
             body {
                 background: white;
@@ -265,7 +299,6 @@
                 display: none !important;
             }
 
-            /* 🌟 인쇄할 때만 나타나는 상단 제목 */
             .print-header-title {
                 display: block;
                 text-align: center;
@@ -280,7 +313,6 @@
                 display: block;
             }
 
-            /* flex 해제하여 꽉 채움 */
             .barcode-section {
                 box-shadow: none;
                 padding: 0;
@@ -289,7 +321,6 @@
             #barcode-container {
                 gap: 10px;
                 grid-template-columns: repeat(4, 1fr);
-                /* 인쇄 시 4열 고정 */
             }
 
             .barcode-card {
@@ -300,8 +331,6 @@
             .barcode-card:not(.print-active) {
                 display: none !important;
             }
-
-            /* 체크 해제 카드 인쇄 제외 */
 
             .student-info {
                 margin-bottom: 2px;
@@ -315,75 +344,118 @@
             .barcode-svg {
                 height: 50px;
             }
-
-            /* 인쇄 시 바코드 높이 살짝 조절 */
         }
     </style>
 </head>
 
 <body>
 
-    <div class="header no-print">
-        <h1>🪪 학생 바코드 출력 페이지</h1>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn btn-print" onclick="window.print()">🖨️ 선택된 바코드 인쇄</button>
-            <button class="btn btn-back" onclick="location.href='settings.html'">⬅️ 환경설정</button>
+    <!-- 🌟 보안용 인증 오버레이 추가 -->
+    <div id="auth-overlay">
+        <div class="auth-box">
+            <h2>🔒 관리자 인증</h2>
+            <p style="font-size: 13px; color: #666; margin-bottom: 20px;">바코드 출력은 관리자 권한이 필요합니다.</p>
+            <input type="email" id="email-input" placeholder="관리자 이메일">
+            <input type="password" id="pass-input" placeholder="비밀번호"
+                onkeypress="if(event.key === 'Enter') checkPass()">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-print" style="flex:2; padding: 15px;" onclick="checkPass()">확인</button>
+                <button class="btn btn-back" style="flex:1; padding: 15px;"
+                    onclick="location.href='index.html'">돌아가기</button>
+            </div>
         </div>
     </div>
 
-    <!-- 반별 검색 및 선택 도구 -->
-    <div class="tools-container no-print" id="tools-panel" style="display: none;">
-        <div class="filter-group">
-            <label>🏫 반별 보기:</label>
-            <select id="class-filter" onchange="filterCards()">
-                <!-- 기본값을 '선택'으로 변경 -->
-                <option value="none" selected>반을 선택하세요</option>
-                <option value="all">전체 보기</option>
-                <!-- 자바스크립트로 옵션이 채워집니다 -->
-            </select>
-        </div>
-        <div style="display: flex; gap: 8px;">
-            <button class="btn btn-success" onclick="toggleVisibleCards(true)">✅ 화면의 모든 학생 선택</button>
-            <button class="btn btn-danger" onclick="toggleVisibleCards(false)">❌ 화면의 모든 학생 해제</button>
-        </div>
-    </div>
-
-    <!-- 인쇄물 상단 제목 영역 (일반 화면에서는 숨겨짐) -->
-    <div class="print-header-title">(2026년 3학년 자기주도학습)</div>
-
-    <div class="layout-wrapper">
-        <!-- 좌측: 학생 명단 리스트 -->
-        <div class="list-container no-print" id="list-panel" style="display: none;">
-            <h3 style="margin-top: 0; color: #052c65;">📋 학생 명단</h3>
-            <p style="font-size: 12px; color: #666; margin-top: -10px;">명단에서 선택해도 반영됩니다.</p>
-            <div class="list-table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <!-- 전체 선택 체크박스도 기본 해제 상태로 변경 -->
-                            <th><input type="checkbox" id="check-all-list" onchange="toggleVisibleCards(this.checked)">
-                            </th>
-                            <th>학번</th>
-                            <th>이름</th>
-                        </tr>
-                    </thead>
-                    <tbody id="student-list-body">
-                        <!-- JS로 채워집니다 -->
-                    </tbody>
-                </table>
+    <!-- 🌟 메인 콘텐츠는 기본적으로 숨겨져 있음 -->
+    <div id="main-content">
+        <div class="header no-print">
+            <h1>🪪 학생 바코드 출력 페이지</h1>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-print" onclick="window.print()">🖨️ 선택된 바코드 인쇄</button>
+                <button class="btn btn-back" onclick="location.href='index.html'">⬅️ 메인 화면</button>
             </div>
         </div>
 
-        <!-- 우측: 바코드 그리드 -->
-        <div class="barcode-section">
-            <div id="barcode-container">
-                <div class="loading-text">⏳ 기초 명단 데이터를 불러오는 중입니다...</div>
+        <div class="tools-container no-print" id="tools-panel" style="display: none;">
+            <div class="filter-group">
+                <label>🏫 반별 보기:</label>
+                <select id="class-filter" onchange="filterCards()">
+                    <option value="none" selected>반을 선택하세요</option>
+                    <option value="all">전체 보기</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-success" onclick="toggleVisibleCards(true)">✅ 화면의 모든 학생 선택</button>
+                <button class="btn btn-danger" onclick="toggleVisibleCards(false)">❌ 화면의 모든 학생 해제</button>
+            </div>
+        </div>
+
+        <div class="print-header-title">(2026년 3학년 자기주도학습)</div>
+
+        <div class="layout-wrapper">
+            <div class="list-container no-print" id="list-panel" style="display: none;">
+                <h3 style="margin-top: 0; color: #052c65;">📋 학생 명단</h3>
+                <p style="font-size: 12px; color: #666; margin-top: -10px;">명단에서 선택해도 반영됩니다.</p>
+                <div class="list-table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="check-all-list"
+                                        onchange="toggleVisibleCards(this.checked)"></th>
+                                <th>학번</th>
+                                <th>이름</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-list-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="barcode-section">
+                <div id="barcode-container">
+                    <div class="loading-text">⏳ 기초 명단 데이터를 불러오는 중입니다...</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // 🌟 페이지 진입 시 로그인 세션 확인
         document.addEventListener("DOMContentLoaded", async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                // 이미 로그인되어 있다면 오버레이 숨기고 데이터 로딩
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                loadBarcodeData();
+            }
+        });
+
+        // 🌟 로그인 확인 함수
+        async function checkPass() {
+            const email = document.getElementById('email-input').value.trim();
+            const pass = document.getElementById('pass-input').value.trim();
+
+            if (!email || !pass) return alert("이메일과 비밀번호를 모두 입력해주세요.");
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email: email, password: pass });
+                if (error) throw error;
+
+                // 로그인 성공 시 화면 표시 및 데이터 호출
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                loadBarcodeData();
+
+            } catch (error) {
+                alert("로그인 실패! 권한이 없거나 정보가 일치하지 않습니다.");
+                console.error(error);
+            }
+        }
+
+        // 🌟 실제 명단 데이터를 불러오고 바코드를 그리는 메인 함수
+        async function loadBarcodeData() {
             const container = document.getElementById('barcode-container');
             const toolsPanel = document.getElementById('tools-panel');
             const listPanel = document.getElementById('list-panel');
@@ -391,7 +463,6 @@
             const classFilter = document.getElementById('class-filter');
 
             try {
-                // 환경설정 테이블에서 'roster' (기초명단) 데이터 불러오기
                 const { data, error } = await supabaseClient
                     .from('settings')
                     .select('value')
@@ -409,27 +480,22 @@
                         return;
                     }
 
-                    // 도구 패널 및 명단 패널 표시
                     toolsPanel.style.display = 'flex';
                     listPanel.style.display = 'flex';
                     container.innerHTML = '';
                     listBody.innerHTML = '';
 
-                    const classesSet = new Set(); // 존재하는 반 목록을 담을 Set
+                    const classesSet = new Set();
 
-                    // 각 학생별 생성 로직
                     studentIds.forEach(id => {
                         const name = roster[id];
                         const classPrefix = String(id).length >= 2 ? String(id).substring(0, 2) : "기타";
                         classesSet.add(classPrefix);
 
-                        // ==========================================
-                        // 1. 좌측 명단 리스트 행(tr) 생성
-                        // ==========================================
+                        // 1. 좌측 명단
                         const tr = document.createElement('tr');
                         tr.className = 'list-row';
                         tr.setAttribute('data-class', classPrefix);
-                        // 체크박스 기본 속성(checked) 제거
                         tr.innerHTML = `
                             <td><input type="checkbox" class="list-cb" data-id="${id}" onchange="syncCheck('${id}', this.checked)"></td>
                             <td style="font-weight: bold;">${id}</td>
@@ -437,16 +503,12 @@
                         `;
                         listBody.appendChild(tr);
 
-                        // ==========================================
-                        // 2. 우측 바코드 카드 생성
-                        // ==========================================
+                        // 2. 우측 바코드
                         const card = document.createElement('div');
-                        // print-active 속성 제거 (기본 선택 해제)
                         card.className = 'barcode-card';
                         card.setAttribute('data-class', classPrefix);
                         card.setAttribute('data-id', id);
 
-                        // 🌟 학생 정보 아래에 '2026년 자기주도학습' 문구 추가
                         card.innerHTML = `
                             <div class="checkbox-area no-print">
                                 <label>
@@ -463,7 +525,6 @@
                         card.appendChild(svg);
                         container.appendChild(card);
 
-                        // 바코드 생성 적용
                         JsBarcode(svg, id, {
                             format: "CODE128",
                             displayValue: true,
@@ -474,7 +535,6 @@
                         });
                     });
 
-                    // Select 박스에 반 목록 추가
                     const sortedClasses = Array.from(classesSet).sort();
                     sortedClasses.forEach(cls => {
                         if (cls !== "기타") {
@@ -484,7 +544,6 @@
                         }
                     });
 
-                    // 로딩 완료 후, 아무것도 보이지 않도록 초기 필터 적용
                     filterCards();
 
                 } else {
@@ -495,9 +554,9 @@
                 console.error("데이터 로드 중 에러:", err);
                 container.innerHTML = `<div class="loading-text" style="color: var(--danger);">❌ 데이터를 불러오는데 실패했습니다. (콘솔 확인)</div>`;
             }
-        });
+        }
 
-        // 명단 리스트 <-> 바코드 카드 체크박스 동기화 함수
+        // 체크박스 동기화 함수
         function syncCheck(studentId, isChecked) {
             const listCb = document.querySelector(`.list-cb[data-id="${studentId}"]`);
             if (listCb) listCb.checked = isChecked;
@@ -515,11 +574,10 @@
             }
         }
 
-        // 반별 필터링 기능 (명단과 바코드 양쪽 모두 적용)
+        // 필터링
         function filterCards() {
             const selectedClass = document.getElementById('class-filter').value;
 
-            // 바코드 카드 필터링
             document.querySelectorAll('.barcode-card').forEach(card => {
                 if (selectedClass === "none") {
                     card.classList.add('hidden-by-filter');
@@ -530,7 +588,6 @@
                 }
             });
 
-            // 명단 리스트 필터링
             document.querySelectorAll('.list-row').forEach(row => {
                 if (selectedClass === "none") {
                     row.classList.add('hidden-by-filter');
@@ -541,12 +598,11 @@
                 }
             });
 
-            // 반이 변경될 때 상단의 '전체 선택' 체크박스는 초기화
             const masterCheck = document.getElementById('check-all-list');
             if (masterCheck) masterCheck.checked = false;
         }
 
-        // 현재 화면에 보이는 학생들의 체크박스 일괄 변경
+        // 일괄 변경
         function toggleVisibleCards(isCheck) {
             document.querySelectorAll('.barcode-card:not(.hidden-by-filter)').forEach(card => {
                 const id = card.getAttribute('data-id');
