@@ -1095,10 +1095,21 @@
                 }
                 // 기존 기능: 체크한 타임이 있을 때 -> 강제 교정 적용
                 else {
+
                     if (!confirm(`[주의] 선택한 타임(${selectedSlots.join(',')}T)에 대해서만 교사 인정 기록을 추가합니다.\n계속하시겠습니까?`)) return;
 
-                    newHistory = ["🛠️ 관리자 강제 교정"];
-                    currentStatus = "귀가"; // 부분 인정 후 다시 바뀌지 않도록 귀가 마감
+                    // 1️⃣ 기존 기록(history)이 있으면 그걸 그대로 가져오고, 없으면 빈 배열 생성
+                    const { data: currentData } = await supabaseClient.from('attendance_logs').select('history').eq('id', logId).maybeSingle();
+                    newHistory = (currentData && currentData.history) ? currentData.history : [];
+
+                    // 2️⃣ 기존 기록 중 이전에 '관리자 강제 승인'했던 기록만 쏙쏙 골라서 제거 (수정할 때 중복되는 것 방지)
+                    newHistory = newHistory.filter(h => !h.includes('(교사)'));
+
+                    // 3️⃣ 마지막에 '강제 교정' 꼬리표 붙이기
+                    newHistory.push("🛠️ 관리자 강제 교정");
+                    currentStatus = "귀가";
+
+
 
                     selectedSlots.forEach(t => {
                         const startStr = currentSchedule[`t${t}`];
