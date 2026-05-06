@@ -1708,6 +1708,10 @@
                                 }
                             });
                         }
+
+
+
+
                     } else if (log.status === "입실" || log.status === "복귀" || log.status === "외출") {
                         // 현재 진행 중인 상태일 때는 '현재 시각'을 기준으로 깐깐하게 인정 타임을 계산합니다.
                         const now = new Date();
@@ -1718,17 +1722,34 @@
                             const currentMin = now.getHours() * 60 + now.getMinutes();
                             const timeToMin = (tmStr) => { const [sh, sm] = tmStr.split(':').map(Number); return sh * 60 + sm; };
 
+
+
                             [1, 2, 3].forEach(t => {
                                 if (st.rawTimes.includes(String(t))) {
                                     const startStr = currentSchedule[`t${t}`];
                                     const reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0;
 
-                                    // 현재 시간이 (타임 시작 시간 + 필수 체류 시간)을 넘겼을 때만 해당 타임을 인정
-                                    if (startStr && currentMin >= (timeToMin(startStr) + reqMin)) {
+                                    // ✅ 추가: 해당 타임에 입실/복귀 태그가 있거나, 이전 타임부터 이어서 입실 중인지 확인
+                                    let hasLogsThisSlot = groupedHistory[t] && groupedHistory[t].length > 0;
+                                    let lastLogBefore = null;
+                                    for (let i = t - 1; i >= 0; i--) {
+                                        if (groupedHistory[i] && groupedHistory[i].length > 0) {
+                                            lastLogBefore = groupedHistory[i][groupedHistory[i].length - 1];
+                                            break;
+                                        }
+                                    }
+                                    // 이전 타임의 마지막 기록이 입실이나 복귀면 현재도 자리에 있는 것으로 간주
+                                    let wasInRoom = lastLogBefore && (lastLogBefore.includes("입실") || lastLogBefore.includes("복귀"));
+
+                                    // ✅ 수정: 자리에 있었음(hasLogsThisSlot || wasInRoom)이 확인될 때만 시간 계산 적용
+                                    if ((hasLogsThisSlot || wasInRoom) && startStr && currentMin >= (timeToMin(startStr) + reqMin)) {
                                         recognizedSet.add(t);
                                     }
                                 }
                             });
+
+
+
                         }
                     }
                 } // 🌟 이 닫는 괄호 하나가 실수로 지워져서 화면이 멈췄던 것입니다! 🌟
