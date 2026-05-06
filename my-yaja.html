@@ -216,13 +216,6 @@
 
 
 
-                // 👈 수정: 계산된 횟수가 아닌 실제 로그 개수를 기준으로 판별
-                if (!logs || logs.length === 0) {
-                    msgElement.innerText = `${month}월의 참여 기록이 없습니다.`;
-                    msgElement.classList.remove('hidden');
-                    document.getElementById('result_area').classList.add('hidden');
-                    return;
-                }
 
                 // 2. 학생 정보 및 상세 로그 가져오기
                 const { data: userData } = await supabaseClient
@@ -238,7 +231,16 @@
                     .like('date', `${month}%`)
                     .order('date', { ascending: false });
 
+                ///////////////////////////////////////
 
+
+                // 👈 수정: 계산된 횟수가 아닌 실제 로그 개수를 기준으로 판별
+                if (!logs || logs.length === 0) {
+                    msgElement.innerText = `${month}월의 참여 기록이 없습니다.`;
+                    msgElement.classList.remove('hidden');
+                    document.getElementById('result_area').classList.add('hidden');
+                    return;
+                }
 
 
                 // UI 업데이트
