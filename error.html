@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>안성여고 - 좌석 중복 오류 점검</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
+
+    <style>
+        :root {
+            --primary: #007bff;
+            --danger: #dc3545;
+            --gray: #6c757d;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1250px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        h2 {
+            text-align: center;
+            border-bottom: 2px solid var(--danger);
+            padding-bottom: 10px;
+            margin: 0;
+            color: var(--danger);
+        }
+
+        .tab-menu {
+            display: flex;
+            gap: 5px;
+            margin: 25px 0;
+            background: #eee;
+            padding: 5px;
+            border-radius: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: 0.3s;
+            min-width: 120px;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: var(--danger);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #dee2e6;
+            padding: 12px 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f8f9fa;
+        }
+
+        tbody tr:hover {
+            background-color: #fff4f4;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: 0.2s;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: #b02a37;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-fixed {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+        }
+
+        .badge-auto {
+            background: #d1e7dd;
+            border: 1px solid #2e7d32;
+            color: #0f5132;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>🚨 일일 좌석 중복 배정 점검</h2>
+
+        <div class="tab-menu">
+            <button class="tab-btn" onclick="location.href='split_admin.html'">🧑‍🏫 통합 관리자 홈</button>
+            <button class="tab-btn" onclick="location.href='statistics.html'">📈 통계 분석</button>
+            <button class="tab-btn active">🚨 중복 배정 오류 점검</button>
+        </div>
+
+        <div
+            style="background: #fff4f4; padding: 20px; border-radius: 10px; border: 1px dashed #dc3545; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span style="font-weight: bold; font-size: 16px;">📅 점검 날짜:</span>
+                <input type="date" id="check-date" onchange="loadDuplicateErrors()"
+                    style="padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-weight: bold;">
+                <button class="btn btn-danger" onclick="loadDuplicateErrors()">새로고침</button>
+            </div>
+            <p style="margin: 10px 0 0 0; font-size: 13px; color: #666;">
+                * 해당 일자에 <b>고정석 신청</b>과 <b>자율석 당일 발권</b>이 동시에 존재하는 학생 목록입니다.<br>
+                * 해결 방법: 아래 목록에서 <b>[자율석 발권 취소]</b>를 눌러 중복을 제거한 후, 통합 관리자 홈의 이름 클릭 > <b>[🛠️ 관리자 출결 강제 승인]</b>을 통해 정확한
+                인정 타임을 부여하세요.
+            </p>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>학번</th>
+                    <th>이름</th>
+                    <th>고정석 정보 (월간)</th>
+                    <th>자율석 정보 (당일)</th>
+                    <th>해결 조치</th>
+                </tr>
+            </thead>
+            <tbody id="error-list-body">
+                <tr>
+                    <td colspan="5" style="padding:30px;">날짜를 선택하고 데이터를 불러오는 중입니다...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('check-date').value = getTodayString();
+            loadDuplicateErrors();
+        });
+
+        async function loadDuplicateErrors() {
+            const targetDate = document.getElementById('check-date').value;
+            const targetDateObj = new Date(targetDate);
+            const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            const targetDay = dayMap[targetDateObj.getDay()]; // 예: 'wed'
+            const targetMonthStr = (targetDateObj.getMonth() + 1) + "월";
+
+            const tbody = document.getElementById('error-list-body');
+            tbody.innerHTML = `<tr><td colspan="5" style="padding:30px;">데이터 분석 중...</td></tr>`;
+
+            try {
+                // 1. 당일 자율석 발권 목록 가져오기
+                const { data: dailyRes, error: err1 } = await supabaseClient
+                    .from('daily_reservations')
+                    .select('*')
+                    .eq('date', targetDate);
+                if (err1) throw err1;
+
+                // 2. 해당 월의 고정석 신청 목록 가져오기
+                const { data: fixedApps, error: err2 } = await supabaseClient
+                    .from('applications')
+                    .select('*')
+                    .eq('target_month', targetMonthStr)
+                    .eq('type', '고정석');
+                if (err2) throw err2;
+
+                let duplicates = [];
+
+                // 3. 교집합 찾기: 당일 자율석이 있는데, 고정석 명단에도 있고 오늘 요일에 신청 타임이 있는 경우
+                dailyRes.forEach(dr => {
+                    const matchedFixed = fixedApps.find(app => String(app.stu_id) === String(dr.stu_id));
+
+                    // 고정석 명단에 있고, 해당 요일(targetDay)에 신청한 타임이 비어있지 않은지 확인
+                    if (matchedFixed && matchedFixed[targetDay] && matchedFixed[targetDay].trim() !== "") {
+                        duplicates.push({
+                            stuId: dr.stu_id,
+                            stuName: dr.stu_name,
+                            dailyDocId: dr.id,
+                            autoSeat: dr.seat_num,
+                            autoTimes: dr.times,
+                            fixedSeat: matchedFixed.seat_num,
+                            fixedTimes: matchedFixed[targetDay]
+                        });
+                    }
+                });
+
+                // 4. 화면 출력
+                if (duplicates.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="padding:50px; font-weight:bold; color:#198754;">🎉 발견된 중복 배정 오류가 없습니다. (정상)</td></tr>`;
+                    return;
+                }
+
+                let html = "";
+                duplicates.forEach(d => {
+                    html += `
+                <tr>
+                    <td style="font-weight:bold;">${d.stuId}</td>
+                    <td style="font-weight:bold; color:var(--danger);">${d.stuName}</td>
+                    <td>
+                        <span class="badge badge-fixed">${d.fixedSeat}</span><br>
+                        <span style="font-size:12px; color:#666;">신청: ${d.fixedTimes}T</span>
+                    </td>
+                    <td>
+                        <span class="badge badge-auto">${d.autoSeat}</span><br>
+                        <span style="font-size:12px; color:#666;">발권: ${d.autoTimes}T</span>
+                    </td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deleteAutoSeat('${d.dailyDocId}', '${d.stuName}', '${targetDate}')">
+                            🗑️ 당일 자율석 발권 삭제
+                        </button>
+                    </td>
+                </tr>`;
+                });
+                tbody.innerHTML = html;
+
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = `<tr><td colspan="5" style="padding:30px; color:red;">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>`;
+            }
+        }
+
+        async function deleteAutoSeat(docId, stuName, targetDate) {
+            if (!confirm(`[주의] ${stuName} 학생의 ${targetDate} 일자 자율석 발권 기록을 완전히 삭제하시겠습니까?\n(고정석 데이터만 남게 됩니다)`)) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('daily_reservations')
+                    .delete()
+                    .eq('id', docId);
+
+                if (error) throw error;
+
+                alert(`${stuName} 학생의 당일 자율석 기록이 삭제되었습니다.\n통합 관리자 홈으로 이동하여 출결 인정을 확인해주세요.`);
+                loadDuplicateErrors(); // 화면 갱신
+            } catch (error) {
+                alert("삭제 중 오류가 발생했습니다: " + error.message);
+            }
+        }
+    </script>
+
+</body>
+
+</html>
