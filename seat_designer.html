@@ -14,6 +14,7 @@
             --wood: #d4a373;
             --wood-dark: #bcaaa4;
             --save: #198754;
+            --warning: #ffc107;
         }
 
         body {
@@ -358,30 +359,6 @@
                 opacity: 1;
             }
         }
-
-        /* 인증 모달용 스타일 추가 */
-        #auth-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .auth-box {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            text-align: center;
-            width: 90%;
-            max-width: 380px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-        }
     </style>
 </head>
 
@@ -443,6 +420,11 @@
             <div class="tool-bar">
                 <b style="line-height: 40px; margin-right: 10px;">🛠️ 기본 도구:</b>
 
+                <!-- 🌟 되돌리기 버튼 추가 🌟 -->
+                <button class="tool-btn" onclick="undo()"
+                    style="border-color: var(--warning); color: #856404; background: #fff3cd; margin-right: 10px;">↩️
+                    되돌리기 (Ctrl+Z)</button>
+
                 <button class="tool-btn active" onclick="setTool(8, this)"
                     style="border-color: #6f42c1; color: #6f42c1; background: #f3e8ff; margin-right: 10px;">🖱️ 다중
                     선택/이동</button>
@@ -493,6 +475,9 @@
         let isSelecting = false;
         let selectedSeats = [];
 
+        // 🌟 되돌리기(Undo)를 위한 스택 변수 🌟
+        let undoStack = [];
+
         document.addEventListener('DOMContentLoaded', async () => {
             const isAuth = await requireAdminAuth();
             if (isAuth) {
@@ -501,6 +486,34 @@
                 drawGrid();
             }
         });
+
+        // 🌟 키보드 단축키 (Ctrl+Z) 감지 이벤트 🌟
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+                e.preventDefault(); // 브라우저 기본 되돌리기 방지
+                undo();
+            }
+        });
+
+        // 🌟 상태를 저장하는 함수 (무언가를 변경하기 직전에 호출) 🌟
+        function saveHistory() {
+            if (undoStack.length >= 30) undoStack.shift(); // 최대 30단계 기억
+            undoStack.push(JSON.stringify(rooms)); // 현재 전체 상태를 문자열로 깊은 복사하여 저장
+        }
+
+        // 🌟 되돌리기 실행 함수 🌟
+        function undo() {
+            if (undoStack.length === 0) {
+                return; // 더 이상 되돌릴 내역이 없으면 무시
+            }
+            const previousState = undoStack.pop();
+            rooms = JSON.parse(previousState); // 이전 상태로 복구
+
+            clearSelection();
+            renderTabs();
+            drawGrid();
+            saveLocalDraft(); // 복구된 상태를 로컬스토리지에도 반영
+        }
 
         function exportToFile() {
             const dataStr = JSON.stringify(rooms, null, 2);
@@ -527,6 +540,7 @@
                     try {
                         const importedRooms = JSON.parse(event.target.result);
                         if (Array.isArray(importedRooms) && importedRooms[0] && importedRooms[0].grid) {
+                            saveHistory(); // 불러오기 직전 상태 저장
                             rooms = importedRooms;
                             currentIdx = 0;
                             saveLocalDraft();
@@ -582,7 +596,12 @@
                 btn.onclick = () => { switchRoom(i); };
                 btn.ondblclick = () => {
                     const n = prompt("구역 이름 변경:", r.name);
-                    if (n && n.trim()) { r.name = n.trim(); renderTabs(); saveLocalDraft(); }
+                    if (n && n.trim()) {
+                        saveHistory(); // 탭 이름 변경 전 저장
+                        r.name = n.trim();
+                        renderTabs();
+                        saveLocalDraft();
+                    }
                 };
                 container.appendChild(btn);
             });
@@ -599,6 +618,7 @@
         function addRoom() {
             const n = prompt("새 구역 이름:", "F실");
             if (!n) return;
+            saveHistory(); // 새 구역 추가 전 저장
             rooms.push({
                 name: n, rows: 15, cols: 20,
                 grid: Array.from({ length: 15 }, () => Array.from({ length: 20 }, () => ({ type: 0, label: "", w: 1, h: 1 })))
@@ -609,9 +629,29 @@
         function deleteRoom() {
             if (rooms.length <= 1) return;
             if (confirm(`[${rooms[currentIdx].name}] 구역을 삭제하시겠습니까?`)) {
+                saveHistory(); // 구역 삭제 전 저장
                 rooms.splice(currentIdx, 1);
                 switchRoom(0);
             }
+        }
+
+        function getRootCell(ri, ci) {
+            const r = rooms[currentIdx];
+            if (!r.grid[ri] || !r.grid[ri][ci]) return null;
+            if (r.grid[ri][ci].type === 0) return null;
+            if (r.grid[ri][ci].type !== -1) return { r: ri, c: ci, ...r.grid[ri][ci] };
+
+            for (let i = ri; i >= 0; i--) {
+                for (let j = ci; j >= 0; j--) {
+                    let root = r.grid[i][j];
+                    if (root.type !== 0 && root.type !== -1) {
+                        if (ri >= i && ri < i + root.h && ci >= j && ci < j + root.w) {
+                            return { r: i, c: j, ...root };
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         function drawGrid() {
@@ -626,7 +666,7 @@
 
             r.grid.forEach((row, ri) => {
                 row.forEach((cell, ci) => {
-                    if (cell.type === -1) return; // 하위 셀 숨김
+                    if (cell.type === -1) return;
                     const div = document.createElement('div');
                     div.className = `seat-cell seat-${cell.type}`;
                     div.innerText = cell.label || "";
@@ -635,7 +675,6 @@
                     if (cell.w > 1) div.style.gridColumn = `span ${cell.w}`;
                     if (cell.h > 1) div.style.gridRow = `span ${cell.h}`;
 
-                    // 요소가 있는 칸일 때 (드래그, 더블클릭)
                     if (cell.type !== 0) {
                         div.draggable = true;
 
@@ -654,7 +693,8 @@
                         div.ondragend = () => { setTimeout(() => isDragging = false, 100); };
 
                         div.ondblclick = () => {
-                            // 🌟 안전한 토글 팝업 (좌석일 때만)
+                            saveHistory(); // 라벨/타입 수정 전 저장
+
                             if (cell.type === 1 || cell.type === 2) {
                                 const nl = prompt("라벨(이름)을 수정하시겠습니까?\n\n※ 확인을 누르면 라벨이 변경되고,\n※ 취소를 누르면 좌석 종류(고정석↔자율석)가 변경됩니다.", cell.label);
 
@@ -719,6 +759,7 @@
         document.addEventListener('mouseup', () => {
             if (isDrawing) {
                 isDrawing = false; justDrawn = true; setTimeout(() => justDrawn = false, 100);
+                saveHistory(); // 그리기 적용 전 저장
                 finalizeDraw(drawStart.r, drawStart.c, drawEnd.r, drawEnd.c);
                 drawStart = null; drawEnd = null;
             } else if (isSelecting) {
@@ -745,10 +786,19 @@
 
             let clear = true;
             for (let i = minR; i <= maxR; i++) for (let j = minC; j <= maxC; j++) if (r.grid[i][j].type !== 0) clear = false;
-            if (!clear) { drawGrid(); return; }
+
+            if (!clear) {
+                undoStack.pop(); // 그릴 수 없어서 취소된 경우 저장 내역 삭제
+                drawGrid();
+                return;
+            }
 
             let lbl = prompt(`[${w}x${h} 크기] 좌석 번호를 입력하세요:`);
-            if (lbl === null) { drawGrid(); return; }
+            if (lbl === null) {
+                undoStack.pop(); // 입력 취소 시 저장 내역 삭제
+                drawGrid();
+                return;
+            }
 
             r.grid[minR][minC] = { type: currentTool, label: lbl, w: w, h: h };
             for (let i = minR; i <= maxR; i++) {
@@ -778,9 +828,11 @@
             let newSelected = [];
             for (let i = minR; i <= maxR; i++) {
                 for (let j = minC; j <= maxC; j++) {
-                    // 선택 영역 안에 있는 모든 기준칸(Root)을 찾아서 담기
-                    if (rData.grid[i][j].type !== 0 && rData.grid[i][j].type !== -1) {
-                        newSelected.push({ r: i, c: j, ...rData.grid[i][j] });
+                    const root = getRootCell(i, j);
+                    if (root) {
+                        if (!newSelected.some(s => s.r === root.r && s.c === root.c)) {
+                            newSelected.push(root);
+                        }
                     }
                 }
             }
@@ -809,7 +861,6 @@
             if (dr === 0 && dc === 0) return;
 
             let canMove = true;
-            // 이동 가능 여부 검사
             for (let seat of selectedSeats) {
                 const nR = seat.r + dr;
                 const nC = seat.c + dc;
@@ -820,9 +871,7 @@
 
                 for (let i = 0; i < seat.h; i++) {
                     for (let j = 0; j < seat.w; j++) {
-                        // 내가 밟으려는 칸이 비어있지 않은데
                         if (rData.grid[nR + i][nC + j].type !== 0) {
-                            // 그 칸이 '우리 그룹'의 칸이 아니라면 충돌!
                             let isOwnGroup = false;
                             for (let ss of selectedSeats) {
                                 if (nR + i >= ss.r && nR + i < ss.r + ss.h && nC + j >= ss.c && nC + j < ss.c + ss.w) {
@@ -839,7 +888,8 @@
 
             if (!canMove) return;
 
-            // 실행 1: 기존 자리 비우기
+            saveHistory(); // 이동 실행 직전 상태 저장
+
             selectedSeats.forEach(seat => {
                 for (let i = 0; i < seat.h; i++) {
                     for (let j = 0; j < seat.w; j++) {
@@ -848,7 +898,6 @@
                 }
             });
 
-            // 실행 2: 새 자리에 채워넣기
             selectedSeats.forEach(seat => {
                 seat.r += dr;
                 seat.c += dc;
@@ -869,23 +918,41 @@
 
         function applyClickTool(ri, ci) {
             const r = rooms[currentIdx];
-            const rootCell = r.grid[ri][ci];
 
-            // 🌟 [안전 속성 변경 로직] 고정석(1), 자율석(2) 도구를 들고 기존 좌석(1,2)을 클릭하면 타입만 변경!
-            if ([1, 2].includes(currentTool)) {
-                if (rootCell.type === 1 || rootCell.type === 2) {
-                    r.grid[ri][ci].type = currentTool;
-                    drawGrid(); saveLocalDraft();
+            let rootR = ri, rootC = ci;
+            if (r.grid[ri][ci].type === -1) {
+                for (let i = ri; i >= 0; i--) {
+                    for (let j = ci; j >= 0; j--) {
+                        let root = r.grid[i][j];
+                        if (root.type !== 0 && root.type !== -1) {
+                            if (ri >= i && ri < i + root.h && ci >= j && ci < j + root.w) {
+                                rootR = i; rootC = j;
+                            }
+                        }
+                    }
                 }
-                return; // 지우지 않고 여기서 종료
             }
 
-            // 지우개(0)나 기타 도구를 들었을 때만 싹 지우기
+            const rootCell = r.grid[rootR][rootC];
+
+            saveHistory(); // 툴 적용 전 저장
+
+            if ([1, 2].includes(currentTool)) {
+                if (rootCell.type === 1 || rootCell.type === 2) {
+                    r.grid[rootR][rootC].type = currentTool;
+                    drawGrid(); saveLocalDraft();
+                } else {
+                    // 고정/자율석 툴로 빈곳이나 엉뚱한거 눌렀을때 암것도 안했으면 스택에서 제거
+                    undoStack.pop();
+                }
+                return;
+            }
+
             if (rootCell.w > 1 || rootCell.h > 1 || rootCell.type !== 0) {
                 for (let i = 0; i < rootCell.h; i++) {
                     for (let j = 0; j < rootCell.w; j++) {
-                        if (r.grid[ri + i] && r.grid[ri + i][ci + j]) {
-                            r.grid[ri + i][ci + j] = { type: 0, label: "", w: 1, h: 1 };
+                        if (r.grid[rootR + i] && r.grid[rootR + i][rootC + j]) {
+                            r.grid[rootR + i][rootC + j] = { type: 0, label: "", w: 1, h: 1 };
                         }
                     }
                 }
@@ -896,7 +963,7 @@
                 if (currentTool === 4) icon = "🚪\n출입구"; else if (currentTool === 5) icon = "👩‍🏫\n교사석"; else if (currentTool === 6) icon = "🪟\n창가"; else if (currentTool === 7) icon = "🗄️\n사물함";
 
                 if (![1, 2, 8].includes(currentTool)) {
-                    r.grid[ri][ci] = { type: currentTool, label: icon, w: 1, h: 1 };
+                    r.grid[rootR][rootC] = { type: currentTool, label: icon, w: 1, h: 1 };
                 }
             }
 
@@ -907,12 +974,13 @@
             currentTool = t;
             document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            clearSelection(); // 도구 변경 시 선택 해제
+            clearSelection();
         }
 
         function resizeGrid() {
             const nr = parseInt(document.getElementById('inp-rows').value), nc = parseInt(document.getElementById('inp-cols').value);
             if (confirm(`가로 ${nc} x 세로 ${nr} 로 변경하시겠습니까?`)) {
+                saveHistory(); // 사이즈 변경 전 저장
                 let newGrid = Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => (rooms[currentIdx].grid[i] && rooms[currentIdx].grid[i][j]) || { type: 0, label: "", w: 1, h: 1 }));
                 rooms[currentIdx].rows = nr; rooms[currentIdx].cols = nc; rooms[currentIdx].grid = newGrid;
                 drawGrid(); saveLocalDraft();
