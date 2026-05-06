@@ -8,6 +8,8 @@
     <title>My Yaja - 나의 참여 정보</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 👇 추가: 공통 계산 로직을 위해 common.js 연결 -->
+    <script src="common.js"></script>
     <style>
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -159,6 +161,14 @@
             try {
                 msgElement.classList.add('hidden');
 
+                // 👇👇 [추가] 환경설정에서 시간표 데이터 가져오기 👇👇
+                const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+                let currentSchedule = { t1: "16:00", t2: "18:50", t3: "20:10", t1_req: 0, t2_req: 0, t3_req: 0 };
+                if (schedDoc && schedDoc.value) {
+                    currentSchedule = { ...currentSchedule, ...schedDoc.value };
+                }
+                // 👆👆 [추가 끝] 👆👆
+
                 // 1. 전체 데이터 가져오기 (history 포함)
                 const { data: allData, error: rankError } = await supabaseClient
                     .from('attendance_logs')
@@ -167,12 +177,41 @@
 
                 if (rankError) throw rankError;
 
-                // 단순 일수가 아닌 '타임 횟수'를 기준으로 합산하도록 수정
-                const counts = allData.reduce((acc, curr) => {
-                    const slots = getTimeSlots(curr.status, curr.history);
-                    acc[curr.stu_id] = (acc[curr.stu_id] || 0) + slots;
+
+
+                // 👇👇 [수정] 공통 함수 getRecognizedTimes 사용 👇👇
+                // (주의: 전체 학생 등수 계산을 위해 모든 학생의 '신청 타임' 데이터가 필요함)
+                const { data: allApps } = await supabaseClient
+                    .from('applications')
+                    .select('stu_id, mon, tue, wed, thu, fri, sat, sun')
+                    .eq('target_month', month.split('-')[1] + "월");
+
+                let appsMap = {};
+                if (allApps) {
+                    allApps.forEach(app => appsMap[String(app.stu_id)] = app);
+                }
+
+                const counts = allData.reduce((acc, log) => {
+                    const stuIdStr = String(log.stu_id);
+                    const logDate = new Date(log.date);
+                    const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][logDate.getDay()];
+
+                    let appliedStr = "";
+                    if (appsMap[stuIdStr] && appsMap[stuIdStr][dayKey]) {
+                        appliedStr = appsMap[stuIdStr][dayKey];
+                    } else {
+                        // 자율석 등 신청 정보가 없다면 기본적으로 1,2,3타임을 모두 시도한 것으로 가정하여 계산
+                        appliedStr = "1,2,3";
+                    }
+
+                    // common.js의 함수 호출
+                    const slots = getRecognizedTimes(log, appliedStr, currentSchedule);
+                    acc[log.stu_id] = (acc[log.stu_id] || 0) + slots;
                     return acc;
                 }, {});
+                // 👆👆 [수정 끝] 👆👆
+
+
 
                 const sortedIds = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
                 const rank = sortedIds.indexOf(currentStuId) + 1;
