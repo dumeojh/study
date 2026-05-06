@@ -17,7 +17,9 @@ function getRecognizedTimes(log, appliedTimesStr, currentScheduleData) {
     if (!log || log.status === "미입실" || log.status === "귀가(누락)") return 0;
     if (!appliedTimesStr) return 0;
 
-    let appliedArray = appliedTimesStr.split(',').map(v => v.trim()).filter(v => v);
+    //    let appliedArray = appliedTimesStr.split(',').map(v => v.trim()).filter(v => v);
+    let appliedArray = appliedTimesStr.split(',').map(v => v.trim()).filter(v => v && v !== '0');
+
     let recognizedCount = 0;
 
     // 1) 교사 수동 인정 체크 (가장 우선)
