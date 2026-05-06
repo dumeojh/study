@@ -638,7 +638,8 @@
                                 <select id="filter-daily-status" onchange="renderDailyList()"
                                     style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-left: 5px;">
                                     <option value="all">전체 보기</option>
-                                    <option value="미입실">🔴 미입실 (결석/누락)</option>
+                                    <option value="미입실">🔴 순수 미입실 (결석)</option>
+                                    <option value="누락">🚨 귀가 누락 (태그 미완료)</option>
                                     <option value="입실">🟢 입실 완료 (정상/복귀)</option>
                                     <option value="외출">🟡 외출 중</option>
                                     <option value="귀가">⚪ 귀가 완료</option>
@@ -1625,10 +1626,12 @@
                     else if (status === "외출") { statusColor = "#fd7e14"; stat.out++; }
                     else if (status === "귀가") { statusColor = "var(--gray)"; stat.finish++; }
 
+
                     let mappedGroup = "미입실";
                     if (status === "입실" || status === "복귀") mappedGroup = "입실";
                     else if (status === "외출") mappedGroup = "외출";
                     else if (status === "귀가") mappedGroup = "귀가";
+                    else if (status === "귀가(누락)") mappedGroup = "누락"; // 👈 귀가(누락) 상태인 학생만 따로 분류
 
                     if (statusFilter !== "all" && mappedGroup !== statusFilter) return;
 
