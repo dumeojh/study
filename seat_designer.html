@@ -174,6 +174,135 @@
             border-radius: 4px;
         }
 
+        /* 🌟 새로 추가된 가느다란 얇은 벽(파티션) 스타일 🌟 */
+        .seat-9,
+        .seat-10,
+        .seat-11,
+        .seat-12,
+        .seat-13,
+        .seat-14,
+        .seat-15 {
+            background: transparent !important;
+            border: 1px dashed #e9ecef !important;
+            /* 배치용 가이드 테두리 */
+        }
+
+        .seat-9::before,
+        .seat-10::before,
+        .seat-11::before,
+        .seat-11::after,
+        .seat-12::before,
+        .seat-12::after,
+        .seat-13::before,
+        .seat-13::after,
+        .seat-14::before,
+        .seat-14::after,
+        .seat-15::before,
+        .seat-15::after {
+            content: '';
+            position: absolute;
+            background: #495057;
+            border-radius: 2px;
+        }
+
+        .seat-9::before {
+            width: 100%;
+            height: 8px;
+            top: calc(50% - 4px);
+            left: 0;
+        }
+
+        /* ㅡ 가로 */
+        .seat-10::before {
+            width: 8px;
+            height: 100%;
+            left: calc(50% - 4px);
+            top: 0;
+        }
+
+        /* ㅣ 세로 */
+        .seat-11::before {
+            width: 100%;
+            height: 8px;
+            top: calc(50% - 4px);
+            left: 0;
+        }
+
+        /* ┼ 가로 */
+        .seat-11::after {
+            width: 8px;
+            height: 100%;
+            left: calc(50% - 4px);
+            top: 0;
+        }
+
+        /* ┼ 세로 */
+        .seat-12::before {
+            width: 100%;
+            height: 8px;
+            top: calc(50% - 4px);
+            left: 0;
+        }
+
+        /* ㅗ 가로 */
+        .seat-12::after {
+            width: 8px;
+            height: 50%;
+            left: calc(50% - 4px);
+            top: 0;
+        }
+
+        /* ㅗ 세로(위) */
+        .seat-13::before {
+            width: 100%;
+            height: 8px;
+            top: calc(50% - 4px);
+            left: 0;
+        }
+
+        /* ㅜ 가로 */
+        .seat-13::after {
+            width: 8px;
+            height: 50%;
+            left: calc(50% - 4px);
+            bottom: 0;
+        }
+
+        /* ㅜ 세로(아래) */
+        .seat-14::before {
+            width: 8px;
+            height: 100%;
+            left: calc(50% - 4px);
+            top: 0;
+        }
+
+        /* ㅓ 세로 */
+        .seat-14::after {
+            width: 50%;
+            height: 8px;
+            top: calc(50% - 4px);
+            left: 0;
+        }
+
+        /* ㅓ 가로(좌) */
+        .seat-15::before {
+            width: 8px;
+            height: 100%;
+            left: calc(50% - 4px);
+            top: 0;
+        }
+
+        /* ㅏ 세로 */
+        .seat-15::after {
+            width: 50%;
+            height: 8px;
+            top: calc(50% - 4px);
+            right: 0;
+        }
+
+        /* ㅏ 가로(우) */
+
+
         .tool-bar {
             display: flex;
             gap: 10px;
@@ -304,23 +433,34 @@
         </div>
 
         <div class="tool-bar">
-            <b style="line-height: 40px; margin-right: 10px;">🛠️ 도구:</b>
+            <b style="line-height: 40px; margin-right: 10px;">🛠️ 기본 도구:</b>
 
-            <!-- 🌟 새 도구: 다중 선택/이동 -->
             <button class="tool-btn active" onclick="setTool(8, this)"
                 style="border-color: #6f42c1; color: #6f42c1; background: #f3e8ff; margin-right: 10px;">🖱️ 다중
                 선택/이동</button>
-
             <button class="tool-btn" onclick="setTool(0, this)"
                 style="border-color: #dc3545; color: #dc3545; background: #fff0f0;">🗑️ 지우개(삭제)</button>
             <button class="tool-btn seat-1" style="border-color:#8d6e63;" onclick="setTool(1, this)">🟨 고정석</button>
             <button class="tool-btn seat-2" style="border-color:#8d6e63;" onclick="setTool(2, this)">🟩 자율석</button>
+
             <div style="width: 2px; background: #ddd; margin: 0 5px;"></div>
-            <button class="tool-btn" onclick="setTool(3, this)">⬛ 벽</button>
+
             <button class="tool-btn" onclick="setTool(4, this)">🚪 출입구</button>
             <button class="tool-btn" onclick="setTool(5, this)">👩‍🏫 교사석</button>
             <button class="tool-btn" onclick="setTool(6, this)">🪟 창가</button>
             <button class="tool-btn" onclick="setTool(7, this)">🗄️ 사물함</button>
+
+            <!-- 🌟 새 줄: 벽/파티션 도구 모음 -->
+            <div style="width: 100%; border-top: 1px dashed #dee2e6; margin: 5px 0;"></div>
+            <b style="line-height: 40px; margin-right: 10px; color: #495057;">🧱 벽/파티션:</b>
+            <button class="tool-btn" onclick="setTool(3, this)">⬛ 굵은벽</button>
+            <button class="tool-btn" style="font-weight:900;" onclick="setTool(9, this)">ㅡ</button>
+            <button class="tool-btn" style="font-weight:900;" onclick="setTool(10, this)">ㅣ</button>
+            <button class="tool-btn" style="font-weight:900;" onclick="setTool(11, this)">┼</button>
+            <button class="tool-btn" style="font-weight:900;" onclick="setTool(12, this)">ㅗ</button>
+            <button class="tool-btn" style="font-weight:900;" onclick="setTool(13, this)">ㅜ</button>
+            <button class="tool-btn" style="font-weight:900;" onclick="setTool(14, this)">ㅓ</button>
+            <button class="tool-btn" style="font-weight:900;" onclick="setTool(15, this)">ㅏ</button>
         </div>
 
         <div style="overflow-x: auto; max-width: 100%;">
@@ -348,7 +488,6 @@
         let isDrawing = false, drawStart = null, drawEnd = null;
         let isDragging = false, justDrawn = false;
 
-        // 🌟 다중 선택을 위한 변수 🌟
         let isSelecting = false;
         let selectedSeats = []; // [{r, c, type, label, w, h}] 배열
 
@@ -469,14 +608,12 @@
             const r = rooms[currentIdx];
             if (!r.grid[ri] || !r.grid[ri][ci]) return null;
             if (r.grid[ri][ci].type === 0) return null;
-            if (r.grid[ri][ci].type !== -1) return { r: ri, c: ci, ...r.grid[ri][ci] }; // 자신이 찐 기준칸일 때
+            if (r.grid[ri][ci].type !== -1) return { r: ri, c: ci, ...r.grid[ri][ci] };
 
-            // 하위 칸(-1)일 경우 위쪽/왼쪽으로 탐색해서 부모 찾기
             for (let i = ri; i >= 0; i--) {
                 for (let j = ci; j >= 0; j--) {
                     let root = r.grid[i][j];
                     if (root.type !== 0 && root.type !== -1) {
-                        // 찾은 부모의 영역 안에 내가 포함되어 있는지 검증
                         if (ri >= i && ri < i + root.h && ci >= j && ci < j + root.w) {
                             return { r: i, c: j, ...root };
                         }
@@ -498,7 +635,7 @@
 
             r.grid.forEach((row, ri) => {
                 row.forEach((cell, ci) => {
-                    if (cell.type === -1) return; // 병합된 칸의 하위 셀은 숨김
+                    if (cell.type === -1) return; // 하위 셀 숨김
                     const div = document.createElement('div');
                     div.className = `seat-cell seat-${cell.type}`;
                     div.innerText = cell.label || "";
@@ -507,7 +644,7 @@
                     if (cell.w > 1) div.style.gridColumn = `span ${cell.w}`;
                     if (cell.h > 1) div.style.gridRow = `span ${cell.h}`;
 
-                    // 요소가 있는 칸일 때 (드래그 가능 설정)
+                    // 요소가 있는 칸일 때 (드래그 기능 포함)
                     if (cell.type !== 0 && cell.type !== -1) {
                         div.draggable = true;
 
@@ -518,15 +655,12 @@
                             const root = getRootCell(ri, ci);
                             if (!root) { e.preventDefault(); return; }
 
-                            // 🌟 다중 선택: 만약 내가 지금 집어든 좌석이 선택 그룹에 없다면, 
-                            // 기존 선택을 다 풀고 '이 녀석 하나만' 그룹에 넣음 (단일 드래그 이동과 통일)
                             const isSelected = selectedSeats.some(s => s.r === root.r && s.c === root.c);
                             if (!isSelected) {
                                 selectedSeats = [root];
                                 reapplySelectionVisuals();
                             }
 
-                            // 항상 기준칸(Root) 좌표를 넘겨줍니다.
                             e.dataTransfer.setData('application/json', JSON.stringify({ r: root.r, c: root.c }));
                         };
 
@@ -543,8 +677,6 @@
                         e.preventDefault();
                         if (!e.dataTransfer.getData('application/json')) return;
                         const data = JSON.parse(e.dataTransfer.getData('application/json'));
-
-                        // 🌟 드롭이 일어나면, 단일 이동이든 다중 이동이든 무조건 '선택 그룹 통째로' 이동시킵니다.
                         moveSelection(data.r, data.c, ri, ci);
                     };
 
@@ -552,7 +684,6 @@
                         if (currentTool === 8) {
                             const root = getRootCell(ri, ci);
                             if (root) {
-                                // 이미 있는 요소를 클릭하면 선택 (단일 클릭)
                                 const isSelected = selectedSeats.some(s => s.r === root.r && s.c === root.c);
                                 if (!isSelected) {
                                     clearSelection();
@@ -560,13 +691,11 @@
                                     reapplySelectionVisuals();
                                 }
                             } else {
-                                // 빈 통로(0)를 클릭하면 다중 선택 박스 그리기 시작
                                 isSelecting = true; drawStart = { r: ri, c: ci }; drawEnd = { r: ri, c: ci };
                                 clearSelection();
                                 highlightAreaSelect(drawStart.r, drawStart.c, drawEnd.r, drawEnd.c);
                             }
                         } else if ([1, 2].includes(currentTool) && cell.type === 0) {
-                            // 새 좌석 그리기 도구
                             isDrawing = true; drawStart = { r: ri, c: ci }; drawEnd = { r: ri, c: ci };
                             highlightArea(drawStart.r, drawStart.c, drawEnd.r, drawEnd.c);
                         }
@@ -574,7 +703,7 @@
 
                     div.onclick = (e) => {
                         if (isDragging || justDrawn) return;
-                        if (currentTool === 8) return; // 선택 도구일 땐 클릭 편집 무시
+                        if (currentTool === 8) return;
                         applyClickTool(ri, ci);
                     };
 
@@ -586,11 +715,9 @@
                 });
             });
 
-            // 화면을 다시 그린 후 보라색 테두리 복구
             reapplySelectionVisuals();
         }
 
-        // 마우스를 뗐을 때 (그리기 혹은 다중 선택 완료)
         document.addEventListener('mouseup', () => {
             if (isDrawing) {
                 isDrawing = false; justDrawn = true; setTimeout(() => justDrawn = false, 100);
@@ -602,128 +729,6 @@
                 drawStart = null; drawEnd = null;
             }
         });
-
-        // 🌟 1. 다중 선택 하이라이트 (파란점선)
-        function highlightAreaSelect(r1, c1, r2, c2) {
-            document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('highlight-select'));
-            const minR = Math.min(r1, r2), maxR = Math.max(r1, r2), minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
-            for (let i = minR; i <= maxR; i++) {
-                for (let j = minC; j <= maxC; j++) {
-                    const el = document.querySelector(`.seat-cell[data-r="${i}"][data-c="${j}"]`);
-                    if (el) el.classList.add('highlight-select');
-                }
-            }
-        }
-
-        // 🌟 2. 다중 선택 완료 및 그룹 짓기 (보라색 테두리 씌우기)
-        function finalizeSelection(r1, c1, r2, c2) {
-            document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('highlight-select'));
-            const minR = Math.min(r1, r2), maxR = Math.max(r1, r2), minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
-
-            let newSelected = [];
-            // 박스 안에 걸친 모든 요소의 Root 찾기
-            for (let i = minR; i <= maxR; i++) {
-                for (let j = minC; j <= maxC; j++) {
-                    const root = getRootCell(i, j);
-                    if (root) {
-                        // 중복 추가 방지
-                        if (!newSelected.some(s => s.r === root.r && s.c === root.c)) {
-                            newSelected.push(root);
-                        }
-                    }
-                }
-            }
-            selectedSeats = newSelected;
-            reapplySelectionVisuals();
-        }
-
-        function clearSelection() {
-            selectedSeats = [];
-            document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('selected-seat'));
-        }
-
-        function reapplySelectionVisuals() {
-            document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('selected-seat'));
-            selectedSeats.forEach(seat => {
-                // 병합된 셀(크기가 2x2 이상인 경우)은 대표 칸(r, c) 하나만 화면에 그려져 있으므로 대표 칸에만 클래스 부여
-                const el = document.querySelector(`.seat-cell[data-r="${seat.r}"][data-c="${seat.c}"]`);
-                if (el) el.classList.add('selected-seat');
-            });
-        }
-
-        // 🌟 3. 선택된 전체 그룹 다같이 이동시키기 🌟
-        function moveSelection(draggedR, draggedC, targetR, targetC) {
-            const rData = rooms[currentIdx];
-
-            // 드래그된 마우스의 실제 이동 칸 수 계산 (오프셋)
-            const dr = targetR - draggedR;
-            const dc = targetC - draggedC;
-
-            if (dr === 0 && dc === 0) return; // 제자리 드롭 무시
-
-            let canMove = true;
-
-            // [검증 단계] 모든 선택된 좌석이 무사히 이동 가능한지 체크
-            for (let seat of selectedSeats) {
-                const nR = seat.r + dr;
-                const nC = seat.c + dc;
-
-                // 1. 도면 밖으로 삐져나가는가?
-                if (nR < 0 || nR + seat.h > rData.rows || nC < 0 || nC + seat.w > rData.cols) {
-                    canMove = false; break;
-                }
-
-                // 2. 다른(선택되지 않은) 녀석들과 겹치는가?
-                for (let i = 0; i < seat.h; i++) {
-                    for (let j = 0; j < seat.w; j++) {
-                        const tRoot = getRootCell(nR + i, nC + j);
-                        if (tRoot) {
-                            // 내가 밟으려는 곳에 요소가 있는데, 그게 '우리 그룹'이 아니면 충돌!
-                            const isTargetInSelection = selectedSeats.some(s => s.r === tRoot.r && s.c === tRoot.c);
-                            if (!isTargetInSelection) { canMove = false; break; }
-                        }
-                    }
-                    if (!canMove) break;
-                }
-                if (!canMove) break;
-            }
-
-            if (!canMove) {
-                // 충돌 시 이동 취소
-                return;
-            }
-
-            // [실행 단계 1] 기존에 있던 자리들을 싹 비워주기
-            selectedSeats.forEach(seat => {
-                for (let i = 0; i < seat.h; i++) {
-                    for (let j = 0; j < seat.w; j++) {
-                        rData.grid[seat.r + i][seat.c + j] = { type: 0, label: "", w: 1, h: 1 };
-                    }
-                }
-            });
-
-            // [실행 단계 2] 비어있는 새 자리에 정보 채워넣기 및 좌표 업데이트
-            selectedSeats.forEach(seat => {
-                seat.r += dr;
-                seat.c += dc;
-                rData.grid[seat.r][seat.c] = { type: seat.type, label: seat.label, w: seat.w, h: seat.h };
-
-                // 병합 칸(-1) 채워주기
-                for (let i = 0; i < seat.h; i++) {
-                    for (let j = 0; j < seat.w; j++) {
-                        if (i !== 0 || j !== 0) {
-                            rData.grid[seat.r + i][seat.c + j] = { type: -1, label: "", w: 1, h: 1 };
-                        }
-                    }
-                }
-            });
-
-            drawGrid();
-            saveLocalDraft();
-        }
-
-
-        // ---------------- 아래는 기존 도구 함수들 유지 ---------------- //
 
         function highlightArea(r1, c1, r2, c2) {
             document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('highlight-draw'));
@@ -756,10 +761,109 @@
             drawGrid(); saveLocalDraft();
         }
 
+        function highlightAreaSelect(r1, c1, r2, c2) {
+            document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('highlight-select'));
+            const minR = Math.min(r1, r2), maxR = Math.max(r1, r2), minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
+            for (let i = minR; i <= maxR; i++) {
+                for (let j = minC; j <= maxC; j++) {
+                    const el = document.querySelector(`.seat-cell[data-r="${i}"][data-c="${j}"]`);
+                    if (el) el.classList.add('highlight-select');
+                }
+            }
+        }
+
+        function finalizeSelection(r1, c1, r2, c2) {
+            document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('highlight-select'));
+            const minR = Math.min(r1, r2), maxR = Math.max(r1, r2), minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
+
+            let newSelected = [];
+            for (let i = minR; i <= maxR; i++) {
+                for (let j = minC; j <= maxC; j++) {
+                    const root = getRootCell(i, j);
+                    if (root) {
+                        if (!newSelected.some(s => s.r === root.r && s.c === root.c)) {
+                            newSelected.push(root);
+                        }
+                    }
+                }
+            }
+            selectedSeats = newSelected;
+            reapplySelectionVisuals();
+        }
+
+        function clearSelection() {
+            selectedSeats = [];
+            document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('selected-seat'));
+        }
+
+        function reapplySelectionVisuals() {
+            document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('selected-seat'));
+            selectedSeats.forEach(seat => {
+                const el = document.querySelector(`.seat-cell[data-r="${seat.r}"][data-c="${seat.c}"]`);
+                if (el) el.classList.add('selected-seat');
+            });
+        }
+
+        function moveSelection(draggedR, draggedC, targetR, targetC) {
+            const rData = rooms[currentIdx];
+            const dr = targetR - draggedR;
+            const dc = targetC - draggedC;
+
+            if (dr === 0 && dc === 0) return;
+
+            let canMove = true;
+            for (let seat of selectedSeats) {
+                const nR = seat.r + dr;
+                const nC = seat.c + dc;
+
+                if (nR < 0 || nR + seat.h > rData.rows || nC < 0 || nC + seat.w > rData.cols) {
+                    canMove = false; break;
+                }
+
+                for (let i = 0; i < seat.h; i++) {
+                    for (let j = 0; j < seat.w; j++) {
+                        const tRoot = getRootCell(nR + i, nC + j);
+                        if (tRoot) {
+                            const isTargetInSelection = selectedSeats.some(s => s.r === tRoot.r && s.c === tRoot.c);
+                            if (!isTargetInSelection) { canMove = false; break; }
+                        }
+                    }
+                    if (!canMove) break;
+                }
+                if (!canMove) break;
+            }
+
+            if (!canMove) return;
+
+            selectedSeats.forEach(seat => {
+                for (let i = 0; i < seat.h; i++) {
+                    for (let j = 0; j < seat.w; j++) {
+                        rData.grid[seat.r + i][seat.c + j] = { type: 0, label: "", w: 1, h: 1 };
+                    }
+                }
+            });
+
+            selectedSeats.forEach(seat => {
+                seat.r += dr;
+                seat.c += dc;
+                rData.grid[seat.r][seat.c] = { type: seat.type, label: seat.label, w: seat.w, h: seat.h };
+
+                for (let i = 0; i < seat.h; i++) {
+                    for (let j = 0; j < seat.w; j++) {
+                        if (i !== 0 || j !== 0) {
+                            rData.grid[seat.r + i][seat.c + j] = { type: -1, label: "", w: 1, h: 1 };
+                        }
+                    }
+                }
+            });
+
+            drawGrid();
+            saveLocalDraft();
+        }
+
         function applyClickTool(ri, ci) {
             const r = rooms[currentIdx];
 
-            // 어디를 클릭하든 부모를 찾아 전체를 관할하도록 개선
             let rootR = ri, rootC = ci;
             if (r.grid[ri][ci].type === -1) {
                 for (let i = ri; i >= 0; i--) {
@@ -790,10 +894,12 @@
                 let icon = "";
                 if (currentTool === 4) icon = "🚪\n출입구"; else if (currentTool === 5) icon = "👩‍🏫\n교사석"; else if (currentTool === 6) icon = "🪟\n창가"; else if (currentTool === 7) icon = "🗄️\n사물함";
 
+                // 🌟 추가된 부분: 얇은 벽(9~15)은 클릭 한 번으로 가볍게 설치되도록 설정 🌟
                 if (![1, 2, 8].includes(currentTool)) {
                     r.grid[rootR][rootC] = { type: currentTool, label: icon, w: 1, h: 1 };
                 }
             }
+
             drawGrid(); saveLocalDraft();
         }
 
