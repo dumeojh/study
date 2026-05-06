@@ -556,11 +556,18 @@
             let currentSchedule = { t1: "16:00", t2: "18:50", t3: "20:10", t1_req: 60, t2_req: 60, t3_req: 60 };
 
             document.addEventListener("DOMContentLoaded", () => {
-                const now = new Date();
-                const monthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                document.getElementById('month-picker').value = monthVal;
-                document.getElementById('yearly-year').value = now.getFullYear();
-                fetchDataAndRender();
+                // 🌟 common.js에 있는 인증 함수 실행 및 결과 기다림
+                const isAuth = await requireAdminAuth();
+
+                // 🌟 인증에 성공했을 때만 아래의 기존 코드들을 실행
+                if (isAuth) {
+
+                    const now = new Date();
+                    const monthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                    document.getElementById('month-picker').value = monthVal;
+                    document.getElementById('yearly-year').value = now.getFullYear();
+                    fetchDataAndRender();
+                }
             });
 
             async function fetchDataAndRender() {
