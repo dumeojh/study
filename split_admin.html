@@ -519,45 +519,42 @@
                 <button class="btn btn-gray" onclick="location.href='settings.html'">⚙️ 환경설정</button>
                 <button class="btn btn-gray" onclick="adminLogout()">🔒 로그아웃</button>
             </div>
+
+
             <div class="tab-menu">
                 <button class="tab-btn active" onclick="switchTab('tab-daily', this)">🧑‍🏫 오늘 감독용 좌석표</button>
                 <button class="tab-btn" onclick="switchTab('tab-daily-list', this)">📋 오늘 일일 현황</button>
-                <button class="tab-btn" onclick="switchTab('tab-status', this)">📊 월별 신청 현황
-                </button>
+                <button class="tab-btn" onclick="switchTab('tab-status', this)">📊 월별 신청 현황</button>
                 <button class="tab-btn" onclick="switchTab('tab-manual', this)">📝 개별 수정/추가</button>
                 <button class="tab-btn" onclick="location.href='statistics.html'">📈 통계 분석</button>
                 <button class="tab-btn" style="color: #dc3545;" onclick="location.href='error.html'">🚨 중복 점검</button>
+            </div>
 
+            <div id="daily-shared-controls"
+                style="display: flex; justify-content: center; align-items: center; gap: 25px; background: #ffffff; padding: 20px 30px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e9ecef;">
+                <div style="display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 10px 18px; border-radius: 10px; border: 1px solid #dee2e6; transition: 0.2s;"
+                    onmouseover="this.style.borderColor='#b6d4fe'" onmouseout="this.style.borderColor='#dee2e6'">
+                    <span style="font-size: 18px;">📅</span>
+                    <span style="font-weight: bold; color: #6c757d; font-size: 14px;">조회 날짜</span>
+                    <input type="date" id="daily-date" onchange="loadDailyDataAndRender()"
+                        style="border: none; background: transparent; font-size: 16px; font-weight: 900; color: #333; outline: none; cursor: pointer; font-family: 'Malgun Gothic', sans-serif;">
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 10px 18px; border-radius: 10px; border: 1px solid #dee2e6; transition: 0.2s;"
+                    onmouseover="this.style.borderColor='#b6d4fe'" onmouseout="this.style.borderColor='#dee2e6'">
+                    <span style="font-size: 18px;">🕒</span>
+                    <span style="font-weight: bold; color: #6c757d; font-size: 14px;">운영 교시</span>
+                    <select id="daily-time" onchange="renderDailySupervisorMap(); renderDailyList();"
+                        style="border: none; background: transparent; font-size: 16px; font-weight: 900; color: var(--primary); outline: none; cursor: pointer; font-family: 'Malgun Gothic', sans-serif;">
+                        <option value="0">0타임 (정규 전)</option>
+                        <option value="1" selected>1타임</option>
+                        <option value="2">2타임</option>
+                        <option value="3">3타임</option>
+                    </select>
+                </div>
             </div>
 
             <div id="tab-daily" class="tab-content active">
-
-
-                <div
-                    style="display: flex; justify-content: center; align-items: center; gap: 25px; background: #ffffff; padding: 20px 30px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e9ecef;">
-
-                    <div style="display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 10px 18px; border-radius: 10px; border: 1px solid #dee2e6; transition: 0.2s;"
-                        onmouseover="this.style.borderColor='#b6d4fe'" onmouseout="this.style.borderColor='#dee2e6'">
-                        <span style="font-size: 18px;">📅</span>
-                        <span style="font-weight: bold; color: #6c757d; font-size: 14px;">조회 날짜</span>
-                        <input type="date" id="daily-date" onchange="loadDailyDataAndRender()"
-                            style="border: none; background: transparent; font-size: 16px; font-weight: 900; color: #333; outline: none; cursor: pointer; font-family: 'Malgun Gothic', sans-serif;">
-                    </div>
-
-                    <div style="display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 10px 18px; border-radius: 10px; border: 1px solid #dee2e6; transition: 0.2s;"
-                        onmouseover="this.style.borderColor='#b6d4fe'" onmouseout="this.style.borderColor='#dee2e6'">
-                        <span style="font-size: 18px;">🕒</span>
-                        <span style="font-weight: bold; color: #6c757d; font-size: 14px;">운영 교시</span>
-                        <select id="daily-time" onchange="renderDailySupervisorMap(); renderDailyList();"
-                            style="border: none; background: transparent; font-size: 16px; font-weight: 900; color: var(--primary); outline: none; cursor: pointer; font-family: 'Malgun Gothic', sans-serif;">
-                            <option value="0">0타임 (정규 전)</option>
-                            <option value="1" selected>1타임</option>
-                            <option value="2">2타임</option>
-                            <option value="3">3타임</option>
-                        </select>
-                    </div>
-
-                </div>
 
                 <div id="holiday-banner"
                     style="display:none; background:#f8d7da; color:#842029; padding:20px; border-radius:10px; text-align:center; margin-bottom:15px; font-weight:bold; font-size:18px; border:2px dashed #dc3545;">
@@ -1260,23 +1257,36 @@
                 document.getElementById('daily-time').value = defaultSlot;
             }
 
+
+
             function switchTab(tabId, btn) {
                 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 document.getElementById(tabId).classList.add('active');
                 if (btn) btn.classList.add('active');
 
+                // 🌟 공통 날짜/교시 제어 박스 보이기/숨기기 처리
+                const sharedControls = document.getElementById('daily-shared-controls');
+                if (sharedControls) {
+                    if (tabId === 'tab-daily' || tabId === 'tab-daily-list') {
+                        sharedControls.style.display = 'flex'; // 두 탭에서는 보이게
+                    } else {
+                        sharedControls.style.display = 'none'; // 다른 탭에서는 숨기기
+                    }
+                }
+
+                // 🌟 주의: 탭을 이동할 때마다 시간이 현재 시간으로 강제 리셋되는 현상을 막기 위해
+                // autoSetCurrentTime() 호출을 제거하고 화면 렌더링만 바로 실행합니다.
                 if (tabId === 'tab-daily') {
-                    autoSetCurrentTime().then(() => renderDailySupervisorMap());
+                    renderDailySupervisorMap();
                 }
                 else if (tabId === 'tab-daily-list') {
-                    autoSetCurrentTime().then(() => renderDailyList());
+                    renderDailyList();
                 }
                 else if (tabId === 'tab-status') {
                     renderStatusTable();
                 }
             }
-
 
             // 🌟 추가된 필터 제어 전역 변수 및 함수 🌟
             let activeSeatFilters = new Set(['fixed', 'auto', 'admin-in', 'out', 'absent', 'admin-out', 'finish']);
