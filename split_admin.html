@@ -502,6 +502,14 @@
                     안성여고 야간 자율학습 통합 관리
                     <span id="daily-supervisor-name" style="font-size: 18px; color: #0d6efd; font-weight: 900;"></span>
                 </h2>
+
+                <label
+                    style="display:flex; align-items:center; gap:5px; margin-right:15px; cursor:pointer; font-weight:bold; color:var(--danger); background:#fff0f0; padding:8px 12px; border-radius:8px; border:1px solid #f5c2c7;">
+                    <input type="checkbox" id="realtime-toggle" onchange="toggleRealtime()"
+                        style="width: 16px; height: 16px; accent-color: var(--danger);">
+                    ⚡ 실시간 모드 (이 PC만 적용)
+                </label>
+
                 <button class="btn btn-primary" style="background:#dc3545; display: none;"
                     onclick="closeMissingTags()">🚨 일일 출결 강제 마감</button>
 
@@ -950,25 +958,27 @@
             let rosterPhones = {};
             let currentSchedule = { t1: "16:00", t2: "18:50", t3: "20:10" };
 
-            // 🌟 1. DOMContentLoaded 옆에 'async'를 꼭 붙여주세요!
-            document.addEventListener('DOMContentLoaded', async () => {
+            // 전역 변수로 타이머를 담을 공간 마련
+            let autoRefreshInterval = null;
 
-                // 🌟 2. common.js에 있는 인증 함수를 부르고, 끝날 때까지 기다립니다(await).
+            document.addEventListener('DOMContentLoaded', async () => {
                 const isAuth = await requireAdminAuth();
 
-                // 🌟 3. 인증이 성공(true)했을 때만 기존 코드들을 실행합니다.
                 if (isAuth) {
-                    // (기존 코드 1) 날짜 세팅
                     document.getElementById('daily-date').value = getTodayString();
 
-                    // (기존 코드 2) 데이터 불러오기 및 타이머 시작
+                    // 🌟 이 PC에 저장된 '실시간 모드' 상태 불러오기
+                    const isRealtime = localStorage.getItem('supervisorRealtime') === 'true';
+                    const toggleBtn = document.getElementById('realtime-toggle');
+                    if (toggleBtn) toggleBtn.checked = isRealtime;
+
                     fetchBaseData().then(() => {
                         loadDailyDataAndRender();
-                        setInterval(loadDailyDataAndRender, 600000);// 10분
+                        // 🌟 10분일지 5초일지 결정해서 타이머 시작
+                        applyIntervalSetting(isRealtime);
                     });
                 }
             });
-
             /*
                         // 👇 수정된 부분: getTodayString()을 사용하여 오늘 날짜를 가져오고, 변수 선언 시점을 명확히 합니다.
                         // const todayStr 을 지우고 함수를 직접 호출합니다.
@@ -1224,10 +1234,6 @@
 
 
 
-            fetchBaseData().then(() => {
-                loadDailyDataAndRender();
-                setInterval(loadDailyDataAndRender, 5000);
-            });
 
             async function autoSetCurrentTime() {
                 const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
@@ -2585,6 +2591,50 @@
             }
 
             autoSweepPastAttendance();
+
+
+
+            // =========================================================
+            // 🌟 특정 PC 실시간 모드 제어 함수
+            // =========================================================
+
+            // 체크박스를 누를 때마다 실행됨
+            function toggleRealtime() {
+                const isChecked = document.getElementById('realtime-toggle').checked;
+
+                // 이 컴퓨터의 브라우저 저장소에 상태 저장
+                localStorage.setItem('supervisorRealtime', isChecked);
+
+                // 타이머 갱신
+                applyIntervalSetting(isChecked);
+
+                if (isChecked) {
+                    alert("⚡ 실시간 모드 ON!\n이제 이 컴퓨터는 5초마다 데이터를 자동으로 새로고침합니다.");
+                    loadDailyDataAndRender(); // 켜자마자 즉시 1회 동기화
+                } else {
+                    alert("🐢 실시간 모드 OFF.\n이제 이 컴퓨터는 10분 주기로 새로고침됩니다.");
+                }
+            }
+
+            // 켜짐/꺼짐 상태에 따라 타이머 주기를 설정하는 함수
+            function applyIntervalSetting(isRealtime) {
+                // 1. 혹시 돌고 있던 예전 타이머가 있다면 끈다
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                }
+
+                // 2. 체크 상태에 따라 주기 결정 (true면 5초(5000), false면 10분(600000))
+                const intervalTime = isRealtime ? 5000 : 600000;
+
+                // 3. 새로운 타이머 장착
+                autoRefreshInterval = setInterval(() => {
+                    loadDailyDataAndRender();
+                    // 만약 [월별 신청 현황] 탭을 보고 있다면 거기도 같이 새로고침
+                    if (document.getElementById('tab-status').classList.contains('active')) {
+                        renderStatusTable();
+                    }
+                }, intervalTime);
+            }
 
         </script>
     </div> <!-- 👈 닫는 태그 추가 -->
