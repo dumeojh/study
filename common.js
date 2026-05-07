@@ -251,23 +251,35 @@ async function openSharedStudentCalendar(stuId, stuName, targetYear, targetMonth
                 // 🌟 수정: 복잡한 로직 모두 지우고 공통 함수 하나로 통합!
                 const recognizedSet = getRecognizedTimes(dailyLog, currentSchedule);
 
+
                 [1, 2, 3].forEach(t => {
                     const isApplied = appliedTimes.includes(String(t));
+                    const isRecognized = recognizedSet.has(t); // 🌟 공통 함수의 결과(실제 출석)
+
                     let leftBg = "transparent", leftCol = "#ccc", borderColor = "#f0f0f0", rightBg = "transparent";
 
+                    // 1. 기본 신청 여부에 따른 왼쪽(1T, 2T 글씨) 바탕색
                     if (isApplied) {
                         tApply++;
                         leftBg = "#f8f9fa"; leftCol = "#333"; borderColor = "#ced4da";
-
-                        // 🌟 공통 함수에서 인정받은 타임(Set)에 해당하면 파란색으로!
-                        if (recognizedSet.has(t)) {
-                            rightBg = "#007bff";
-                            tPresent++;
-                        } else {
-                            rightBg = "#ff9999";
-                        }
                     }
 
+                    // 2. 신청 여부 무관! 공통 함수에서 인정받았다면 오른쪽을 무조건 파란색으로 칠함!
+                    if (isRecognized) {
+                        tPresent++;
+                        rightBg = "#007bff"; // 출석 파란색
+
+                        // 🌟 디테일: 신청 안 했는데 남아서 공부한 기특한 경우 (하늘색 테두리로 강조)
+                        if (!isApplied) {
+                            leftBg = "#eef6ff";
+                            leftCol = "#0d6efd";
+                            borderColor = "#b6d4fe";
+                        }
+                    }
+                    // 3. 신청했는데 인정 못 받은 경우 (결석 빨간색)
+                    else if (isApplied) {
+                        rightBg = "#ff9999";
+                    }
 
                     slotHtml += `
             <div style="display:flex; width:100%; height:18px; font-size:10px; font-weight:bold; border-radius:3px; overflow:hidden; border:1px solid ${borderColor}; margin-bottom:1px;">
@@ -275,9 +287,6 @@ async function openSharedStudentCalendar(stuId, stuName, targetYear, targetMonth
                 <div style="flex:1; background:${rightBg}; border-left:1px solid ${borderColor};"></div>
             </div>`;
                 });
-
-                // 👆 여기까지 교체하시면 됩니다.
-
 
 
 
