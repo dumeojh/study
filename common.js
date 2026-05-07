@@ -389,3 +389,12 @@ function addMinutesToTime(timeStr, minsToAdd) {
     date.setMinutes(mm + minsToAdd);
     return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
+
+// 로그아웃 기능 예시 (common.js 맨 아래 추가)
+async function adminLogout() {
+    if (confirm("관리자 계정에서 로그아웃 하시겠습니까?")) {
+        await supabaseClient.auth.signOut();
+        alert("로그아웃 되었습니다.");
+        location.reload(); // 새로고침하여 화면 잠금
+    }
+}
