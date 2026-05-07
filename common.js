@@ -390,11 +390,88 @@ function addMinutesToTime(timeStr, minsToAdd) {
     return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-// 로그아웃 기능 예시 (common.js 맨 아래 추가)
+// =======================================================
+// 🔒 예쁜 커스텀 로그아웃 모달 기능
+// =======================================================
 async function adminLogout() {
-    if (confirm("관리자 계정에서 로그아웃 하시겠습니까?")) {
-        await supabaseClient.auth.signOut();
-        alert("로그아웃 되었습니다.");
-        location.reload(); // 새로고침하여 화면 잠금
-    }
+    // 1. 모달 배경(Overlay) 동적 생성
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);
+        display: flex; justify-content: center; align-items: center;
+        z-index: 100000; opacity: 0; transition: opacity 0.3s ease;
+    `;
+
+    // 2. 모달 컨텐츠(Box) 생성
+    const box = document.createElement('div');
+    box.style.cssText = `
+        background: white; padding: 35px 25px; border-radius: 20px;
+        width: 320px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    `;
+
+    // 내부 HTML 구조 설정
+    box.innerHTML = `
+        <div style="font-size: 45px; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0,0,0,0.1);">👋</div>
+        <h3 style="margin: 0 0 8px 0; color: #212529; font-size: 20px; font-weight: 900;">로그아웃 하시겠습니까?</h3>
+        <p style="margin: 0 0 25px 0; color: #6c757d; font-size: 14px;">현재 기기에서 관리자 세션이 종료됩니다.</p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="btn-logout-cancel" style="flex: 1; padding: 12px; border-radius: 10px; border: none; background: #f8f9fa; color: #495057; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s;">취소</button>
+            <button id="btn-logout-confirm" style="flex: 1; padding: 12px; border-radius: 10px; border: none; background: #dc3545; color: white; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);">로그아웃</button>
+        </div>
+    `;
+
+    // 화면에 추가
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    // 3. 애니메이션 실행 (부드럽게 나타나기)
+    requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
+        box.style.transform = 'translateY(0)';
+    });
+
+    // 4. 버튼 이벤트 연결
+    // 닫기 함수
+    const closeModal = () => {
+        overlay.style.opacity = '0';
+        box.style.transform = 'translateY(20px)';
+        setTimeout(() => document.body.removeChild(overlay), 300); // 애니메이션 끝난 후 삭제
+    };
+
+    // [취소] 버튼 클릭
+    document.getElementById('btn-logout-cancel').onclick = closeModal;
+
+    // [로그아웃] 버튼 클릭
+    document.getElementById('btn-logout-confirm').onclick = async () => {
+        const confirmBtn = document.getElementById('btn-logout-confirm');
+
+        // 버튼 로딩 상태로 변경
+        confirmBtn.innerText = "종료 중...";
+        confirmBtn.style.background = "#c82333";
+        confirmBtn.disabled = true;
+
+        try {
+            // DB 로그아웃 실행
+            await supabaseClient.auth.signOut();
+
+            // 성공 화면으로 스르륵 전환
+            box.innerHTML = `
+                <div style="font-size: 50px; margin-bottom: 10px; animation: popIn 0.5s ease;">✅</div>
+                <h3 style="margin: 0 0 10px 0; color: #198754; font-size: 20px; font-weight: 900;">로그아웃 완료</h3>
+                <p style="margin: 0; color: #6c757d; font-size: 14px;">안전하게 종료되었습니다.<br>잠시 후 화면이 잠깁니다.</p>
+                <style>@keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }</style>
+            `;
+
+            // 1.5초(1500ms) 뒤에 자동으로 화면 새로고침 (권한 차단)
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+
+        } catch (error) {
+            alert("로그아웃 중 오류가 발생했습니다.");
+            closeModal();
+        }
+    };
 }
