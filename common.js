@@ -9,66 +9,102 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 
-
-// 👇👇 [여기에 추가] 공통 관리자 인증 함수 👇👇
+// 👇👇 [수정됨] 비밀번호가 보이지 않는 커스텀 인증 함수 👇👇
 async function requireAdminAuth() {
     try {
-        // 1. 오늘 날짜 구하기 (KST 기준)
         const todayDateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
-
-        // 2. 현재 브라우저에 로그인된 세션 확인
         let { data: { session } } = await supabaseClient.auth.getSession();
-
-        // 3. 로컬 스토리지에 저장된 마지막 로그인 날짜 확인
         const lastLoginDate = localStorage.getItem('adminLoginDate');
 
-        // 4. 세션은 있지만 로그인한 날짜가 오늘이 아니라면 (자정이 지났다면) 강제 파기
+        // 1. 자정 자동 로그아웃 체크
         if (session && lastLoginDate !== todayDateStr) {
             await supabaseClient.auth.signOut();
             localStorage.removeItem('adminLoginDate');
-            session = null; // 세션을 비워서 다시 로그인 창이 뜨게 만듦
-            alert("보안을 위해 자정이 지나 자동으로 로그아웃 되었습니다.\n다시 로그인해 주세요.");
+            session = null;
+            alert("보안을 위해 자정이 지나 자동으로 로그아웃 되었습니다.");
         }
 
-        // 5. 오늘 로그인한 유효한 세션이 있다면 프리패스!
+        // 2. 이미 로그인된 경우 프리패스
         if (session && session.user.email === 'teacher@anseong.kr') {
             document.getElementById('main-content').style.display = 'block';
-            startMidnightLogoutChecker(); // 자정 감시 타이머 시작
+            startMidnightLogoutChecker();
             return true;
         }
 
-        // 6. 로그인이 안 되어 있다면 팝업으로 비밀번호를 물어봄 (안내문구 추가)
-        const pwd = prompt("관리자(teacher@anseong.kr) 비밀번호를 입력하세요:\n(※ 로그인 상태는 오늘 밤 12시까지만 유지됩니다)");
+        // 3. 커스텀 비밀번호 모달 띄우기
+        return new Promise((resolve) => {
+            // 기존 모달이 있다면 제거
+            const oldModal = document.getElementById('admin-login-modal');
+            if (oldModal) oldModal.remove();
 
-        if (!pwd) {
-            // 취소를 누른 경우 화면 차단
-            document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; color:#dc3545;'>접근이 차단되었습니다. (새로고침하여 다시 로그인하세요)</h2>";
-            return false;
-        }
+            const modalHtml = `
+            <div id="admin-login-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(5px); z-index:100000; display:flex; justify-content:center; align-items:center;">
+                <div style="background:white; padding:40px 30px; border-radius:20px; width:350px; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.3);">
+                    <div style="font-size:40px; margin-bottom:15px;">🔒</div>
+                    <h3 style="margin:0 0 10px 0; color:#333; font-weight:900;">관리자 인증</h3>
+                    <p style="margin:0 0 25px 0; font-size:13px; color:#666; line-height:1.4;">
+                        비밀번호를 입력해주세요.<br><span style="color:#dc3545;">(입력 시 별표로 표시됩니다)</span>
+                    </p>
+                    <input type="password" id="admin-pwd-input" placeholder="Password" 
+                        style="width:100%; padding:12px; border:2px solid #ddd; border-radius:10px; margin-bottom:15px; font-size:16px; text-align:center; box-sizing:border-box; outline:none; transition:0.2s;">
+                    <button id="admin-login-btn" style="width:100%; padding:12px; background:#007bff; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:16px;">로그인</button>
+                    <p style="margin-top:15px; font-size:11px; color:#999;">인증 상태는 오늘 자정까지 유지됩니다.</p>
+                </div>
+            </div>`;
 
-        // 7. 입력받은 비밀번호로 수파베이스에 정식 로그인 요청
-        const { error } = await supabaseClient.auth.signInWithPassword({
-            email: 'teacher@anseong.kr',
-            password: pwd
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            const input = document.getElementById('admin-pwd-input');
+            const btn = document.getElementById('admin-login-btn');
+
+            // 포커스 주기
+            input.focus();
+
+            // 로그인 실행 함수
+            const attemptLogin = async () => {
+                const pwd = input.value;
+                if (!pwd) return;
+
+                btn.innerText = "인증 중...";
+                btn.disabled = true;
+
+                const { error } = await supabaseClient.auth.signInWithPassword({
+                    email: 'teacher@anseong.kr',
+                    password: pwd
+                });
+
+                if (error) {
+                    alert("비밀번호가 틀렸습니다.");
+                    btn.innerText = "로그인";
+                    btn.disabled = false;
+                    input.value = "";
+                    input.focus();
+                } else {
+                    localStorage.setItem('adminLoginDate', todayDateStr);
+                    document.getElementById('admin-login-modal').remove();
+                    document.getElementById('main-content').style.display = 'block';
+                    startMidnightLogoutChecker();
+                    resolve(true);
+                }
+            };
+
+            // 버튼 클릭 및 엔터키 이벤트
+            btn.onclick = attemptLogin;
+            input.onkeypress = (e) => { if (e.key === 'Enter') attemptLogin(); };
+
+            // 입력창 테두리 효과
+            input.onfocus = () => { input.style.borderColor = '#007bff'; };
+            input.onblur = () => { input.style.borderColor = '#ddd'; };
         });
 
-        if (error) {
-            alert("비밀번호가 틀렸습니다. 다시 시도해주세요.");
-            location.reload(); // 새로고침하여 다시 잠금
-            return false;
-        } else {
-            // 로그인 성공 시 '오늘 날짜' 도장 쾅!
-            localStorage.setItem('adminLoginDate', todayDateStr);
-            document.getElementById('main-content').style.display = 'block';
-            startMidnightLogoutChecker(); // 자정 감시 타이머 시작
-            return true;
-        }
     } catch (err) {
         alert("인증 처리 중 오류가 발생했습니다.");
         console.error(err);
         return false;
     }
 }
+
+
 
 // 🌟 자정(24시)이 지났는지 실시간으로 감시하는 백그라운드 함수
 function startMidnightLogoutChecker() {
