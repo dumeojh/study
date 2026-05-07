@@ -1646,67 +1646,11 @@
 
                     if (statusFilter !== "all" && mappedGroup !== statusFilter) return;
 
+                    // 공통 함수(common.js)를 호출하여 완벽하게 통합된 인정 타임(Set)을 바로 가져옵니다.
+                    let recognizedSet = getRecognizedTimes(log, currentSchedule);
 
-
-                    // 🌟 [수정] 수동 인정 태그 세트 초기화 (전역적으로 사용)
-                    let manualRecognized = new Set();
-                    if (log && log.history) {
-                        log.history.forEach(h => {
-                            [1, 2, 3].forEach(t => {
-                                if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`)) {
-                                    manualRecognized.add(t);
-                                }
-                            });
-                        });
-                    }
-
-                    // 👇👇 [수정] 타임 횟수(recTimes) 계산 로직 👇👇
-                    let recTimes = 0;
-                    if (status === "미입실" || status === "귀가(누락)") {
-                        recTimes = 0;
-                    } else {
-                        if (manualRecognized.size > 0) {
-                            recTimes = manualRecognized.size;
-                        } else {
-                            const timeToMin = (tmStr) => { const [h, m] = tmStr.split(':').map(Number); return h * 60 + m; };
-
-                            [1, 2, 3].forEach(t => {
-                                if (st.rawTimes.includes(String(t))) {
-                                    let hasLogsThisSlot = groupedHistory[t] && groupedHistory[t].length > 0;
-                                    let lastLogBefore = null;
-                                    for (let i = t - 1; i >= 0; i--) {
-                                        if (groupedHistory[i] && groupedHistory[i].length > 0) {
-                                            lastLogBefore = groupedHistory[i][groupedHistory[i].length - 1];
-                                            break;
-                                        }
-                                    }
-                                    let wasInRoom = lastLogBefore && (lastLogBefore.includes("입실") || lastLogBefore.includes("복귀"));
-
-                                    if (hasLogsThisSlot || wasInRoom) {
-                                        let valid = true;
-                                        if (hasLogsThisSlot) {
-                                            let lastLogThisSlot = groupedHistory[t][groupedHistory[t].length - 1];
-                                            if (lastLogThisSlot.includes("외출") || lastLogThisSlot.includes("귀가")) {
-                                                const match = lastLogThisSlot.match(/(\d{2}:\d{2})/);
-                                                if (match) {
-                                                    let logMin = timeToMin(match[1]);
-                                                    let startStr = currentSchedule[`t${t}`];
-                                                    let reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0;
-                                                    if (startStr && !isNaN(reqMin)) {
-                                                        let passMin = timeToMin(startStr) + reqMin;
-                                                        if (logMin < passMin) valid = false;
-                                                    }
-                                                }
-                                            }
-                                        } else if (t === currentSlot && status === "외출") {
-                                            valid = false;
-                                        }
-                                        if (valid) recTimes++;
-                                    }
-                                }
-                            });
-                        }
-                    }
+                    // 총 인정 타임 횟수 업데이트
+                    let recTimes = recognizedSet.size;
 
                     if (recTimes > 0) {
                         recText = `<b style="color:var(--primary); font-size:15px;">${recTimes}</b>타임`;
@@ -1715,26 +1659,15 @@
                         else recText = `<span style="color:#dc3545; font-weight:bold;">0타임</span>`;
                     }
 
-
-
-
-                    // 👇👇 [수정] 여기서부터 교체하세요 👇👇
                     let appliedBadges = "";
                     let currentBadges = "";
                     let resultBadges = "";
 
-                    // 공통 함수(common.js)를 호출하여 완벽하게 통합된 인정 타임(Set)을 바로 가져옵니다.
-                    let recognizedSet = getRecognizedTimes(log, currentSchedule);
 
 
 
 
 
-
-
-
-                    // 총 인정 타임 횟수 업데이트
-                    recTimes = recognizedSet.size;
 
                     [0, 1, 2, 3].forEach(t => {
                         const isApplied = st.rawTimes.includes(String(t));
