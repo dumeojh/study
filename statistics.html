@@ -722,24 +722,20 @@
                     if (isOperating) {
                         const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
 
+
                         applicationData.forEach(app => {
-                            if (app[dayKey]) {
-                                const stuIdStr = String(app.stu_id);
-                                if (stuIdStr.length < 4) return;
+                            const stuIdStr = String(app.stu_id);
+                            if (stuIdStr.length < 4) return;
 
-                                const stat = matrixStats[stuIdStr];
-                                if (!stat) return;
+                            const stat = matrixStats[stuIdStr];
+                            if (!stat) return;
 
-                                const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
+                            const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
 
-
-
-
-                                const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
-                                if (recognizedCount > 0) {
-                                    stat.dailyCounts[d - 1] += recognizedCount;
-                                    stat.totalCount += recognizedCount;
-                                }
+                            const recognizedCount = getRecognizedTimes(studentLog, currentSchedule).size;
+                            if (recognizedCount > 0) {
+                                stat.dailyCounts[d - 1] += recognizedCount;
+                                stat.totalCount += recognizedCount;
                             }
                         });
                     }
@@ -893,6 +889,11 @@
                         html += `<div class="box-holiday">${reason || "야자 미운영"}</div>`;
                     } else {
                         let t0 = 0, t1 = 0, t2 = 0, t3 = 0;
+
+
+
+
+                        /////////////////////////////////
                         applicationData.forEach(app => {
                             if (app[dayKey]) {
                                 if (app[dayKey].includes('0')) t0++;
@@ -1067,29 +1068,33 @@
                         const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
 
                         applicationData.forEach(app => {
-                            if (app[dayKey]) {
-                                const stuIdStr = String(app.stu_id);
-                                if (stuIdStr.length < 4) return;
+                            // 🌟 수정: 신청 여부 무관하게 반별 통계 집계
+                            const stuIdStr = String(app.stu_id);
+                            if (stuIdStr.length < 4) return;
 
-                                const classCode = stuIdStr.slice(0, -2);
-                                const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
+                            const classCode = stuIdStr.slice(0, -2);
+                            const className = `${classCode.substring(0, 1)}학년 ${classCode.substring(1)}반`;
 
-                                const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
-                                if (classStats[className]) {
-                                    classStats[className].totalTimes += timesCount;
+                            // 신청한 횟수가 있으면 더해주고, 없으면 0으로 처리
+                            const timesCount = app[dayKey] ? app[dayKey].split(',').filter(v => v.trim() !== "").length : 0;
 
-                                    const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
+                            if (classStats[className]) {
+                                classStats[className].totalTimes += timesCount;
 
+                                const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
 
-                                    const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
-                                    if (recognizedCount > 0) {
-                                        classStats[className].attendedTimes += recognizedCount;
-                                    }
-
-
+                                // 🌟 수정: .size 적용 및 무조건 계산
+                                const recognizedCount = getRecognizedTimes(studentLog, currentSchedule).size;
+                                if (recognizedCount > 0) {
+                                    classStats[className].attendedTimes += recognizedCount;
                                 }
                             }
                         });
+
+
+
+
+
                     }
                 }
 
@@ -1178,29 +1183,30 @@
                     if (isOperating) {
                         const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
 
+
+
                         applicationData.forEach(app => {
-                            if (app[dayKey]) {
-                                const stuIdStr = String(app.stu_id);
-                                if (stuIdStr.length < 4) return;
+                            const stuIdStr = String(app.stu_id);
+                            if (stuIdStr.length < 4) return;
 
-                                const stat = personalStats[stuIdStr];
-                                const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
+                            const stat = personalStats[stuIdStr];
+                            const timesCount = app[dayKey] ? app[dayKey].split(',').filter(v => v.trim() !== "").length : 0;
 
-                                stat.appliedDays += 1;
-                                stat.appliedTimes += timesCount;
+                            if (timesCount > 0) stat.appliedDays += 1;
+                            stat.appliedTimes += timesCount;
 
-                                const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
+                            const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
 
-
-                                const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
-                                if (recognizedCount > 0) {
-                                    stat.attendedDays += 1;
-                                    stat.attendedTimes += recognizedCount;
-                                }
-
-
+                            const recognizedCount = getRecognizedTimes(studentLog, currentSchedule).size;
+                            if (recognizedCount > 0) {
+                                stat.attendedDays += 1;
+                                stat.attendedTimes += recognizedCount;
                             }
                         });
+
+
+
+
                     }
                 }
 
@@ -1326,19 +1332,20 @@
 
                     if (isOperating) {
                         const dayLogs = monthLogs.filter(log => log.date === dateStr);
+
+
                         monthApps.forEach(app => {
-                            if (app[dayKey]) {
-                                const stuIdStr = String(app.stu_id);
-                                const timesCount = app[dayKey].split(',').filter(v => v.trim() !== "").length;
-                                const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
+                            const stuIdStr = String(app.stu_id);
+                            const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
 
-                                const recognizedCount = getRecognizedTimes(studentLog, app[dayKey]);
-                                if (recognizedCount > 0) {
-                                    if (stats[stuIdStr]) stats[stuIdStr].attendedTimes += recognizedCount;
-                                }
-
+                            const recognizedCount = getRecognizedTimes(studentLog, currentSchedule).size;
+                            if (recognizedCount > 0) {
+                                if (stats[stuIdStr]) stats[stuIdStr].attendedTimes += recognizedCount;
                             }
                         });
+
+
+
                     }
                 }
                 return stats;
