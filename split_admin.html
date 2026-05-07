@@ -2596,49 +2596,110 @@
             //   autoSweepPastAttendance();
 
 
-
             // =========================================================
-            // 🌟 특정 PC 실시간 모드 제어 함수
+            // 🌟 특정 PC 실시간 모드 제어 (DB 1대 제한 토큰 시스템)
             // =========================================================
 
-            // 체크박스를 누를 때마다 실행됨
-            function toggleRealtime() {
-                const isChecked = document.getElementById('realtime-toggle').checked;
+            // 1. 이 PC(브라우저)만의 고유 ID 생성 (한 번 생성하면 계속 유지)
+            let myPcId = localStorage.getItem('myPcId');
+            if (!myPcId) {
+                myPcId = 'PC_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('myPcId', myPcId);
+            }
 
-                // 이 컴퓨터의 브라우저 저장소에 상태 저장
-                localStorage.setItem('supervisorRealtime', isChecked);
+            // 1분마다 DB 소유권을 검사할 타이머 변수
+            let tokenCheckInterval = null;
 
-                // 타이머 갱신
-                applyIntervalSetting(isChecked);
+            // 체크박스를 누를 때 실행됨
+            async function toggleRealtime() {
+                const toggleBtn = document.getElementById('realtime-toggle');
+                const isChecked = toggleBtn.checked;
 
                 if (isChecked) {
-                    alert("⚡ 실시간 모드 ON!\n이제 이 컴퓨터는 5초마다 데이터를 자동으로 새로고침합니다.");
-                    loadDailyDataAndRender(); // 켜자마자 즉시 1회 동기화
+                    try {
+                        // 1. DB에서 현재 실시간 모드를 누가 쓰고 있는지 확인
+                        const { data } = await supabaseClient.from('settings').select('value').eq('key', 'realtime_owner').maybeSingle();
+                        let currentOwner = data ? data.value : null;
+
+                        // 2. 누군가 쓰고 있고, 그게 내가 아니라면?
+                        if (currentOwner && currentOwner.pcId !== myPcId) {
+                            const takeover = confirm(`🚨 현재 [${currentOwner.pcName || '다른 PC'}]에서 실시간 모드를 사용 중입니다.\n\n강제로 권한을 뺏어오시겠습니까?\n(뺏긴 PC는 자동으로 일반 모드로 전환됩니다)`);
+
+                            if (!takeover) {
+                                toggleBtn.checked = false; // 취소하면 체크박스 원상복구
+                                return;
+                            }
+                        }
+
+                        // 3. 권한 획득 (누구 PC인지 이름 입력받기 - 선택사항)
+                        const pcName = prompt("이 컴퓨터를 식별할 수 있는 이름을 짧게 적어주세요.\n(예: 교무실 내자리, 1반 담임노트북 등)", "감독교사 PC");
+                        if (pcName === null) {
+                            toggleBtn.checked = false;
+                            return;
+                        }
+
+                        // DB에 내 정보 기록 (내가 이제 주인이다!)
+                        await supabaseClient.from('settings').upsert({
+                            key: 'realtime_owner',
+                            value: { pcId: myPcId, pcName: pcName, timestamp: Date.now() }
+                        });
+
+                        localStorage.setItem('supervisorRealtime', 'true');
+                        applyIntervalSetting(true);
+                        alert(`⚡ [${pcName}] 실시간 모드가 켜졌습니다!\n이제 이 컴퓨터만 5초마다 데이터를 가져옵니다.`);
+                        loadDailyDataAndRender(); // 즉시 1회 동기화
+
+                    } catch (e) {
+                        alert("서버 통신 중 오류가 발생했습니다.");
+                        toggleBtn.checked = false;
+                    }
+
                 } else {
-                    alert("🐢 실시간 모드 OFF.\n이제 이 컴퓨터는 10분 주기로 새로고침됩니다.");
+                    // 내가 끄는 경우
+                    localStorage.setItem('supervisorRealtime', 'false');
+                    applyIntervalSetting(false);
+                    alert("🐢 실시간 모드가 해제되었습니다. (10분 주기로 변경)");
+
+                    // (선택) 내가 끄면 DB 기록을 지워줄 수도 있지만, 어차피 남이 덮어쓰므로 놔둬도 무방합니다.
                 }
             }
 
-            // 켜짐/꺼짐 상태에 따라 타이머 주기를 설정하는 함수
+            // 타이머 설정 함수 (감시 기능 포함)
             function applyIntervalSetting(isRealtime) {
-                // 1. 혹시 돌고 있던 예전 타이머가 있다면 끈다
-                if (autoRefreshInterval) {
-                    clearInterval(autoRefreshInterval);
-                }
+                // 기존 타이머 싹 다 청소
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+                if (tokenCheckInterval) clearInterval(tokenCheckInterval);
 
-                // 2. 체크 상태에 따라 주기 결정 (true면 5초(5000), false면 10분(600000))
+                // 기본 새로고침 5초 vs 10분
                 const intervalTime = isRealtime ? 5000 : 600000;
 
-                // 3. 새로운 타이머 장착
                 autoRefreshInterval = setInterval(() => {
                     loadDailyDataAndRender();
-                    // 만약 [월별 신청 현황] 탭을 보고 있다면 거기도 같이 새로고침
                     if (document.getElementById('tab-status').classList.contains('active')) {
                         renderStatusTable();
                     }
                 }, intervalTime);
-            }
 
+                // 🌟 선생님의 핵심 아이디어: 1분마다 생존(소유권) 검사!
+                if (isRealtime) {
+                    tokenCheckInterval = setInterval(async () => {
+                        try {
+                            const { data } = await supabaseClient.from('settings').select('value').eq('key', 'realtime_owner').maybeSingle();
+
+                            // DB 확인해봤는데 주인이 내가 아니라면? (누가 뺏어갔다면)
+                            if (data && data.value && data.value.pcId !== myPcId) {
+                                alert(`🚨 다른 선생님([${data.value.pcName}])이 실시간 모드를 가져갔습니다.\n이 컴퓨터는 서버 보호를 위해 일반 모드(10분)로 자동 전환됩니다.`);
+
+                                document.getElementById('realtime-toggle').checked = false;
+                                localStorage.setItem('supervisorRealtime', 'false');
+
+                                // 내 타이머 다시 세팅 (실시간 해제)
+                                applyIntervalSetting(false);
+                            }
+                        } catch (e) { console.error("소유권 확인 오류", e); }
+                    }, 60000); // 60000ms = 1분
+                }
+            }
         </script>
     </div> <!-- 👈 닫는 태그 추가 -->
 </body>
