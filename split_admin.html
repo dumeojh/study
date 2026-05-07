@@ -2680,24 +2680,30 @@
                     }
                 }, intervalTime);
 
-                // 🌟 선생님의 핵심 아이디어: 1분마다 생존(소유권) 검사!
+                // 🌟 선생님의 핵심 아이디어: 누군가 뺏어갔는지 검사! (1분 -> 10초로 단축)
                 if (isRealtime) {
                     tokenCheckInterval = setInterval(async () => {
                         try {
                             const { data } = await supabaseClient.from('settings').select('value').eq('key', 'realtime_owner').maybeSingle();
 
-                            // DB 확인해봤는데 주인이 내가 아니라면? (누가 뺏어갔다면)
+                            // DB 확인해봤는데 주인이 내가 아니라면? (누가 권한을 뺏어갔다면)
                             if (data && data.value && data.value.pcId !== myPcId) {
-                                alert(`🚨 다른 선생님([${data.value.pcName}])이 실시간 모드를 가져갔습니다.\n이 컴퓨터는 서버 보호를 위해 일반 모드(10분)로 자동 전환됩니다.`);
 
+                                // 1. 화면의 체크박스를 강제로 끕니다.
                                 document.getElementById('realtime-toggle').checked = false;
+
+                                // 2. 브라우저 메모리를 일반 모드로 변경합니다.
                                 localStorage.setItem('supervisorRealtime', 'false');
 
-                                // 내 타이머 다시 세팅 (실시간 해제)
+                                // 3. 내 타이머를 10분짜리 일반 모드로 재설정합니다. (실시간 감시도 여기서 멈춤)
                                 applyIntervalSetting(false);
+
+                                // 4. 마지막으로 팝업을 띄워 선생님께 확실히 알립니다.
+                                alert(`🚨 앗! 다른 선생님([${data.value.pcName}])이 실시간 모드를 가져갔습니다.\n\n서버 보호를 위해 이 컴퓨터는 일반 모드(10분)로 자동 전환됩니다.`);
+
                             }
                         } catch (e) { console.error("소유권 확인 오류", e); }
-                    }, 60000); // 60000ms = 1분
+                    }, 10000); // 👈 60000(1분)에서 10000(10초)으로 변경하여 거의 즉각 반응하게 만듦!
                 }
             }
         </script>
