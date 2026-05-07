@@ -368,13 +368,20 @@
 
     <!-- 🌟 메인 콘텐츠는 기본적으로 숨겨져 있음 -->
     <div id="main-content">
+
+
+
         <div class="header no-print">
             <h1>🪪 학생 바코드 출력 페이지</h1>
             <div style="display: flex; gap: 10px;">
+                <button class="btn btn-danger" onclick="adminLogout()">🔓 로그아웃</button>
                 <button class="btn btn-print" onclick="window.print()">🖨️ 선택된 바코드 인쇄</button>
                 <button class="btn btn-back" onclick="location.href='index.html'">⬅️ 메인 화면</button>
             </div>
         </div>
+
+
+
 
         <div class="tools-container no-print" id="tools-panel" style="display: none;">
             <div class="filter-group">
