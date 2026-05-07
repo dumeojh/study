@@ -1,378 +1,564 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="color-scheme" content="light">
     <title>안성여고 자율석 일일 발권기</title>
-    
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        :root { --primary: #198754; --bg: #f4f7f6; --card: #ffffff; }
-        body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg); margin: 0; padding: 15px; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        
-        .kiosk-container { width: 100%; max-width: 600px; background: var(--card); padding: 30px 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .header { text-align: center; margin-bottom: 25px; }
-        .header h2 { margin: 0 0 10px 0; color: #1a1a1a; font-size: 24px; }
-        .date-badge { display: inline-block; background: #e8f5e9; color: var(--primary); padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 16px; border: 1px solid #c3e6cb; }
+        :root {
+            --primary: #198754;
+            --bg: #f4f7f6;
+            --card: #ffffff;
+        }
 
-        .input-group { margin-bottom: 15px; }
-        .input-group input { width: 100%; padding: 15px; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 18px; text-align: center; transition: 0.3s; }
-        .input-group input:focus { border-color: var(--primary); outline: none; }
-        
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; }
-        .btn-main { background: var(--primary); box-shadow: 0 4px 10px rgba(25, 135, 84, 0.3); }
-        .btn-main:active { transform: scale(0.98); }
-        .btn:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 15px;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
 
-        #ticket-section { display: none; margin-top: 20px; border-top: 2px dashed #ddd; padding-top: 20px; }
-        .student-info-box { background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px solid #e9ecef; }
-        .student-info-box strong { color: var(--primary); font-size: 18px; }
+        .kiosk-container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card);
+            padding: 30px 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .header h2 {
+            margin: 0 0 10px 0;
+            color: #1a1a1a;
+            font-size: 24px;
+        }
+
+        .date-badge {
+            display: inline-block;
+            background: #e8f5e9;
+            color: var(--primary);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 18px;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
+        }
+
+        .btn-main {
+            background: var(--primary);
+            box-shadow: 0 4px 10px rgba(25, 135, 84, 0.3);
+        }
+
+        .btn-main:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        #ticket-section {
+            display: none;
+            margin-top: 20px;
+            border-top: 2px dashed #ddd;
+            padding-top: 20px;
+        }
+
+        .student-info-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .student-info-box strong {
+            color: var(--primary);
+            font-size: 18px;
+        }
 
         /* 좌석 배치도 CSS */
-        .seat-scroll-container { overflow-x: auto; padding: 10px 0; margin-bottom: 20px; }
-        .seat-grid { display: grid; gap: 4px; justify-content: start; }
-        .seat-cell { width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; border-radius: 6px; box-sizing: border-box; text-align: center; line-height: 1.1; border: 1px solid #ccc; position: relative; }
-        
-        .seat-empty { background: transparent; border: none; } 
-        .seat-static { opacity: 0.6; background: #e9ecef; color: #adb5bd; } /* 벽, 문, 고정석은 회색 처리 */
-        
+        .seat-scroll-container {
+            overflow-x: auto;
+            padding: 10px 0;
+            margin-bottom: 20px;
+        }
+
+        .seat-grid {
+            display: grid;
+            gap: 4px;
+            justify-content: start;
+        }
+
+        .seat-cell {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 6px;
+            box-sizing: border-box;
+            text-align: center;
+            line-height: 1.1;
+            border: 1px solid #ccc;
+            position: relative;
+        }
+
+        .seat-empty {
+            background: transparent;
+            border: none;
+        }
+
+        .seat-static {
+            opacity: 0.6;
+            background: #e9ecef;
+            color: #adb5bd;
+        }
+
+        /* 벽, 문, 고정석은 회색 처리 */
+
         /* 자율석 상태 */
-        .seat-available { background: white; color: var(--primary); border: 2px solid var(--primary); cursor: pointer; }
-        .seat-available:hover { background: #e8f5e9; transform: scale(1.1); z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .seat-taken { background: #f8d7da; color: #dc3545; border-color: #f5c2c7; opacity: 0.8; text-decoration: line-through; }
-        .seat-selected { background: var(--primary) !important; color: white !important; border-color: #146c43; transform: scale(1.1); z-index: 10; box-shadow: 0 4px 10px rgba(25, 135, 84, 0.4); }
+        .seat-available {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            cursor: pointer;
+        }
+
+        .seat-available:hover {
+            background: #e8f5e9;
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .seat-taken {
+            background: #f8d7da;
+            color: #dc3545;
+            border-color: #f5c2c7;
+            opacity: 0.8;
+            text-decoration: line-through;
+        }
+
+        .seat-selected {
+            background: var(--primary) !important;
+            color: white !important;
+            border-color: #146c43;
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(25, 135, 84, 0.4);
+        }
 
         /* 이미 발권된 내 티켓 화면 */
-        .my-ticket { background: linear-gradient(135deg, #198754, #20c997); color: white; padding: 30px; border-radius: 15px; text-align: center; box-shadow: 0 10px 20px rgba(32, 201, 151, 0.3); }
-        .my-ticket h1 { margin: 0; font-size: 40px; margin-bottom: 10px; }
-        .my-ticket p { margin: 5px 0; font-size: 18px; opacity: 0.9; }
+        .my-ticket {
+            background: linear-gradient(135deg, #198754, #20c997);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(32, 201, 151, 0.3);
+        }
+
+        .my-ticket h1 {
+            margin: 0;
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .my-ticket p {
+            margin: 5px 0;
+            font-size: 18px;
+            opacity: 0.9;
+        }
     </style>
 </head>
+
 <body>
 
-<div class="kiosk-container">
-    <div class="header">
-        <h2>🏫 일일 자율석 발권기</h2>
-        <div class="date-badge" id="today-date-display">날짜 로딩 중...</div>
-    </div>
-
-<div id="login-section">
-        <div id="main-notice" style="background:#fff3cd; color:#856404; padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #ffeeba; font-weight:bold; text-align:center; white-space:pre-wrap; line-height:1.4;">
-            공지사항을 불러오는 중입니다...
-        </div>
-        
-        <p style="text-align: center; color: #666; margin-bottom: 20px; font-size: 14px;">
-            학번과 이름을 입력하고 오늘의 자리를 선택하세요.
-        </p>
-        <div class="input-group"><input type="number" id="stu-id" placeholder="학번 (예: 3101)"></div>
-        <div class="input-group"><input type="text" id="stu-name" placeholder="이름 (실명)"></div>
-        <button id="login-btn" class="btn btn-main" onclick="verifyForTicket()">조회하기</button>
-    </div>
-
-
-
-    
-
-    <div id="ticket-section">
-        <div class="student-info-box" id="student-info">
-            </div>
-
-        <div id="map-area">
-            <p style="text-align: center; font-size: 14px; font-weight: bold; color: var(--primary);">초록색 테두리의 빈자리를 선택하세요.</p>
-            <div style="text-align: center; font-size: 12px; color: #666; margin-bottom: 10px;">
-                <span style="display:inline-block; width:12px; height:12px; border:2px solid var(--primary); background:white; vertical-align:middle;"></span> 선택가능 &nbsp;
-                <span style="display:inline-block; width:12px; height:12px; background:var(--primary); vertical-align:middle;"></span> 내선택 &nbsp;
-                <span style="display:inline-block; width:12px; height:12px; background:#f8d7da; vertical-align:middle;"></span> 다른학생 예약
-            </div>
-            
-            <div class="seat-scroll-container">
-                <div id="ticket-seat-grid" class="seat-grid"></div>
-            </div>
-            <button id="issue-btn" class="btn btn-main" onclick="issueTicket()" disabled>이 자리로 발권하기</button>
+    <div class="kiosk-container">
+        <div class="header">
+            <h2>🏫 일일 자율석 발권기</h2>
+            <div class="date-badge" id="today-date-display">날짜 로딩 중...</div>
         </div>
 
-        <div id="my-ticket-area" style="display: none;">
-            <div class="my-ticket">
-                <p>오늘의 내 자리</p>
-                <h1 id="my-seat-name">A-5</h1>
-                <p id="my-time-info">1타임, 2타임</p>
+        <div id="login-section">
+            <div id="main-notice"
+                style="background:#fff3cd; color:#856404; padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #ffeeba; font-weight:bold; text-align:center; white-space:pre-wrap; line-height:1.4;">
+                공지사항을 불러오는 중입니다...
             </div>
-            <p style="text-align: center; color: #666; font-size: 13px; margin-top: 15px;">※ 한 번 발권된 자리는 오늘 하루 동안 변경할 수 없습니다.</p>
-            <button class="btn" style="background:#6c757d; margin-top:10px;" onclick="location.reload()">처음으로 돌아가기</button>
+
+            <p style="text-align: center; color: #666; margin-bottom: 20px; font-size: 14px;">
+                학번과 이름을 입력하고 오늘의 자리를 선택하세요.
+            </p>
+            <div class="input-group"><input type="number" id="stu-id" placeholder="학번 (예: 3101)"></div>
+            <div class="input-group"><input type="text" id="stu-name" placeholder="이름 (실명)"></div>
+            <button id="login-btn" class="btn btn-main" onclick="verifyForTicket()">조회하기</button>
+        </div>
+
+
+
+
+
+        <div id="ticket-section">
+            <div class="student-info-box" id="student-info">
+            </div>
+
+            <div id="map-area">
+                <p style="text-align: center; font-size: 14px; font-weight: bold; color: var(--primary);">초록색 테두리의 빈자리를
+                    선택하세요.</p>
+                <div style="text-align: center; font-size: 12px; color: #666; margin-bottom: 10px;">
+                    <span
+                        style="display:inline-block; width:12px; height:12px; border:2px solid var(--primary); background:white; vertical-align:middle;"></span>
+                    선택가능 &nbsp;
+                    <span
+                        style="display:inline-block; width:12px; height:12px; background:var(--primary); vertical-align:middle;"></span>
+                    내선택 &nbsp;
+                    <span
+                        style="display:inline-block; width:12px; height:12px; background:#f8d7da; vertical-align:middle;"></span>
+                    다른학생 예약
+                </div>
+
+                <div class="seat-scroll-container">
+                    <div id="ticket-seat-grid" class="seat-grid"></div>
+                </div>
+                <button id="issue-btn" class="btn btn-main" onclick="issueTicket()" disabled>이 자리로 발권하기</button>
+            </div>
+
+            <div id="my-ticket-area" style="display: none;">
+                <div class="my-ticket">
+                    <p>오늘의 내 자리</p>
+                    <h1 id="my-seat-name">A-5</h1>
+                    <p id="my-time-info">1타임, 2타임</p>
+                </div>
+                <p style="text-align: center; color: #666; font-size: 13px; margin-top: 15px;">※ 한 번 발권된 자리는 오늘 하루 동안
+                    변경할 수 없습니다.</p>
+                <button class="btn" style="background:#6c757d; margin-top:10px;" onclick="location.reload()">처음으로
+                    돌아가기</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    // =========================================================
-    // 1. Supabase 초기화
-    // =========================================================
-    const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <script>
+        // =========================================================
+        // 1. Supabase 초기화
+        // =========================================================
+        const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let schoolSchedule = null; 
-    let serverRoster = {}; 
-    let seatMapData = []; let layoutRows = 0; let layoutCols = 0;
-    
-    let todayObj = new Date();
-    const todayStr = todayObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }); 
-    const currentMonthStr = (todayObj.getMonth() + 1) + "월";
-    const daysEng = ['sun','mon','tue','wed','thu','fri','sat'];
-    const todayDayEng = daysEng[todayObj.getDay()];
+        let schoolSchedule = null;
+        let serverRoster = {};
+        let seatMapData = []; let layoutRows = 0; let layoutCols = 0;
 
-    const daysKor = ['일','월','화','수','목','금','토'];
-    document.getElementById('today-date-display').innerText = `${todayObj.getFullYear()}년 ${todayObj.getMonth()+1}월 ${todayObj.getDate()}일 (${daysKor[todayObj.getDay()]}요일)`;
+        let todayObj = new Date();
+        const todayStr = todayObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+        const currentMonthStr = (todayObj.getMonth() + 1) + "월";
+        const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const todayDayEng = daysEng[todayObj.getDay()];
 
-    let studentSchedule = ""; 
-    let selectedSeatId = "";
-    let todayReservations = []; 
+        const daysKor = ['일', '월', '화', '수', '목', '금', '토'];
+        document.getElementById('today-date-display').innerText = `${todayObj.getFullYear()}년 ${todayObj.getMonth() + 1}월 ${todayObj.getDate()}일 (${daysKor[todayObj.getDay()]}요일)`;
 
-    // =========================================================
-    // 2. 초기 데이터 로딩 (설정, 명단, 도면, 오늘 예약내역)
-    // =========================================================
-    async function fetchInitialData() {
-        try {
-            // 1. 운영 시간 및 공지사항
-            const { data: schedDoc } = await supabaseClient.from("settings").select("value").eq("key", "schedule").maybeSingle();
-            if (schedDoc && schedDoc.value) {
-                schoolSchedule = schedDoc.value;
-                document.getElementById('main-notice').innerText = schoolSchedule.ticket_notice || "자율석 신청 학생만 이용할 수 있습니다.";
-            }
+        let studentSchedule = "";
+        let selectedSeatId = "";
+        let todayReservations = [];
 
-            // 2. 기초 명단
-            const { data: rosterDoc } = await supabaseClient.from("settings").select("value").eq("key", "roster").maybeSingle();
-            if (rosterDoc && rosterDoc.value) {
-                serverRoster = JSON.parse(rosterDoc.value.list || "{}");
-            }
-            
-            // 3. 좌석 도면
-            const { data: layoutDoc } = await supabaseClient.from("settings").select("value").eq("key", "seatLayout").maybeSingle();
-            if (layoutDoc && layoutDoc.value) {
-                const data = layoutDoc.value;
-                layoutRows = data.rows; layoutCols = data.cols;
-                seatMapData = JSON.parse(data.grid).map(row => row.map(c => typeof c === 'number' ? {type: c, label: ""} : c));
-            }
+        // =========================================================
+        // 2. 초기 데이터 로딩 (설정, 명단, 도면, 오늘 예약내역)
+        // =========================================================
+        async function fetchInitialData() {
+            try {
+                // 1. 운영 시간 및 공지사항
+                const { data: schedDoc } = await supabaseClient.from("settings").select("value").eq("key", "schedule").maybeSingle();
+                if (schedDoc && schedDoc.value) {
+                    schoolSchedule = schedDoc.value;
+                    document.getElementById('main-notice').innerText = schoolSchedule.ticket_notice || "자율석 신청 학생만 이용할 수 있습니다.";
+                }
 
-            // 4. 오늘의 발권 내역 모두 가져오기
-            const { data: resData } = await supabaseClient.from("daily_reservations").select("*").eq("date", todayStr);
-            if (resData) {
-                todayReservations = resData;
-            }
+                // 2. 기초 명단
+                const { data: rosterDoc } = await supabaseClient.from("settings").select("value").eq("key", "roster").maybeSingle();
+                if (rosterDoc && rosterDoc.value) {
+                    serverRoster = JSON.parse(rosterDoc.value.list || "{}");
+                }
 
-        } catch(e) { console.error("데이터 로드 에러:", e); }
-    }
-    fetchInitialData();
+                // 3. 좌석 도면
+                const { data: layoutDoc } = await supabaseClient.from("settings").select("value").eq("key", "seatLayout").maybeSingle();
+                if (layoutDoc && layoutDoc.value) {
+                    const data = layoutDoc.value;
+                    layoutRows = data.rows; layoutCols = data.cols;
+                    seatMapData = JSON.parse(data.grid).map(row => row.map(c => typeof c === 'number' ? { type: c, label: "" } : c));
+                }
 
-    // =========================================================
-    // 3. 발권 자격 확인 및 조회
-    // =========================================================
-    async function verifyForTicket() {
-        const btn = document.getElementById('login-btn');
-        const id = document.getElementById('stu-id').value.trim();
-        const name = document.getElementById('stu-name').value.trim();
+                // 4. 오늘의 발권 내역 모두 가져오기
+                const { data: resData } = await supabaseClient.from("daily_reservations").select("*").eq("date", todayStr);
+                if (resData) {
+                    todayReservations = resData;
+                }
 
-        if (!id || !name) return alert("학번과 이름을 모두 입력해주세요.");
-
-        // [운영 시간 제약 확인]
-        if (schoolSchedule) {
-            const now = new Date();
-            const currentMin = now.getHours() * 60 + now.getMinutes();
-
-            const [t1H, t1M] = schoolSchedule.t1.split(':').map(Number);
-            const [endH, endM] = schoolSchedule.t3_end.split(':').map(Number); 
-            
-            const leadTime = parseInt(schoolSchedule.ticket_lead_time || "30");
-            const startMin = (t1H * 60 + t1M) - leadTime; 
-            const endMin = endH * 60 + endM;
-
-            if (currentMin < startMin || currentMin > endMin) {
-                const startH = Math.floor(startMin / 60);
-                const startM = startMin % 60;
-                const startTimeStr = `${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}`;
-                alert(`지금은 발권 가능 시간이 아닙니다.\n오늘 발권 가능 시간: ${startTimeStr} ~ ${schoolSchedule.t3_end}`);
-                return; 
-            }
+            } catch (e) { console.error("데이터 로드 에러:", e); }
         }
+        fetchInitialData();
 
-        // 명단 확인
-        if (serverRoster[id] !== name) {
-            alert("명단에 없거나 학번/이름이 일치하지 않습니다.");
-            return;
-        }
+        // =========================================================
+        // 3. 발권 자격 확인 및 조회
+        // =========================================================
+        async function verifyForTicket() {
+            const btn = document.getElementById('login-btn');
+            const id = document.getElementById('stu-id').value.trim();
+            const name = document.getElementById('stu-name').value.trim();
 
-        btn.innerText = "확인 중..."; 
-        btn.disabled = true;
+            if (!id || !name) return alert("학번과 이름을 모두 입력해주세요.");
 
-        try {
-            // 이번 달 신청 내역 확인
-            const { data: apps, error } = await supabaseClient.from("applications")
-                .select("*").eq("stu_id", id).eq("target_month", currentMonthStr);
+            // [운영 시간 제약 확인]
+            if (schoolSchedule) {
+                const now = new Date();
+                const currentMin = now.getHours() * 60 + now.getMinutes();
 
-            if (!apps || apps.length === 0) {
-                alert(`🚨 ${currentMonthStr} 자율학습 신청 내역이 없습니다.`);
-                btn.innerText = "조회하기"; btn.disabled = false; return;
+                const [t1H, t1M] = schoolSchedule.t1.split(':').map(Number);
+                const [endH, endM] = schoolSchedule.t3_end.split(':').map(Number);
+
+                const leadTime = parseInt(schoolSchedule.ticket_lead_time || "30");
+                const startMin = (t1H * 60 + t1M) - leadTime;
+                const endMin = endH * 60 + endM;
+
+                if (currentMin < startMin || currentMin > endMin) {
+                    const startH = Math.floor(startMin / 60);
+                    const startM = startMin % 60;
+                    const startTimeStr = `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}`;
+                    alert(`지금은 발권 가능 시간이 아닙니다.\n오늘 발권 가능 시간: ${startTimeStr} ~ ${schoolSchedule.t3_end}`);
+                    return;
+                }
             }
 
-            const data = apps[0];
-
-            if (data.type !== "자율석") {
-                alert("🚨 고정석 신청 학생입니다.\n고정석은 매일 발권할 필요 없이 지정된 자리로 바로 가면 됩니다.");
-                btn.innerText = "조회하기"; btn.disabled = false; return;
+            // 명단 확인
+            if (serverRoster[id] !== name) {
+                alert("명단에 없거나 학번/이름이 일치하지 않습니다.");
+                return;
             }
 
-            studentSchedule = data[todayDayEng]; 
-            if (!studentSchedule) {
-                alert("오늘은 자율학습을 신청한 요일이 아닙니다. 일정을 확인해주세요! 😊");
-                btn.innerText = "조회하기"; btn.disabled = false; return;
-            }
+            btn.innerText = "확인 중...";
+            btn.disabled = true;
 
-            document.getElementById('login-section').style.display = 'none';
-            document.getElementById('ticket-section').style.display = 'block';
-            
-            document.getElementById('student-info').innerHTML = `
+            try {
+                // 이번 달 신청 내역 확인
+                const { data: apps, error } = await supabaseClient.from("applications")
+                    .select("*").eq("stu_id", id).eq("target_month", currentMonthStr);
+
+                if (!apps || apps.length === 0) {
+                    alert(`🚨 ${currentMonthStr} 자율학습 신청 내역이 없습니다.`);
+                    btn.innerText = "조회하기"; btn.disabled = false; return;
+                }
+
+                const data = apps[0];
+
+                if (data.type !== "자율석") {
+                    alert("🚨 고정석 신청 학생입니다.\n고정석은 매일 발권할 필요 없이 지정된 자리로 바로 가면 됩니다.");
+                    btn.innerText = "조회하기"; btn.disabled = false; return;
+                }
+
+                studentSchedule = data[todayDayEng];
+                if (!studentSchedule) {
+                    alert("오늘은 자율학습을 신청한 요일이 아닙니다. 일정을 확인해주세요! 😊");
+                    btn.innerText = "조회하기"; btn.disabled = false; return;
+                }
+
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('ticket-section').style.display = 'block';
+
+                document.getElementById('student-info').innerHTML = `
                 <strong>${name} 학생, 환영합니다!</strong><br>
                 <span style="font-size:14px; color:#666;">오늘 예정된 자습: [ ${studentSchedule} ] 타임</span>
             `;
 
-            // 중복 예약(이미 발권) 검사
-            const myTicket = todayReservations.find(r => r.stu_id === id);
-            if (myTicket) {
+                // 중복 예약(이미 발권) 검사
+                const myTicket = todayReservations.find(r => r.stu_id === id);
+                if (myTicket) {
+                    document.getElementById('map-area').style.display = 'none';
+                    document.getElementById('my-ticket-area').style.display = 'block';
+                    document.getElementById('my-seat-name').innerText = myTicket.seat_num;
+                    document.getElementById('my-time-info').innerText = `${myTicket.times} 타임`;
+                } else {
+                    buildTicketGrid();
+                }
+
+            } catch (e) {
+                console.error("조회 오류:", e);
+                alert("데이터를 조회하는 중 오류가 발생했습니다: " + e.message);
+                btn.innerText = "조회하기"; btn.disabled = false;
+            }
+        }
+
+        // =========================================================
+        // 4. 자율석 도면 그리기
+        // =========================================================
+        function buildTicketGrid() {
+            const container = document.getElementById('ticket-seat-grid');
+            container.style.gridTemplateColumns = `repeat(${layoutCols}, 45px)`;
+            container.innerHTML = '';
+
+            for (let r = 0; r < layoutRows; r++) {
+                for (let c = 0; c < layoutCols; c++) {
+                    const cellData = seatMapData[r][c];
+                    const div = document.createElement('div');
+                    div.className = 'seat-cell';
+
+                    if (cellData.type === 2) {
+                        const seatLabel = cellData.label || `자율-${r + 1}-${c + 1}`;
+                        div.innerText = seatLabel;
+
+                        let isTaken = false;
+                        const myTimes = studentSchedule.split(',');
+
+                        const seatReservations = todayReservations.filter(res => res.seat_num === seatLabel);
+                        for (let res of seatReservations) {
+                            const bookedTimes = res.times.split(',');
+                            const overlap = myTimes.some(t => bookedTimes.includes(t));
+                            if (overlap) { isTaken = true; break; }
+                        }
+
+                        if (isTaken) {
+                            div.classList.add('seat-taken');
+                        } else {
+                            div.classList.add('seat-available');
+                            div.onclick = () => pickTicketSeat(seatLabel, div);
+                        }
+                    } else if (cellData.type === 0) {
+                        div.classList.add('seat-empty');
+                    } else {
+                        div.classList.add('seat-static');
+                        div.innerText = cellData.label || "";
+                    }
+                    container.appendChild(div);
+                }
+            }
+        }
+
+        function pickTicketSeat(label, cellElement) {
+            document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('seat-selected'));
+            cellElement.classList.add('seat-selected');
+            selectedSeatId = label;
+            document.getElementById('issue-btn').disabled = false;
+            document.getElementById('issue-btn').innerText = `[ ${label} ] 자리로 발권하기`;
+        }
+
+        // =========================================================
+        // 5. 서버에 발권 내역 저장 (이중 예약 방지 로직 추가)
+        // =========================================================
+        async function issueTicket() {
+            const btn = document.getElementById('issue-btn');
+            btn.innerText = "발권 처리 중..."; btn.disabled = true;
+            const stuId = document.getElementById('stu-id').value.trim();
+            const stuName = document.getElementById('stu-name').value.trim();
+
+            const ticketData = {
+                date: todayStr,
+                stu_id: stuId,
+                stu_name: stuName,
+                seat_num: selectedSeatId,
+                times: studentSchedule
+            };
+
+            try {
+                // 🌟 1. 방금 전 찰나의 순간에 누군가 이 자리를 가져갔는지 DB에 다시 물어봅니다.
+                const { data: checkData, error: checkErr } = await supabaseClient
+                    .from("daily_reservations")
+                    .select("times")
+                    .eq("date", todayStr)
+                    .eq("seat_num", selectedSeatId);
+
+                if (checkErr) throw checkErr;
+
+                // 🌟 2. 만약 이 자리에 예약이 있다면, 나와 겹치는 타임인지 확인합니다.
+                if (checkData && checkData.length > 0) {
+                    const myTimes = studentSchedule.split(','); // 내가 신청한 타임 (예: "1,2")
+                    let isOverlap = false;
+
+                    for (let res of checkData) {
+                        const bookedTimes = res.times.split(',');
+                        // 하나라도 겹치는 타임이 있는지 검사
+                        if (myTimes.some(t => bookedTimes.includes(t))) {
+                            isOverlap = true;
+                            break;
+                        }
+                    }
+
+                    // 🌟 3. 겹친다면 에러를 발생시키고 발권을 취소합니다.
+                    if (isOverlap) {
+                        alert(`🚨 아차! 간발의 차이로 다른 학생이 먼저 [${selectedSeatId}] 자리를 발권했습니다.\n확인을 누르면 남은 빈자리를 다시 불러옵니다.`);
+                        location.reload(); // 화면을 새로고침해서 최신 빈자리 상태를 다시 보여줌
+                        return; // 더 이상 아래 코드를 실행하지 않고 함수 종료
+                    }
+                }
+
+                // 4. 겹치는 예약이 없을 때만 안심하고 내 예약을 저장(upsert)합니다.
+                const { error } = await supabaseClient.from("daily_reservations").upsert(ticketData, { onConflict: 'date, stu_id' });
+
+                if (error) throw error;
+
                 document.getElementById('map-area').style.display = 'none';
                 document.getElementById('my-ticket-area').style.display = 'block';
-                document.getElementById('my-seat-name').innerText = myTicket.seat_num;
-                document.getElementById('my-time-info').innerText = `${myTicket.times} 타임`;
-            } else {
-                buildTicketGrid();
-            }
+                document.getElementById('my-seat-name').innerText = selectedSeatId;
+                document.getElementById('my-time-info').innerText = `${studentSchedule} 타임`;
 
-        } catch(e) {
-            console.error("조회 오류:", e);
-            alert("데이터를 조회하는 중 오류가 발생했습니다: " + e.message);
-            btn.innerText = "조회하기"; btn.disabled = false;
-        }
-    }
-
-    // =========================================================
-    // 4. 자율석 도면 그리기
-    // =========================================================
-    function buildTicketGrid() {
-        const container = document.getElementById('ticket-seat-grid');
-        container.style.gridTemplateColumns = `repeat(${layoutCols}, 45px)`;
-        container.innerHTML = '';
-
-        for (let r = 0; r < layoutRows; r++) {
-            for (let c = 0; c < layoutCols; c++) {
-                const cellData = seatMapData[r][c];
-                const div = document.createElement('div');
-                div.className = 'seat-cell';
-                
-                if (cellData.type === 2) {
-                    const seatLabel = cellData.label || `자율-${r+1}-${c+1}`;
-                    div.innerText = seatLabel;
-                    
-                    let isTaken = false;
-                    const myTimes = studentSchedule.split(',');
-                    
-                    const seatReservations = todayReservations.filter(res => res.seat_num === seatLabel);
-                    for (let res of seatReservations) {
-                        const bookedTimes = res.times.split(',');
-                        const overlap = myTimes.some(t => bookedTimes.includes(t));
-                        if (overlap) { isTaken = true; break; }
-                    }
-
-                    if (isTaken) {
-                        div.classList.add('seat-taken');
-                    } else {
-                        div.classList.add('seat-available');
-                        div.onclick = () => pickTicketSeat(seatLabel, div);
-                    }
-                } else if (cellData.type === 0) {
-                    div.classList.add('seat-empty');
-                } else {
-                    div.classList.add('seat-static');
-                    div.innerText = cellData.label || "";
-                }
-                container.appendChild(div);
+                alert("발권이 완료되었습니다. 열공하세요! 🔥");
+            } catch (e) {
+                alert("발권 오류: " + (e.message || e));
+                btn.innerText = `[ ${selectedSeatId} ] 자리로 발권하기`; btn.disabled = false;
             }
         }
-    }
-
-    function pickTicketSeat(label, cellElement) {
-        document.querySelectorAll('.seat-cell').forEach(el => el.classList.remove('seat-selected'));
-        cellElement.classList.add('seat-selected');
-        selectedSeatId = label;
-        document.getElementById('issue-btn').disabled = false;
-        document.getElementById('issue-btn').innerText = `[ ${label} ] 자리로 발권하기`;
-    }
-
-// =========================================================
-    // 5. 서버에 발권 내역 저장 (이중 예약 방지 로직 추가)
-    // =========================================================
-    async function issueTicket() {
-        const btn = document.getElementById('issue-btn');
-        btn.innerText = "발권 처리 중..."; btn.disabled = true;
-        const stuId = document.getElementById('stu-id').value.trim();
-        const stuName = document.getElementById('stu-name').value.trim();
-
-        const ticketData = {
-            date: todayStr, 
-            stu_id: stuId,
-            stu_name: stuName,
-            seat_num: selectedSeatId,
-            times: studentSchedule 
-        };
-
-        try {
-            // 🌟 1. 방금 전 찰나의 순간에 누군가 이 자리를 가져갔는지 DB에 다시 물어봅니다.
-            const { data: checkData, error: checkErr } = await supabaseClient
-                .from("daily_reservations")
-                .select("times")
-                .eq("date", todayStr)
-                .eq("seat_num", selectedSeatId);
-
-            if (checkErr) throw checkErr;
-
-            // 🌟 2. 만약 이 자리에 예약이 있다면, 나와 겹치는 타임인지 확인합니다.
-            if (checkData && checkData.length > 0) {
-                const myTimes = studentSchedule.split(','); // 내가 신청한 타임 (예: "1,2")
-                let isOverlap = false;
-
-                for (let res of checkData) {
-                    const bookedTimes = res.times.split(',');
-                    // 하나라도 겹치는 타임이 있는지 검사
-                    if (myTimes.some(t => bookedTimes.includes(t))) {
-                        isOverlap = true;
-                        break;
-                    }
-                }
-
-                // 🌟 3. 겹친다면 에러를 발생시키고 발권을 취소합니다.
-                if (isOverlap) {
-                    alert(`🚨 아차! 간발의 차이로 다른 학생이 먼저 [${selectedSeatId}] 자리를 발권했습니다.\n확인을 누르면 남은 빈자리를 다시 불러옵니다.`);
-                    location.reload(); // 화면을 새로고침해서 최신 빈자리 상태를 다시 보여줌
-                    return; // 더 이상 아래 코드를 실행하지 않고 함수 종료
-                }
-            }
-
-            // 4. 겹치는 예약이 없을 때만 안심하고 내 예약을 저장(upsert)합니다.
-            const { error } = await supabaseClient.from("daily_reservations").upsert(ticketData, { onConflict: 'date, stu_id' });
-            
-            if (error) throw error;
-            
-            document.getElementById('map-area').style.display = 'none';
-            document.getElementById('my-ticket-area').style.display = 'block';
-            document.getElementById('my-seat-name').innerText = selectedSeatId;
-            document.getElementById('my-time-info').innerText = `${studentSchedule} 타임`;
-            
-            alert("발권이 완료되었습니다. 열공하세요! 🔥");
-        } catch(e) {
-            alert("발권 오류: " + (e.message || e));
-            btn.innerText = `[ ${selectedSeatId} ] 자리로 발권하기`; btn.disabled = false;
-        }
-    }
-</script>
+    </script>
 </body>
+
 </html>
