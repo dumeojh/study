@@ -140,34 +140,38 @@
         }
 
 
-        // 타임 횟수를 계산하는 헬퍼 함수 추가 (새로 교체된 강력한 계산 로직)
-        function getTimeSlots(status, history, currentSchedule) {
-            if (status === '미입실' || status === '귀가(누락)') return 0;
 
-            let count = 0;
-            // 정상 귀가했을 경우, 마지막 귀가 시간을 추출하여 몇 타임까지 했는지 자동 계산
-            if (status === '귀가' && history) {
-                let lastTimeStr = "";
-                for (let i = history.length - 1; i >= 0; i--) {
-                    if (history[i].includes("귀가")) {
-                        const match = history[i].match(/(\d{2}:\d{2})/);
-                        if (match) { lastTimeStr = match[1]; break; }
+        /*        /////////////////////////////////////////////////////////////////////////
+                // 타임 횟수를 계산하는 헬퍼 함수 추가 (새로 교체된 강력한 계산 로직)
+                function getTimeSlots(status, history, currentSchedule) {
+                    if (status === '미입실' || status === '귀가(누락)') return 0;
+        
+                    let count = 0;
+                    // 정상 귀가했을 경우, 마지막 귀가 시간을 추출하여 몇 타임까지 했는지 자동 계산
+                    if (status === '귀가' && history) {
+                        let lastTimeStr = "";
+                        for (let i = history.length - 1; i >= 0; i--) {
+                            if (history[i].includes("귀가")) {
+                                const match = history[i].match(/(\d{2}:\d{2})/);
+                                if (match) { lastTimeStr = match[1]; break; }
+                            }
+                        }
+        
+                        if (lastTimeStr) {
+                            const [h, m] = lastTimeStr.split(':').map(Number);
+                            const finishMin = h * 60 + m;
+                            const timeToMin = (tStr) => { const [sh, sm] = tStr.split(':').map(Number); return sh * 60 + sm; };
+        
+                            // 귀가 찍은 시간이 각 타임 시작 시간을 넘었는지 확인하여 횟수 누적
+                            if (currentSchedule.t1 && finishMin >= timeToMin(currentSchedule.t1)) count = 1;
+                            if (currentSchedule.t2 && finishMin >= timeToMin(currentSchedule.t2)) count = 2;
+                            if (currentSchedule.t3 && finishMin >= timeToMin(currentSchedule.t3)) count = 3;
+                        }
                     }
+                    return count > 0 ? count : 1; // 기록이 애매해도 최소 1타임은 보장
                 }
-
-                if (lastTimeStr) {
-                    const [h, m] = lastTimeStr.split(':').map(Number);
-                    const finishMin = h * 60 + m;
-                    const timeToMin = (tStr) => { const [sh, sm] = tStr.split(':').map(Number); return sh * 60 + sm; };
-
-                    // 귀가 찍은 시간이 각 타임 시작 시간을 넘었는지 확인하여 횟수 누적
-                    if (currentSchedule.t1 && finishMin >= timeToMin(currentSchedule.t1)) count = 1;
-                    if (currentSchedule.t2 && finishMin >= timeToMin(currentSchedule.t2)) count = 2;
-                    if (currentSchedule.t3 && finishMin >= timeToMin(currentSchedule.t3)) count = 3;
-                }
-            }
-            return count > 0 ? count : 1; // 기록이 애매해도 최소 1타임은 보장
-        }
+        
+        */
 
         async function checkMyStatus(month) {
             const msgElement = document.getElementById('msg');
