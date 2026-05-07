@@ -967,6 +967,9 @@
                 if (isAuth) {
                     document.getElementById('daily-date').value = getTodayString();
 
+                    // 🌟 여기에 붙여넣기: 인증이 확인된 직후에 과거 데이터 자동 마감 실행!
+                    autoSweepPastAttendance();
+
                     // 🌟 이 PC에 저장된 '실시간 모드' 상태 불러오기
                     const isRealtime = localStorage.getItem('supervisorRealtime') === 'true';
                     const toggleBtn = document.getElementById('realtime-toggle');
@@ -2590,7 +2593,7 @@
                 } catch (e) { console.error("자동 마감 중 오류:", e); }
             }
 
-            autoSweepPastAttendance();
+            //   autoSweepPastAttendance();
 
 
 
