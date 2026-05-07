@@ -1488,8 +1488,8 @@
                             const studentApp = apps.find(a => String(a.stu_id).trim() === String(id).trim() && a.target_month === `${month}월`);
                             const appliedTimesStr = studentApp ? studentApp[dayKey] : "";
 
-                            // 공통 함수 getRecognizedTimes 활용 
-                            counts[`m${month}`] += getRecognizedTimes(log, appliedTimesStr, currentSchedule);
+                            // 🌟 수정: 바뀐 파라미터 적용 및 Set을 숫자로 변환(.size)
+                            counts[`m${month}`] += getRecognizedTimes(log, currentSchedule).size;
                         }
                     }
                 });

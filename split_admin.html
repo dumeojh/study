@@ -1723,90 +1723,15 @@
                     let currentBadges = "";
                     let resultBadges = "";
 
-
-
-                    // ★ 공통 함수 getRecognizedTimes 로직을 개별 타임별로 판단하도록 분리 적용 ★
-                    let recognizedSet = new Set();
-                    if (log && log.history) {
-                        // 1. 수동 인정 (교사) 체크
-                        log.history.forEach(h => {
-                            [1, 2, 3].forEach(t => {
-                                if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`) || h.includes(`${t}T입실(교사)`)) {
-                                    recognizedSet.add(t);
-                                }
-                            });
-                        });
-
-                        // 2. 키오스크 태그 기록 분석 (수동 인정이 없는 타임들에 대해)
-                        if (log.status === "귀가" || log.status === "귀가(누락)") {
-                            let lastTimeStr = "";
-                            for (let i = log.history.length - 1; i >= 0; i--) {
-                                if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
-                                    const match = log.history[i].match(/(\d{2}:\d{2})/);
-                                    if (match) { lastTimeStr = match[1]; break; }
-                                }
-                            }
-
-                            if (lastTimeStr) {
-                                const [h, m] = lastTimeStr.split(':').map(Number);
-                                const finishMin = h * 60 + m;
-                                const timeToMin = (tmStr) => { const [sh, sm] = tmStr.split(':').map(Number); return sh * 60 + sm; };
-
-                                [1, 2, 3].forEach(t => {
-                                    if (st.rawTimes.includes(String(t))) {
-                                        const startStr = currentSchedule[`t${t}`];
-                                        const reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0;
-                                        if (startStr && finishMin >= (timeToMin(startStr) + reqMin)) {
-                                            recognizedSet.add(t);
-                                        }
-                                    }
-                                });
-                            }
+                    // 공통 함수(common.js)를 호출하여 완벽하게 통합된 인정 타임(Set)을 바로 가져옵니다.
+                    let recognizedSet = getRecognizedTimes(log, currentSchedule);
 
 
 
 
-                        } else if (log.status === "입실" || log.status === "복귀" || log.status === "외출") {
-                            // 현재 진행 중인 상태일 때는 '현재 시각'을 기준으로 깐깐하게 인정 타임을 계산합니다.
-                            const now = new Date();
-                            const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
-
-                            // 오늘 날짜의 기록인 경우에만 실시간 시간 체크 진행
-                            if (log.date === todayStr) {
-                                const currentMin = now.getHours() * 60 + now.getMinutes();
-                                const timeToMin = (tmStr) => { const [sh, sm] = tmStr.split(':').map(Number); return sh * 60 + sm; };
 
 
 
-                                [1, 2, 3].forEach(t => {
-                                    if (st.rawTimes.includes(String(t))) {
-                                        const startStr = currentSchedule[`t${t}`];
-                                        const reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0;
-
-                                        // ✅ 추가: 해당 타임에 입실/복귀 태그가 있거나, 이전 타임부터 이어서 입실 중인지 확인
-                                        let hasLogsThisSlot = groupedHistory[t] && groupedHistory[t].length > 0;
-                                        let lastLogBefore = null;
-                                        for (let i = t - 1; i >= 0; i--) {
-                                            if (groupedHistory[i] && groupedHistory[i].length > 0) {
-                                                lastLogBefore = groupedHistory[i][groupedHistory[i].length - 1];
-                                                break;
-                                            }
-                                        }
-                                        // 이전 타임의 마지막 기록이 입실이나 복귀면 현재도 자리에 있는 것으로 간주
-                                        let wasInRoom = lastLogBefore && (lastLogBefore.includes("입실") || lastLogBefore.includes("복귀"));
-
-                                        // ✅ 수정: 자리에 있었음(hasLogsThisSlot || wasInRoom)이 확인될 때만 시간 계산 적용
-                                        if ((hasLogsThisSlot || wasInRoom) && startStr && currentMin >= (timeToMin(startStr) + reqMin)) {
-                                            recognizedSet.add(t);
-                                        }
-                                    }
-                                });
-
-
-
-                            }
-                        }
-                    } // 🌟 이 닫는 괄호 하나가 실수로 지워져서 화면이 멈췄던 것입니다! 🌟
 
                     // 총 인정 타임 횟수 업데이트
                     recTimes = recognizedSet.size;

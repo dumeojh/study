@@ -273,7 +273,7 @@
                     const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][logDate.getDay()];
 
                     let appliedStr = "1,2,3"; // 기록 출력 시 기준값
-                    const slots = getTimeSlots(log.status, log.history, currentSchedule);
+                    const slots = getRecognizedTimes(log, currentSchedule).size;
                     // 👇 날짜 변환을 먼저 하도록 위로 올렸습니다.
                     const dayStr = parseInt(log.date.split('-')[2]) + '일';
 

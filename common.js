@@ -37,6 +37,7 @@ async function requireAdminAuth() {
 
         if (error) {
             alert("비밀번호가 틀렸습니다. 다시 시도해주세요.");
+
             location.reload(); // 새로고침하여 다시 잠금
             return false;
         } else {
@@ -53,77 +54,74 @@ async function requireAdminAuth() {
 // 👆👆 [추가 끝] 👆👆
 
 
-
-// 2. 공통 타임 인정 계산 함수
-// (statistics.html, split_admin.html, settings.html 등에서 공통 사용)
-function getRecognizedTimes(log, appliedTimesStr, currentScheduleData) {
-    // currentScheduleData가 안 들어오면 전역 변수 currentSchedule을 사용하도록 처리
+// 2. 공통 타임 인정 계산 함수 (완벽 통합 버전)
+function getRecognizedTimes(log, currentScheduleData) {
     const schedule = currentScheduleData || (typeof currentSchedule !== 'undefined' ? currentSchedule : {});
+    let recognizedSet = new Set(); // 인정받은 타임(1, 2, 3)을 담는 바구니
 
-    if (!log || log.status === "미입실" || log.status === "귀가(누락)") return 0;
-    if (!appliedTimesStr) return 0;
+    if (!log || log.status === "미입실" || log.status === "귀가(누락)") return recognizedSet;
 
-    //    let appliedArray = appliedTimesStr.split(',').map(v => v.trim()).filter(v => v);
-    let appliedArray = appliedTimesStr.split(',').map(v => v.trim()).filter(v => v && v !== '0');
+    const history = log.history || [];
 
-    let recognizedCount = 0;
-
-    // 1) 교사 수동 인정 체크 (가장 우선)
-    if (log.history) {
-        let manualSet = new Set();
-        log.history.forEach(h => {
-            appliedArray.forEach(t => {
-                if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`)) manualSet.add(t);
-            });
+    // 1) 관리자 수동 인정(교사) 체크 (가장 우선)
+    history.forEach(h => {
+        [1, 2, 3].forEach(t => {
+            if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`) || h.includes(`${t}T입실(교사)`)) {
+                recognizedSet.add(t);
+            }
         });
-        if (manualSet.size > 0) return manualSet.size;
-    }
+    });
+    if (recognizedSet.size > 0) return recognizedSet;
 
-    // 2) 시간 기반 체크 (키오스크 귀가)
-    if (log.status === "귀가" && log.history) {
+    const timeToMin = (tmStr) => { const [h, m] = tmStr.split(':').map(Number); return h * 60 + m; };
+
+    // 2) 정상 귀가 시 시간 계산 (신청 여부 무관하게 무조건 1,2,3타임 검사)
+    if (log.status === "귀가") {
         let lastTimeStr = "";
-        for (let i = log.history.length - 1; i >= 0; i--) {
-            if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
-                const match = log.history[i].match(/(\d{2}:\d{2})/);
+        for (let i = history.length - 1; i >= 0; i--) {
+            if (history[i].includes("귀가") && !history[i].includes("누락")) {
+                const match = history[i].match(/(\d{2}:\d{2})/);
                 if (match) { lastTimeStr = match[1]; break; }
             }
         }
 
         if (lastTimeStr) {
-            const [h, m] = lastTimeStr.split(':').map(Number);
-            const finishMin = h * 60 + m;
-            const timeToMin = (t) => { const [sh, sm] = t.split(':').map(Number); return sh * 60 + sm; };
-
-            appliedArray.forEach(t => {
+            const finishMin = timeToMin(lastTimeStr);
+            [1, 2, 3].forEach(t => {
                 const startStr = schedule[`t${t}`];
-                const reqMin = schedule[`t${t}_req`] || 0;
-                if (startStr && finishMin >= (timeToMin(startStr) + reqMin)) recognizedCount++;
+                const reqMin = parseInt(schedule[`t${t}_req`]) || 0;
+                if (startStr && finishMin >= (timeToMin(startStr) + reqMin)) recognizedSet.add(t);
             });
         }
-    } else if (["입실", "복귀", "외출"].includes(log.status)) {
-        // 현재 진행 중인 상태일 때는 '현재 시간'을 기준으로 인정 타임을 계산합니다.
+    }
+    // 3) 현재 진행 중인 상태 (실시간 계산)
+    else if (["입실", "복귀", "외출"].includes(log.status)) {
         const now = new Date();
         const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
 
-        // 오늘 날짜의 기록인 경우에만 실시간 시간 체크 진행
         if (log.date === todayStr) {
             const currentMin = now.getHours() * 60 + now.getMinutes();
-            const timeToMin = (t) => { const [sh, sm] = t.split(':').map(Number); return sh * 60 + sm; };
 
-            appliedArray.forEach(t => {
+            [1, 2, 3].forEach(t => {
                 const startStr = schedule[`t${t}`];
-                const reqMin = parseInt(schedule[`t${t}_req`]) || 0; // 설정된 필수 체류 시간 (예: 30분)
-
-                // 현재 시간이 (타임 시작 시간 + 필수 체류 시간)을 지났을 때만 1회 인정
-                if (startStr && currentMin >= (timeToMin(startStr) + reqMin)) {
-                    recognizedCount++;
-                }
+                const reqMin = parseInt(schedule[`t${t}_req`]) || 0;
+                if (startStr && currentMin >= (timeToMin(startStr) + reqMin)) recognizedSet.add(t);
             });
+
+            // 외출 중일 때는 현재 겹쳐있는 타임은 인정하지 않음
+            if (log.status === "외출") {
+                let currentSlot = 1;
+                if (currentMin >= timeToMin(schedule.t3 || "20:10")) currentSlot = 3;
+                else if (currentMin >= timeToMin(schedule.t2 || "18:50")) currentSlot = 2;
+                recognizedSet.delete(currentSlot);
+            }
         }
-        // (과거 날짜인데 귀가 태그를 하지 않아 '입실' 상태로 남아있는 경우 0회 처리됨)
     }
-    return recognizedCount;
+    return recognizedSet;
 }
+
+
+
 
 // =======================================================
 // 🌟 [공통] 학생 상세 출결 달력 모달 (여러 페이지에서 재사용)
@@ -184,14 +182,22 @@ async function openSharedStudentCalendar(stuId, stuName, targetYear, targetMonth
     const endDate = `${targetYear}-${String(targetMonthNum).padStart(2, '0')}-${String(lastDateObj.getDate()).padStart(2, '0')}`;
 
     try {
-        // 병렬로 데이터 가져오기
-        const [{ data: appData }, { data: logsData }, { data: calSettings }] = await Promise.all([
+
+        // 🌟 수정: 시간표(schedule) 데이터도 함께 가져오도록 추가
+        const [{ data: appData }, { data: logsData }, { data: calSettings }, { data: schedSettings }] = await Promise.all([
             supabaseClient.from('applications').select('*').eq('stu_id', stuId).eq('target_month', targetMonthStr).maybeSingle(),
             supabaseClient.from('attendance_logs').select('date, status, history').eq('stu_id', stuId).gte('date', startDate).lte('date', endDate),
-            supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle()
+            supabaseClient.from('settings').select('value').eq('key', 'calendarSchedule').maybeSingle(),
+            supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle()
         ]);
 
+        let currentSchedule = { t1: "16:00", t2: "18:50", t3: "20:10" };
+        if (schedSettings && schedSettings.value) {
+            currentSchedule = { ...currentSchedule, ...schedSettings.value };
+        }
+
         document.getElementById('shared-sc-title').innerText = `🧑‍🎓 ${stuName} (${stuId}) - ${targetMonthNum}월 출결 달력`;
+
 
         let calSchedule = { data: {}, defaultDays: [1, 2, 3, 4, 5] };
         if (calSettings && calSettings.value) {
@@ -239,21 +245,11 @@ async function openSharedStudentCalendar(stuId, stuName, targetYear, targetMonth
                 const appliedStr = (appData && appData[dayKey]) ? appData[dayKey] : "";
                 const appliedTimes = appliedStr.split(',').filter(v => v.trim());
 
-                const recognizedCount = (typeof getRecognizedTimes === 'function')
-                    ? getRecognizedTimes(dailyLog, appliedStr)
-                    : (dailyLog && dailyLog.status !== "미입실" ? appliedTimes.length : 0);
 
-                // 👇 여기서부터 복사해서 기존 [1, 2, 3].forEach(...) 구역을 완전히 교체하세요.
 
-                // [추가] 기록된 타임을 정확히 파악하기 위한 세트
-                let recognizedSet = new Set();
-                if (dailyLog && dailyLog.history) {
-                    dailyLog.history.forEach(h => {
-                        [1, 2, 3].forEach(t => {
-                            if (h.includes(`${t}T`)) recognizedSet.add(String(t));
-                        });
-                    });
-                }
+
+                // 🌟 수정: 복잡한 로직 모두 지우고 공통 함수 하나로 통합!
+                const recognizedSet = getRecognizedTimes(dailyLog, currentSchedule);
 
                 [1, 2, 3].forEach(t => {
                     const isApplied = appliedTimes.includes(String(t));
@@ -263,30 +259,15 @@ async function openSharedStudentCalendar(stuId, stuName, targetYear, targetMonth
                         tApply++;
                         leftBg = "#f8f9fa"; leftCol = "#333"; borderColor = "#ced4da";
 
-                        // [수정] 단순히 횟수로 앞에서부터 채우던 로직을 실제 타임 확인 로직으로 변경
-                        let isPresent = false;
-                        const hasSpecificTags = dailyLog && dailyLog.history && dailyLog.history.some(h => h.includes('T'));
-
-                        if (hasSpecificTags) {
-                            // 교사가 1T, 3T 등 특정 타임을 명시해서 승인한 경우 해당 타임만 정확히 인정
-                            if (recognizedSet.has(String(t))) {
-                                isPresent = true;
-                            }
-                        } else {
-                            // 키오스크로 정상 태그한 경우 (기존 방식 유지)
-                            const appliedIndex = appliedTimes.indexOf(String(t)) + 1;
-                            if (appliedIndex <= recognizedCount) {
-                                isPresent = true;
-                            }
-                        }
-
-                        if (isPresent) {
+                        // 🌟 공통 함수에서 인정받은 타임(Set)에 해당하면 파란색으로!
+                        if (recognizedSet.has(t)) {
                             rightBg = "#007bff";
                             tPresent++;
                         } else {
                             rightBg = "#ff9999";
                         }
                     }
+
 
                     slotHtml += `
             <div style="display:flex; width:100%; height:18px; font-size:10px; font-weight:bold; border-radius:3px; overflow:hidden; border:1px solid ${borderColor}; margin-bottom:1px;">
