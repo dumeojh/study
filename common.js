@@ -8,20 +8,37 @@ const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+
+
 // 👇👇 [여기에 추가] 공통 관리자 인증 함수 👇👇
 async function requireAdminAuth() {
     try {
-        // 1. 현재 브라우저에 로그인된 세션(사용자)이 있는지 확인
-        const { data: { session } } = await supabaseClient.auth.getSession();
+        // 1. 오늘 날짜 구하기 (KST 기준)
+        const todayDateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
 
-        // 2. 이미 로그인되어 있고, 그 계정이 선생님 계정이라면 프리패스!
-        if (session && session.user.email === 'teacher@anseong.kr') {
-            document.getElementById('main-content').style.display = 'block';
-            return true; // 인증 성공
+        // 2. 현재 브라우저에 로그인된 세션 확인
+        let { data: { session } } = await supabaseClient.auth.getSession();
+
+        // 3. 로컬 스토리지에 저장된 마지막 로그인 날짜 확인
+        const lastLoginDate = localStorage.getItem('adminLoginDate');
+
+        // 4. 세션은 있지만 로그인한 날짜가 오늘이 아니라면 (자정이 지났다면) 강제 파기
+        if (session && lastLoginDate !== todayDateStr) {
+            await supabaseClient.auth.signOut();
+            localStorage.removeItem('adminLoginDate');
+            session = null; // 세션을 비워서 다시 로그인 창이 뜨게 만듦
+            alert("보안을 위해 자정이 지나 자동으로 로그아웃 되었습니다.\n다시 로그인해 주세요.");
         }
 
-        // 3. 로그인이 안 되어 있다면 팝업으로 비밀번호를 물어봄
-        const pwd = prompt("관리자(teacher@anseong.kr) 비밀번호를 입력하세요:");
+        // 5. 오늘 로그인한 유효한 세션이 있다면 프리패스!
+        if (session && session.user.email === 'teacher@anseong.kr') {
+            document.getElementById('main-content').style.display = 'block';
+            startMidnightLogoutChecker(); // 자정 감시 타이머 시작
+            return true;
+        }
+
+        // 6. 로그인이 안 되어 있다면 팝업으로 비밀번호를 물어봄 (안내문구 추가)
+        const pwd = prompt("관리자(teacher@anseong.kr) 비밀번호를 입력하세요:\n(※ 로그인 상태는 오늘 밤 12시까지만 유지됩니다)");
 
         if (!pwd) {
             // 취소를 누른 경우 화면 차단
@@ -29,20 +46,21 @@ async function requireAdminAuth() {
             return false;
         }
 
-        // 4. 입력받은 비밀번호로 수파베이스에 정식 로그인 요청
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
+        // 7. 입력받은 비밀번호로 수파베이스에 정식 로그인 요청
+        const { error } = await supabaseClient.auth.signInWithPassword({
             email: 'teacher@anseong.kr',
             password: pwd
         });
 
         if (error) {
             alert("비밀번호가 틀렸습니다. 다시 시도해주세요.");
-
             location.reload(); // 새로고침하여 다시 잠금
             return false;
         } else {
-            // 로그인 성공 시 숨겨둔 화면을 보여줌
+            // 로그인 성공 시 '오늘 날짜' 도장 쾅!
+            localStorage.setItem('adminLoginDate', todayDateStr);
             document.getElementById('main-content').style.display = 'block';
+            startMidnightLogoutChecker(); // 자정 감시 타이머 시작
             return true;
         }
     } catch (err) {
@@ -50,6 +68,23 @@ async function requireAdminAuth() {
         console.error(err);
         return false;
     }
+}
+
+// 🌟 자정(24시)이 지났는지 실시간으로 감시하는 백그라운드 함수
+function startMidnightLogoutChecker() {
+    setInterval(() => {
+        const currentToday = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+        const savedDate = localStorage.getItem('adminLoginDate');
+
+        // 저장된 날짜가 있는데, 그게 오늘 날짜와 달라졌다면 (자정이 땡! 하고 지났다면)
+        if (savedDate && savedDate !== currentToday) {
+            alert("🕛 자정이 지나 보안을 위해 자동 로그아웃 처리됩니다.");
+            supabaseClient.auth.signOut().then(() => {
+                localStorage.removeItem('adminLoginDate');
+                location.reload(); // 화면 새로고침하여 잠금
+            });
+        }
+    }, 60000); // 1분(60000ms)마다 몰래 날짜가 바뀌었는지 검사
 }
 // 👆👆 [추가 끝] 👆👆
 
