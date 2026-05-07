@@ -57,8 +57,7 @@
         <div class="card p-6 mb-6">
             <label class="block text-gray-700 text-sm font-bold mb-2">학번 입력</label>
             <div class="flex gap-2">
-                <input type="number" id="stu_id" placeholder="예: 3101"
-                    onkeyup="if(window.event.keyCode==13){initCheck()}"
+                <input type="number" id="stu_id" placeholder="예: 3101" onkeyup="if(event.key === 'Enter') initCheck()"
                     class="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
                 <button onclick="initCheck()"
                     class="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-purple-700 transition">
@@ -141,7 +140,7 @@
 
 
 
-        /*        /////////////////////////////////////////////////////////////////////////
+        /*     삭제   /////////////////////////////////////////////////////////////////////////
                 // 타임 횟수를 계산하는 헬퍼 함수 추가 (새로 교체된 강력한 계산 로직)
                 function getTimeSlots(status, history, currentSchedule) {
                     if (status === '미입실' || status === '귀가(누락)') return 0;
