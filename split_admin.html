@@ -2889,35 +2889,54 @@
                 const stuIdStr = String(st.stuId);
                 let classNum = "1";
                 if (stuIdStr.length >= 4) {
-                    classNum = stuIdStr.slice(0, -2).substring(1); // 3701 -> 7
+                    classNum = stuIdStr.slice(0, -2).substring(1);
                 } else {
                     classNum = stuIdStr;
                 }
 
                 // 2. 무지개색 (빨주노초파남) 반별 컬러 배정
                 let classBorderColor = "#ccc";
-                if (classNum === "1") classBorderColor = "#ff4d4d"; // 빨강
-                else if (classNum === "2") classBorderColor = "#fd7e14"; // 주황
-                else if (classNum === "3") classBorderColor = "#ffc107"; // 노랑
-                else if (classNum === "4") classBorderColor = "#198754"; // 초록
-                else if (classNum === "5") classBorderColor = "#0d6efd"; // 파랑
-                else if (classNum === "6") classBorderColor = "#6610f2"; // 남색
+                if (classNum === "1") classBorderColor = "#ff4d4d";
+                else if (classNum === "2") classBorderColor = "#fd7e14";
+                else if (classNum === "3") classBorderColor = "#ffc107";
+                else if (classNum === "4") classBorderColor = "#198754";
+                else if (classNum === "5") classBorderColor = "#0d6efd";
+                else if (classNum === "6") classBorderColor = "#6610f2";
 
-                // 3. 고정/자율/미발권 배경색 배정
-                let bgCol = "#ffffff";
-                if (st.type === "고정석") bgCol = "#fff3cd"; // 연노랑
-                else if (st.type === "자율석" && st.seatNum !== "미발권") bgCol = "#d1e7dd"; // 연초록
-                else if (st.type === "자율석" && st.seatNum === "미발권") bgCol = "#f8d7da"; // 연빨강
+                // 👇 3. 새로 추가된 로직: 현재 출결 상태를 가져와서 좌석표와 동일한 CSS 클래스 산출
+                const log = attendanceLogsData[String(st.stuId)];
+                let cssClass = "status-absent"; // 기본값: 미입실 (빨간 점선)
 
-                // 4. 네모 박스 그리기 (클릭하면 기존처럼 출결 변경 모달이 열립니다)
+                if (log) {
+                    const isTeacherAbsent = log.history && log.history.join('').includes('빈자리');
+                    const isTeacherPresent = log.history && log.history.join('').includes('교사인정');
+
+                    if (log.status === "미입실") {
+                        cssClass = isTeacherAbsent ? "status-admin-absent" : "status-absent";
+                    }
+                    else if (log.status === "귀가(누락)") { cssClass = "status-missing-tag"; }
+                    else if (log.status === "외출") { cssClass = "status-out"; }
+                    else if (log.status === "귀가") { cssClass = "status-finish"; }
+                    else {
+                        // 입실 또는 복귀 상태
+                        if (isTeacherPresent) { cssClass = "status-admin-present"; }
+                        else { cssClass = st.type === "고정석" ? "status-present-fixed" : "status-present-auto"; }
+                    }
+                }
+
+                // 👇 4. 네모 박스 그리기 (CSS 클래스 적용 및 폰트 색상 자동 맞춤)
                 html += `
                         <div onclick="openDailyStatus('${st.stuId}', '${st.stuName}', '${st.seatNum}', '')" 
-                             style="background: ${bgCol}; border: 1px solid #ddd; border-top: 5px solid ${classBorderColor}; border-radius: 8px; padding: 10px 5px; text-align: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.2s;"
+                             class="${cssClass}"
+                             style="border-radius: 8px; padding: 12px 5px 10px 5px; text-align: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.2s; position: relative; overflow: hidden;"
                              onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" 
                              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.05)';">
-                            <div style="font-size: 11px; color: #555; letter-spacing: -0.5px;">${st.stuId}</div>
-                            <div style="font-size: 14px; font-weight: 900; color: #222; margin: 4px 0;">${st.stuName}</div>
-                            <div style="font-size: 11px; font-weight: bold; color: #666;">${st.seatNum === '미발권' ? '<span style="color:#dc3545;">미발권</span>' : st.seatNum}</div>
+                            
+                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: ${classBorderColor};"></div>
+                            
+                            <div style="font-size: 11px; letter-spacing: -0.5px; color: inherit; opacity: 0.8; margin-top: 3px;">${st.stuId}</div>
+                            <div style="font-size: 14px; font-weight: 900; color: inherit; margin: 4px 0;">${st.stuName}</div>
+                            <div style="font-size: 11px; font-weight: bold; color: inherit; opacity: 0.9;">${st.seatNum === '미발권' ? '미발권' : st.seatNum}</div>
                         </div>
                     `;
             });
