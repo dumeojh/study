@@ -45,10 +45,14 @@ async function requireAdminAuth() {
                     <p style="margin:0 0 25px 0; font-size:13px; color:#666; line-height:1.4;">
                         비밀번호를 입력해주세요.<br><span style="color:#dc3545;">(입력 시 별표로 표시됩니다)</span>
                     </p>
-                    <input type="password" id="admin-pwd-input" placeholder="Password"  autocomplete="new-password"
-
+                    <input type="password" id="admin-pwd-input" placeholder="Password" autocomplete="new-password"
                         style="width:100%; padding:12px; border:2px solid #ddd; border-radius:10px; margin-bottom:15px; font-size:16px; text-align:center; box-sizing:border-box; outline:none; transition:0.2s;">
-                    <button id="admin-login-btn" style="width:100%; padding:12px; background:#007bff; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:16px;">로그인</button>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button id="admin-cancel-btn" style="flex: 1; padding:12px; background:#6c757d; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:16px;">취소</button>
+                        <button id="admin-login-btn" style="flex: 1; padding:12px; background:#007bff; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:16px;">로그인</button>
+                    </div>
+
                     <p style="margin-top:15px; font-size:11px; color:#999;">인증 상태는 오늘 자정까지 유지됩니다.</p>
                 </div>
             </div>`;
@@ -56,18 +60,24 @@ async function requireAdminAuth() {
             document.body.insertAdjacentHTML('beforeend', modalHtml);
 
             const input = document.getElementById('admin-pwd-input');
-            const btn = document.getElementById('admin-login-btn');
+            const loginBtn = document.getElementById('admin-login-btn');
+            const cancelBtn = document.getElementById('admin-cancel-btn'); // 취소 버튼 선택자 추가
 
             // 포커스 주기
             input.focus();
+
+            // 🌟 취소 버튼 클릭 시 index.html로 돌아가기
+            cancelBtn.onclick = () => {
+                location.href = 'index.html';
+            };
 
             // 로그인 실행 함수
             const attemptLogin = async () => {
                 const pwd = input.value;
                 if (!pwd) return;
 
-                btn.innerText = "인증 중...";
-                btn.disabled = true;
+                loginBtn.innerText = "인증 중...";
+                loginBtn.disabled = true;
 
                 const { error } = await supabaseClient.auth.signInWithPassword({
                     email: 'teacher@anseong.kr',
@@ -76,8 +86,8 @@ async function requireAdminAuth() {
 
                 if (error) {
                     alert("비밀번호가 틀렸습니다.");
-                    btn.innerText = "로그인";
-                    btn.disabled = false;
+                    loginBtn.innerText = "로그인";
+                    loginBtn.disabled = false;
                     input.value = "";
                     input.focus();
                 } else {
@@ -89,8 +99,8 @@ async function requireAdminAuth() {
                 }
             };
 
-            // 버튼 클릭 및 엔터키 이벤트
-            btn.onclick = attemptLogin;
+            // 버튼 클릭 및 엔터키 이벤트 (기존 btn 변수명을 loginBtn으로 변경)
+            loginBtn.onclick = attemptLogin;
             input.onkeypress = (e) => { if (e.key === 'Enter') attemptLogin(); };
 
             // 입력창 테두리 효과
@@ -104,7 +114,6 @@ async function requireAdminAuth() {
         return false;
     }
 }
-
 
 
 // 🌟 자정(24시)이 지났는지 실시간으로 감시하는 백그라운드 함수
