@@ -1903,28 +1903,97 @@
             const log = attendanceLogsData[String(stuId)];
             const recentLogDiv = document.getElementById('ds-recent-log');
 
-            // 👇👇 1. 여기서부터 새로 추가/교체되는 부분입니다. 👇👇
-            if (log && log.history && log.history.length > 0) {
-                const lastLog = log.history[log.history.length - 1];
-                recentLogDiv.innerHTML = `최근 기록 참고: <b style="color:var(--primary);">${lastLog}</b>`;
 
-                // 🌟 추가됨: 학생의 기존 출결 기록을 분석하여 강제 승인 체크박스 미리 체크하기
+
+
+
+
+            // 👇👇 1. 여기서부터 교체되는 부분입니다. (타임라인 상세 흔적 표시) 👇👇
+            let historyHtml = "";
+
+            // 학생이 원래 신청했던 타임 정보 가져오기 (타임라인 뼈대에 표시하기 위함)
+            const targetDateStr = document.getElementById('daily-date').value;
+            const targetDateObj = new Date(targetDateStr);
+            const targetDay = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][targetDateObj.getDay()];
+            const targetMonthStr = (targetDateObj.getMonth() + 1) + "월";
+            let rawTimes = "";
+
+            const appEntry = Object.values(applicationData).find(app => String(app.stuId) === String(stuId) && app.targetMonth === targetMonthStr);
+            if (appEntry && appEntry[targetDay]) rawTimes = appEntry[targetDay];
+            const resEntry = dailyReservationsData.find(res => String(res.stuId) === String(stuId) && res.date === targetDateStr);
+            if (resEntry && resEntry.times) rawTimes = resEntry.times;
+
+            // 학생의 출결 기록(log.history)이 존재할 경우 타임라인 조립
+            if (log && log.history && log.history.length > 0) {
+                let groupedHistory = { 0: [], 1: [], 2: [], 3: [] };
+
+                // 시간대별로 기록(흔적) 분류하기
+                log.history.forEach(h => {
+                    const tmMatch = h.match(/(\d{2}:\d{2})/);
+                    let slot = 0;
+                    if (tmMatch) {
+                        const timeStr = tmMatch[1];
+                        if (timeStr < currentSchedule.t1) slot = 0;
+                        else if (timeStr < currentSchedule.t2) slot = 1;
+                        else if (timeStr < currentSchedule.t3) slot = 2;
+                        else slot = 3;
+                    } else {
+                        if (h.includes("1타임") || h.includes("1T")) slot = 1;
+                        else if (h.includes("2타임") || h.includes("2T")) slot = 2;
+                        else if (h.includes("3타임") || h.includes("3T")) slot = 3;
+                    }
+                    groupedHistory[slot].push(h);
+                });
+
+                let allTagsInline = [];
+                [0, 1, 2, 3].forEach(t => {
+                    const hasLogs = groupedHistory[t].length > 0;
+                    const isApplied = rawTimes.includes(String(t));
+
+                    // 해당 타임에 흔적(기록)이 있거나, 신청했던 타임이면 표시
+                    const shouldShowSlot = (t === 0 && hasLogs) || (t > 0 && (isApplied || hasLogs));
+
+                    if (shouldShowSlot) {
+                        const slotLabel = t === 0 ? "0T" : `${t}T`;
+                        const slotBg = (hasLogs || t === 0) ? (t === 0 ? "#6c757d" : "var(--primary)") : "#adb5bd";
+                        allTagsInline.push(`<span style="background:${slotBg}; color:white; font-size:11px; padding:4px 8px; border-radius:5px; font-weight:bold; display:inline-block; vertical-align:middle; box-shadow:0 1px 2px rgba(0,0,0,0.1);">${slotLabel}</span>`);
+
+                        // 실제 찍힌 흔적(입실, 외출, 복귀 등)들을 화살표 사이에 나열
+                        if (hasLogs) {
+                            groupedHistory[t].forEach(h => {
+                                let tagClass = "tag-in";
+                                if (h.includes("교사") || h.includes("빈자리") || h.includes("수동")) tagClass = "tag-admin";
+                                else if (h.includes("외출")) tagClass = "tag-out";
+                                else if (h.includes("귀가") || h.includes("누락") || h.includes("마감") || h.includes("취소")) tagClass = "tag-home";
+
+                                allTagsInline.push(`<span class="mini-tag ${tagClass}" style="display:inline-block; vertical-align:middle; font-size:11px; padding:4px 8px;">${h}</span>`);
+                            });
+                        }
+                    }
+                });
+
+                if (allTagsInline.length > 0) {
+                    historyHtml = `<div style="line-height:2.6; text-align:left; padding:12px; background:#fff; border-radius:8px; border:1px solid #ddd; margin-top:8px;">` +
+                        allTagsInline.join('<span style="color:#aaa; font-size:12px; margin:0 5px; display:inline-block; vertical-align:middle;">➔</span>') +
+                        `</div>`;
+                }
+
+                // 관리자 강제 승인 체크박스 자동 동기화
                 const historyStr = log.history.join('');
                 document.querySelectorAll('.manual-t-chk').forEach(cb => {
                     const t = cb.value;
-                    // 해당 타임에 '입실(교사)' 또는 키오스크 정상 '입실' 등의 기록이 있는지 확인
-                    if (historyStr.includes(`${t}T`) && !historyStr.includes(`${t}T누락`)) {
-                        cb.checked = true;
-                    } else {
-                        cb.checked = false;
-                    }
+                    if (historyStr.includes(`${t}T`) && !historyStr.includes(`${t}T누락`)) cb.checked = true;
+                    else cb.checked = false;
                 });
             } else {
-                recentLogDiv.innerHTML = `최근 기록 참고: <b style="color:#999;">없음 (미입실)</b>`;
-                // 기록이 없으면 모든 체크박스 해제
+                // 기록이 아예 없는 경우
+                historyHtml = `<div style="text-align:center; padding:15px; background:#fff; border-radius:8px; border:1px dashed #ccc; margin-top:8px; color:#999; font-weight:bold;">출결 기록 없음 (미입실)</div>`;
                 document.querySelectorAll('.manual-t-chk').forEach(cb => cb.checked = false);
             }
-            // 👆👆 여기까지가 추가/교체되는 부분입니다. 👆👆
+
+            // 최종적으로 모달창 내부에 타임라인 그려주기
+            recentLogDiv.innerHTML = `<div style="font-weight:900; color:#495057; font-size:14px; text-align:left;">🕒 출결 상세 흔적 (타임라인)</div>` + historyHtml;
+            // 👆👆 여기까지가 교체되는 부분입니다. 👆👆
 
 
 
