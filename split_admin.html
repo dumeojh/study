@@ -929,16 +929,22 @@
 
 
 
-
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; opacity: 0.8;">
-                        <button class="btn" style="background:#0d6efd; padding:10px; font-size:12px;"
+                        <button id="btn-manual-in" class="btn" style="background:#0d6efd; padding:10px; font-size:12px;"
                             onclick="manualAttendanceUpdate('입실(수동)', this)">🟢 수동입실</button>
-                        <button class="btn" style="background:#198754; padding:10px; font-size:12px;"
+                        <button id="btn-manual-return" class="btn"
+                            style="background:#198754; padding:10px; font-size:12px;"
                             onclick="manualAttendanceUpdate('복귀(수동)', this)">🔵 수동복귀</button>
-                        <button class="btn" style="background:#fd7e14; padding:10px; font-size:12px;"
+                        <button id="btn-manual-out" class="btn"
+                            style="background:#fd7e14; padding:10px; font-size:12px;"
                             onclick="manualAttendanceUpdate('외출(수동)', this)">🟡 수동외출</button>
-                        <button class="btn" style="background:#d63384; padding:10px; font-size:12px;"
+                        <button id="btn-manual-absent" class="btn"
+                            style="background:#d63384; padding:10px; font-size:12px;"
                             onclick="manualAttendanceUpdate('미입실(수동)', this)">🔴 수동결석</button>
+                        <button id="btn-manual-finish" class="btn"
+                            style="background:#6c757d; padding:10px; font-size:12px; grid-column: span 2;"
+                            onclick="manualAttendanceUpdate('귀가(수동)', this)">⚪ 최종 귀가 처리</button>
+
                         <input type="time" id="manual-time-input"
                             style="grid-column: span 2; padding:5px; margin-top:5px; text-align:center;">
                     </div>
