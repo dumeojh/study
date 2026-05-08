@@ -273,9 +273,12 @@
         const todayObj = new Date();
         const todayStr = todayObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
 
+
+
         let isProcessing = false;
         let selectionTimer = null;
         let currentStudentLogData = null;
+        let receiptTimeout = null; // 🌟 추가: 영수증 화면 대기 타이머
 
         // ★ 스캐너 속도 측정을 위한 변수
         let firstCharTime = 0;
@@ -349,10 +352,30 @@
             }
         });
 
+
         scannerInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                if (isProcessing) return;
+
+                // 1. 일반 '처리 완료(파란색/빨간색 등)' 영수증 화면일 때는 뒷사람 스캔 시 즉시 넘겨줌 (유지)
+                if (receiptTimeout) {
+                    clearTimeout(receiptTimeout);
+                    receiptTimeout = null;
+                    document.getElementById('result-overlay').style.display = 'none';
+                    document.querySelector('.kiosk-box').style.backgroundColor = "#ffffff";
+                }
+
+                // 2. 🌟 앞사람이 '상태 선택(외출/귀가)' 중일 때는 뒷사람 스캔 완전 무시!
+                if (selectionTimer != null) {
+                    scannerInput.value = ""; // 뒷사람이 찍은 바코드 번호가 입력창에 꼬이지 않게 즉시 지워버림
+                    return; // 아무 처리도 하지 않고 여기서 차단!
+                }
+
+                // DB 통신 중일 때도 찌꺼기가 남지 않도록 입력창 비우고 차단
+                if (isProcessing) {
+                    scannerInput.value = "";
+                    return;
+                }
 
                 let typeSpeed = Date.now() - firstCharTime;
                 let isScanner = (typeSpeed < 200);
@@ -361,6 +384,7 @@
                 else processCheckInOut(isScanner);
             }
         });
+
 
         nameInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
@@ -388,6 +412,9 @@
         async function processCheckInOut(isScanner) {
             let rawId = scannerInput.value.trim();
             if (!rawId) return;
+
+            // 🌟 추가: 바코드를 읽자마자 입력창을 비워 다음 학생 스캔과 섞이지 않게 함
+            scannerInput.value = "";
 
             isProcessing = true;
 
@@ -620,9 +647,6 @@
 
 
 
-
-
-
         function showReceipt(name, status, timeInfo, msg, color, isUrgent = false) {
             const container = document.querySelector('.kiosk-box');
             const originalBg = "#ffffff";
@@ -642,16 +666,24 @@
             const overlay = document.getElementById('result-overlay');
             overlay.style.display = 'flex';
 
-            setTimeout(() => {
+            // 🌟 핵심 수정: DB 저장이 끝났으므로 화면이 떠 있어도 잠금을 해제합니다!
+            isProcessing = false;
+
+            // 기존 타이머가 돌고 있다면 취소
+            if (receiptTimeout) clearTimeout(receiptTimeout);
+
+            // 2.5초 뒤 화면 닫기 예약
+            receiptTimeout = setTimeout(() => {
                 overlay.style.display = 'none';
                 container.style.backgroundColor = originalBg;
                 selectStatus('입실', document.querySelector('.btn-in'));
-                const scannerInput = document.getElementById('scanner-input');
-                scannerInput.value = "";
-                isProcessing = false;
+                receiptTimeout = null;
                 focusScanner();
             }, 2500);
         }
+
+
+
 
         async function autoSweepPastAttendance() {
             try {
