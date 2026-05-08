@@ -538,12 +538,13 @@ async function adminLogout() {
 
             // 1.5초(1500ms) 뒤에 자동으로 화면 새로고침 (권한 차단)
             setTimeout(() => {
-                location.reload();
+                location.href = 'index.html'; // 👈 location.reload() 대신 이 코드를 넣으세요!
             }, 1500);
+        }, 1500);
 
-        } catch (error) {
-            alert("로그아웃 중 오류가 발생했습니다.");
-            closeModal();
-        }
-    };
+    } catch (error) {
+        alert("로그아웃 중 오류가 발생했습니다.");
+        closeModal();
+    }
+};
 }
