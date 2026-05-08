@@ -2727,10 +2727,22 @@
             // 학번 순 정렬
             targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
 
+
+
+
             // 4. 상황 계산 및 표 그리기
-            let stat = { total: targetStudents.length, present: 0, absent: 0, out: 0, finish: 0 };
+            // (fixed, autoIssued, autoUnissued 변수 추가)
+            let stat = { total: targetStudents.length, fixed: 0, autoIssued: 0, autoUnissued: 0, present: 0, absent: 0, out: 0, finish: 0 };
 
             targetStudents.forEach((st, index) => {
+                // [추가] 좌석 유형별(고정석, 자율석-발권, 자율석-미발권) 통계 집계
+                if (st.type === "고정석") {
+                    stat.fixed++;
+                } else {
+                    if (st.seatNum === "미발권") stat.autoUnissued++;
+                    else stat.autoIssued++;
+                }
+
                 const log = attendanceLogsData[String(st.stuId)];
                 let status = "미참여";
                 let statusColor = "var(--danger)";
@@ -2778,12 +2790,47 @@
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color:#dc3545; font-weight:bold;">해당 타임에 신청한 학생이 없습니다.</td></tr>`;
             }
 
-            // 요약 정보 갱신
-            document.getElementById('time-list-summary').innerHTML =
-                `총 신청자: ${stat.total}명 | <span style="color:var(--primary);">🟢 참여: ${stat.present}명</span> | <span style="color:#fd7e14;">🟡 외출: ${stat.out}명</span> | <span style="color:var(--gray);">⚪ 귀가: ${stat.finish}명</span> | <span style="color:var(--danger);">🔴 미참여: ${stat.absent}명</span>`;
-        }
-        // 👆 [새로 추가할 자바스크립트 끝] 👆
 
+
+            // 요약 정보 갱신 (표 형태로 디자인 변경)
+            const summaryDiv = document.getElementById('time-list-summary');
+            summaryDiv.style.padding = "0";     // 기존 흰색 테두리 박스 초기화
+            summaryDiv.style.border = "none";
+            summaryDiv.style.background = "transparent";
+
+            summaryDiv.innerHTML = `
+                    <table style="border-collapse: collapse; text-align: center; font-size: 13px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; margin: 0;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #333;">총 신청자</th>
+                                <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #856404; background: #fff3cd;">고정석</th>
+                                <th colspan="2" style="padding: 4px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #0f5132; background: #d1e7dd;">자율석</th>
+                                <th colspan="4" style="padding: 4px 12px; border-bottom: 1px solid #ddd; color: #555;">현재 출결 상황</th>
+                            </tr>
+                            <tr style="background: #f8f9fa;">
+                                <th style="padding: 4px 10px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 11px; background: #e2e3e5; color: #41464b;">발권완료</th>
+                                <th style="padding: 4px 10px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 11px; background: #f8d7da; color: #842029;">미발권</th>
+                                <th style="padding: 4px 10px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 11px;">🟢 참여</th>
+                                <th style="padding: 4px 10px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 11px;">🟡 외출</th>
+                                <th style="padding: 4px 10px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 11px;">⚪ 귀가</th>
+                                <th style="padding: 4px 10px; border-bottom: 1px solid #ddd; font-size: 11px;">🔴 미참여</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 8px 12px; font-weight: 900; font-size: 15px; border-right: 1px solid #ddd; color: #0d6efd;">${stat.total}명</td>
+                                <td style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd;">${stat.fixed}명</td>
+                                <td style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #198754;">${stat.autoIssued}명</td>
+                                <td style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #dc3545;">${stat.autoUnissued}명</td>
+                                <td style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--primary);">${stat.present}명</td>
+                                <td style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #fd7e14;">${stat.out}명</td>
+                                <td style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--gray);">${stat.finish}명</td>
+                                <td style="padding: 8px 12px; font-weight: bold; color: var(--danger);">${stat.absent}명</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+        }
 
     </script>
     </div> <!-- 👈 닫는 태그 추가 -->
