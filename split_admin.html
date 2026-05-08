@@ -1610,6 +1610,9 @@
                 }
             });
 
+
+
+
             dailyReservationsData.forEach(res => {
                 const stuIdStr = String(res.stuId);
                 if (targetStudentsMap.has(stuIdStr)) {
@@ -2799,6 +2802,7 @@
                 }
             });
 
+
             dailyReservationsData.forEach(res => {
                 if (res.times && String(res.times).includes(String(timeSlot))) {
                     targetStudentsMap.set(String(res.stuId), {
@@ -2810,20 +2814,54 @@
                 }
             });
 
+            // 🌟 [추가] 연장 학습자(미신청자 중 현재 입실/복귀 상태인 학생) 감지 로직
+            Object.values(attendanceLogsData).forEach(log => {
+                const sId = String(log.stuId);
+                if ((log.status === "입실" || log.status === "복귀") && !targetStudentsMap.has(sId)) {
+                    let foundSeat = "미확인";
+                    let foundType = "연장학습";
+
+                    // 원래 이 학생의 좌석 정보 가져오기 시도
+                    const appEntry = Object.values(applicationData).find(app => String(app.stuId) === sId && app.targetMonth === targetMonthStr);
+                    if (appEntry) {
+                        if (appEntry.type === "고정석") foundSeat = appEntry.seatNum;
+                        foundType = appEntry.type;
+                    }
+                    const resEntry = dailyReservationsData.find(res => String(res.stuId) === sId && res.date === targetDateStr);
+                    if (resEntry) {
+                        foundSeat = resEntry.seatNum;
+                        foundType = "자율석";
+                    }
+
+                    targetStudentsMap.set(sId, {
+                        stuId: log.stuId,
+                        stuName: log.stuName,
+                        seatNum: foundSeat,
+                        type: foundType,
+                        isExtended: true // 연장 학습자 꼬리표 붙이기
+                    });
+                }
+            });
+
             let targetStudents = Array.from(targetStudentsMap.values());
 
             // 학번 순 정렬
             targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
 
 
-            // 4. 상황 계산 및 표 그리기
-            let stat = { total: targetStudents.length, fixed: 0, autoIssued: 0, autoUnissued: 0, present: 0, absent: 0, out: 0, finish: 0 };
+            // 4. 상황 계산 및 표 그리기 (stat.extended 추가)
+            let stat = { total: 0, extended: 0, fixed: 0, autoIssued: 0, autoUnissued: 0, present: 0, absent: 0, out: 0, finish: 0 };
 
             targetStudents.forEach((st, index) => {
-                if (st.type === "고정석") stat.fixed++;
-                else {
-                    if (st.seatNum === "미발권") stat.autoUnissued++;
-                    else stat.autoIssued++;
+                if (st.isExtended) {
+                    stat.extended++; // 연장 학습자 카운트
+                } else {
+                    stat.total++; // 정상 신청자 카운트
+                    if (st.type === "고정석") stat.fixed++;
+                    else {
+                        if (st.seatNum === "미발권") stat.autoUnissued++;
+                        else stat.autoIssued++;
+                    }
                 }
 
                 const log = attendanceLogsData[String(st.stuId)];
@@ -2831,7 +2869,10 @@
                 let statusColor = "var(--danger)";
                 let statusBg = "#fff0f0";
 
-                if (log) {
+                if (st.isExtended) {
+                    // 연장 학습자는 무조건 참여 중인 상태임
+                    status = "연장(참여)"; statusColor = "#d63384"; statusBg = "#ffe5ec"; stat.present++;
+                } else if (log) {
                     if (log.status === "입실" || log.status === "복귀") {
                         status = "참여"; statusColor = "var(--primary)"; statusBg = "#e7f1ff"; stat.present++;
                     }
@@ -2863,6 +2904,12 @@
                 tbody.appendChild(tr);
             });
 
+
+
+
+
+
+
             if (targetStudents.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color:#dc3545; font-weight:bold;">해당 타임에 신청한 학생이 없습니다.</td></tr>`;
             }
@@ -2881,9 +2928,14 @@
                     </style>
                     <table style="border-collapse: collapse; text-align: center; font-size: 13px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; margin: 0;">
 <thead>
-                            <tr style="background: #f8f9fa;">
+
+
+
+
+<tr style="background: #f8f9fa;">
                                 <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #333;">총 신청자</th>
                                 <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #5b21b6; background: #f3e8ff; font-weight: 900;">🎯 관리 대상<br><span style="font-size:10px; font-weight:normal;">(고정+발권)</span></th>
+                                <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #d63384; background: #fff0f7; font-weight: 900;">🔥 연장 학습</th>
                                 <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #856404; background: #fff3cd;">고정석</th>
                                 <th colspan="2" style="padding: 4px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #0f5132; background: #d1e7dd;">자율석</th>
                                 <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 12px;">🟢 참여</th>
@@ -2900,7 +2952,11 @@
                             <tr>
                                 <td class="sum-btn" onclick="showTimeGrid('all')" style="padding: 8px 12px; font-weight: 900; font-size: 15px; border-right: 1px solid #ddd; color: #0d6efd;">${stat.total}명</td>
                                 <td class="sum-btn" onclick="showTimeGrid('managed')" style="padding: 8px 12px; font-weight: 900; font-size: 16px; border-right: 1px solid #ddd; color: #5b21b6; background: #faf5ff;">${stat.fixed + stat.autoIssued}명</td>
+                                <td class="sum-btn" onclick="showTimeGrid('extended')" style="padding: 8px 12px; font-weight: 900; font-size: 15px; border-right: 1px solid #ddd; color: #d63384; background: #fff0f7;">${stat.extended}명</td>
                                 <td class="sum-btn" onclick="showTimeGrid('fixed')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd;">${stat.fixed}명</td>
+                             
+                             
+                             
                                 <td class="sum-btn" onclick="showTimeGrid('autoIssued')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #198754;">${stat.autoIssued}명</td>
                                 <td class="sum-btn" onclick="showTimeGrid('autoUnissued')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #dc3545;">${stat.autoUnissued}명</td>
                                 <td class="sum-btn" onclick="showTimeGrid('present')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--primary);">${stat.present}명</td>
@@ -2921,16 +2977,18 @@
             let filtered = [];
             let title = "";
 
+
             window.currentTimeStudents.forEach(st => {
                 let match = false;
                 if (category === 'all') { match = true; title = "총 신청자"; }
-                // 👇 새로 추가된 '관리 대상' 필터 조건
                 else if (category === 'managed' && (st.type === "고정석" || (st.type === "자율석" && st.seatNum !== "미발권"))) { match = true; title = "🎯 실 관리 대상 (고정석 + 발권완료)"; }
+                // 👇 연장 학습 필터 추가
+                else if (category === 'extended' && st.isExtended) { match = true; title = "🔥 연장 학습자 (미신청/입실 중)"; }
                 else if (category === 'fixed' && st.type === "고정석") { match = true; title = "고정석 신청"; }
                 else if (category === 'autoIssued' && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
-
                 else if (category === 'autoUnissued' && st.type === "자율석" && st.seatNum === "미발권") { match = true; title = "자율석 (미발권)"; }
-                else if (category === 'present' && st.currentStatus === "참여") { match = true; title = "🟢 현재 참여 중"; }
+                // 👇 연장 학습자도 참여 명단에 포함되도록 수정
+                else if (category === 'present' && (st.currentStatus === "참여" || st.currentStatus === "연장(참여)")) { match = true; title = "🟢 현재 참여 중"; }
                 else if (category === 'out' && st.currentStatus === "외출") { match = true; title = "🟡 현재 외출 중"; }
                 else if (category === 'finish' && st.currentStatus === "귀가") { match = true; title = "⚪ 최종 귀가 완료"; }
                 else if (category === 'absent' && st.currentStatus === "미참여") { match = true; title = "🔴 미참여 (결석/미입실)"; }
