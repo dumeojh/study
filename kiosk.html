@@ -567,8 +567,15 @@
             saveAttendance(id, name, status, new Date());
         }
 
+
+
+        // ✅ 이렇게 변경해 주세요 (수정 완료 코드)
         async function saveAttendance(id, name, status, timeObj) {
-            const logId = `${todayStr}_${id}`;
+            // 1️⃣ 넘어온 시간(timeObj)을 기준으로 정확한 오늘 날짜를 다시 계산합니다.
+            const realTodayStr = timeObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+
+            // 2️⃣ 계산된 실시간 날짜로 고유 ID를 만듭니다.
+            const logId = `${realTodayStr}_${id}`;
             const timeStr = timeObj.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
             try {
@@ -585,7 +592,7 @@
                     .from('attendance_logs')
                     .upsert({
                         id: logId,
-                        date: todayStr,
+                        date: realTodayStr, // 3️⃣ DB에 저장되는 기준 날짜도 실시간 날짜로 변경합니다.
                         stu_id: id,
                         stu_name: name,
                         status: status,
@@ -599,7 +606,7 @@
 
                 // 🌟 3T 종료 후 자동 귀가 처리된 경우 메시지 추가
                 let successMsg = "정상 처리되었습니다.";
-                if (status === "귀가" && new Date().getHours() * 60 + new Date().getMinutes() >= parseInt(finalEndTime.split(':')[0]) * 60 + parseInt(finalEndTime.split(':')[1])) {
+                if (status === "귀가" && timeObj.getHours() * 60 + timeObj.getMinutes() >= parseInt(finalEndTime.split(':')[0]) * 60 + parseInt(finalEndTime.split(':')[1])) {
                     successMsg = "야자 종료 시간 경과로 <b>자동 귀가 처리</b> 되었습니다.";
                 }
 
@@ -609,6 +616,12 @@
                 showReceipt("오류", "저장 실패", "연결 오류", e.message || "알 수 없는 오류가 발생했습니다.", "#dc3545");
             }
         }
+
+
+
+
+
+
 
         function showReceipt(name, status, timeInfo, msg, color, isUrgent = false) {
             const container = document.querySelector('.kiosk-box');
