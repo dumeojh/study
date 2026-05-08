@@ -1041,28 +1041,22 @@
             const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
             let layoutMode = "1"; // 기본값은 '1개 통합 도면'
 
+
+
+
             if (schedDoc && schedDoc.value) {
                 const sched = schedDoc.value;
                 if (sched.layoutMode) layoutMode = sched.layoutMode; // 👈 설정된 모드가 있으면 덮어쓰기
 
-                // 기존 스케줄(시간) 설정 처리
-                currentSchedule.t1 = sched.t1 || "16:00";
-                currentSchedule.t2 = sched.t2 || "18:50";
-                currentSchedule.t3 = sched.t3 || "20:10";
-                currentSchedule.t3_end = sched.t3_end || "21:30";
+                // 🌟 DB의 모든 환경설정값(시작, 종료, 기준시간 등)을 누락 없이 그대로 반영!
+                currentSchedule = { ...currentSchedule, ...sched };
 
-                // 🌟 추가: 환경설정의 '최소 인정 기준(분)' 값을 숫자로 가져옵니다.
-                currentSchedule.t1_req = parseInt(sched.t1_req) || 0;
-                currentSchedule.t2_req = parseInt(sched.t2_req) || 0;
-                currentSchedule.t3_req = parseInt(sched.t3_req) || 0;
-
+                // 화면에 뿌려줄 때 쓸 변수만 따로 빼두기
                 const t1_end = sched.t1_end || "18:10";
-
-
-
-
                 const t2_end = sched.t2_end || "20:10";
                 const t3_end = sched.t3_end || "21:30";
+
+
 
                 const now = new Date();
                 const currentMin = now.getHours() * 60 + now.getMinutes();

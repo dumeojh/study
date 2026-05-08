@@ -135,16 +135,16 @@ function startMidnightLogoutChecker() {
 // 👆👆 [추가 끝] 👆👆
 
 
-// 2. 공통 타임 인정 계산 함수 (완벽 통합 버전)
+// 2. 공통 타임 인정 계산 함수 (환경설정 시간/기준 완벽 연동 버전)
 function getRecognizedTimes(log, currentScheduleData) {
-    const schedule = currentScheduleData || (typeof currentSchedule !== 'undefined' ? currentSchedule : {});
+    const schedule = currentScheduleData || {};
     let recognizedSet = new Set(); // 인정받은 타임(1, 2, 3)을 담는 바구니
 
     if (!log || log.status === "미입실" || log.status === "귀가(누락)") return recognizedSet;
 
     const history = log.history || [];
 
-    // 1) 관리자 수동 인정(교사) 체크 (가장 우선)
+    // 1) 관리자 수동 인정(교사) 체크
     history.forEach(h => {
         [1, 2, 3].forEach(t => {
             if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`) || h.includes(`${t}T입실(교사)`)) {
@@ -152,55 +152,89 @@ function getRecognizedTimes(log, currentScheduleData) {
             }
         });
     });
-    if (recognizedSet.size > 0) return recognizedSet;
 
-    const timeToMin = (tmStr) => { const [h, m] = tmStr.split(':').map(Number); return h * 60 + m; };
+    // 시간(HH:MM)을 '분(minute)' 단위로 변환하는 헬퍼 함수
+    const timeToMin = (tmStr) => {
+        if (!tmStr) return 0;
+        const [h, m] = tmStr.split(':').map(Number);
+        return h * 60 + m;
+    };
 
-    // 2) 정상 귀가 시 시간 계산 (신청 여부 무관하게 무조건 1,2,3타임 검사)
-    if (log.status === "귀가") {
-        let lastTimeStr = "";
-        for (let i = history.length - 1; i >= 0; i--) {
-            if (history[i].includes("귀가") && !history[i].includes("누락")) {
-                const match = history[i].match(/(\d{2}:\d{2})/);
-                if (match) { lastTimeStr = match[1]; break; }
+    // 2) 실제 자리에 앉아있던 '체류 구간(Intervals)' 추출하기
+    let events = [];
+    history.forEach(h => {
+        if (h.includes("(교사)")) return; // 수동 기록 제외
+
+        const match = h.match(/(\d{2}:\d{2})/);
+        if (match) {
+            const min = timeToMin(match[1]);
+            if (h.includes("입실") || h.includes("복귀")) {
+                events.push({ time: min, state: "IN" });
+            }
+            else if (h.includes("외출") || h.includes("귀가") || h.includes("누락") || h.includes("마감") || h.includes("결석") || h.includes("빈자리")) {
+                events.push({ time: min, state: "OUT" });
             }
         }
+    });
 
-        if (lastTimeStr) {
-            const finishMin = timeToMin(lastTimeStr);
-            [1, 2, 3].forEach(t => {
-                const startStr = schedule[`t${t}`];
-                const reqMin = parseInt(schedule[`t${t}_req`]) || 0;
-                if (startStr && finishMin >= (timeToMin(startStr) + reqMin)) recognizedSet.add(t);
-            });
+    events.sort((a, b) => a.time - b.time);
+
+    let intervals = [];
+    let currentIn = null;
+
+    events.forEach(ev => {
+        if (ev.state === "IN" && currentIn === null) {
+            currentIn = ev.time;
+        } else if (ev.state === "OUT" && currentIn !== null) {
+            intervals.push({ start: currentIn, end: ev.time });
+            currentIn = null;
         }
-    }
-    // 3) 현재 진행 중인 상태 (실시간 계산)
-    else if (["입실", "복귀", "외출"].includes(log.status)) {
+    });
+
+    // 아직 집에 안 간 경우 (입실 중)
+    if (currentIn !== null) {
         const now = new Date();
         const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
 
         if (log.date === todayStr) {
             const currentMin = now.getHours() * 60 + now.getMinutes();
-
-            [1, 2, 3].forEach(t => {
-                const startStr = schedule[`t${t}`];
-                const reqMin = parseInt(schedule[`t${t}_req`]) || 0;
-                if (startStr && currentMin >= (timeToMin(startStr) + reqMin)) recognizedSet.add(t);
-            });
-
-            // 외출 중일 때는 현재 겹쳐있는 타임은 인정하지 않음
-            if (log.status === "외출") {
-                let currentSlot = 1;
-                if (currentMin >= timeToMin(schedule.t3 || "20:10")) currentSlot = 3;
-                else if (currentMin >= timeToMin(schedule.t2 || "18:50")) currentSlot = 2;
-                recognizedSet.delete(currentSlot);
-            }
+            intervals.push({ start: currentIn, end: currentMin });
+        } else {
+            intervals.push({ start: currentIn, end: 1440 }); // 과거 비정상 마감 건 방어
         }
     }
+
+    // 3) 🌟 환경설정(DB)에 지정된 타임별 운영시간 및 인정기준 대조
+    [1, 2, 3].forEach(t => {
+        if (recognizedSet.has(t)) return; // 수동 교사인정 받은 곳은 패스
+
+        // 🎯 환경설정에서 지정한 시작, 종료, 최소 인정시간 가져오기 (설정이 없으면 기본값)
+        const startStr = schedule[`t${t}`] || (t === 1 ? "16:00" : (t === 2 ? "18:50" : "20:10"));
+        const endStr = schedule[`t${t}_end`] || (t === 1 ? "18:10" : (t === 2 ? "20:10" : "21:30"));
+        const reqMin = parseInt(schedule[`t${t}_req`]) || 30; // 기준 시간
+
+        const slotStart = timeToMin(startStr);
+        const slotEnd = timeToMin(endStr);
+
+        let overlapSum = 0;
+
+        intervals.forEach(iv => {
+            // 학생이 앉아있던 구간과 환경설정의 타임 구간이 겹치는 만큼만 잘라서 계산
+            const overlapStart = Math.max(slotStart, iv.start);
+            const overlapEnd = Math.min(slotEnd, iv.end);
+            if (overlapEnd > overlapStart) {
+                overlapSum += (overlapEnd - overlapStart);
+            }
+        });
+
+        // 환경설정에서 정한 기준 분(reqMin)을 넘기면 최종 인정!
+        if (overlapSum >= reqMin) {
+            recognizedSet.add(t);
+        }
+    });
+
     return recognizedSet;
 }
-
 
 
 
