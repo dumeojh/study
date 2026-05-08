@@ -395,7 +395,8 @@
         <div class="auth-box">
             <h2>🔒 관리자 인증</h2>
             <input type="email" id="email-input" placeholder="관리자 이메일">
-            <input type="password" id="pass-input" placeholder="비밀번호"
+
+            <input type="password" id="pass-input" placeholder="비밀번호" autocomplete="new-password"
                 onkeypress="if(event.key === 'Enter') checkPass()">
             <div style="display: flex; gap: 10px;">
                 <button class="btn" style="background:var(--primary); flex:2;" onclick="checkPass()">확인</button>
