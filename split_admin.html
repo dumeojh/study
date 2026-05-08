@@ -2853,12 +2853,14 @@
             let filtered = [];
             let title = "";
 
-            // 클릭한 조건에 맞춰 학생 걸러내기
             window.currentTimeStudents.forEach(st => {
                 let match = false;
                 if (category === 'all') { match = true; title = "총 신청자"; }
+                // 👇 새로 추가된 '관리 대상' 필터 조건
+                else if (category === 'managed' && (st.type === "고정석" || (st.type === "자율석" && st.seatNum !== "미발권"))) { match = true; title = "🎯 실 관리 대상 (고정석 + 발권완료)"; }
                 else if (category === 'fixed' && st.type === "고정석") { match = true; title = "고정석 신청"; }
                 else if (category === 'autoIssued' && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
+
                 else if (category === 'autoUnissued' && st.type === "자율석" && st.seatNum === "미발권") { match = true; title = "자율석 (미발권)"; }
                 else if (category === 'present' && st.currentStatus === "참여") { match = true; title = "🟢 현재 참여 중"; }
                 else if (category === 'out' && st.currentStatus === "외출") { match = true; title = "🟡 현재 외출 중"; }
