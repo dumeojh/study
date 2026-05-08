@@ -703,6 +703,8 @@
                     </div>
                 </div>
 
+                <div id="time-grid-area" style="display: none; animation: fadeIn 0.3s ease;"></div>
+
                 <div style="overflow-x:auto;">
                     <table>
                         <thead>
@@ -2734,17 +2736,12 @@
                 targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
 
 
-
-
                 // 4. 상황 계산 및 표 그리기
-                // (fixed, autoIssued, autoUnissued 변수 추가)
                 let stat = { total: targetStudents.length, fixed: 0, autoIssued: 0, autoUnissued: 0, present: 0, absent: 0, out: 0, finish: 0 };
 
                 targetStudents.forEach((st, index) => {
-                    // [추가] 좌석 유형별(고정석, 자율석-발권, 자율석-미발권) 통계 집계
-                    if (st.type === "고정석") {
-                        stat.fixed++;
-                    } else {
+                    if (st.type === "고정석") stat.fixed++;
+                    else {
                         if (st.seatNum === "미발권") stat.autoUnissued++;
                         else stat.autoIssued++;
                     }
@@ -2764,29 +2761,23 @@
                         else if (log.status === "귀가" || log.status === "귀가(누락)") {
                             status = "귀가"; statusColor = "var(--gray)"; statusBg = "#f8f9fa"; stat.finish++;
                         }
-                        else {
-                            stat.absent++; // 미입실
-                        }
-                    } else {
-                        stat.absent++;
-                    }
+                        else stat.absent++;
+                    } else stat.absent++;
+
+                    // 🌟 [추가] 나중에 네모 박스를 그릴 때 상태를 알기 위해 현재 상태 저장
+                    st.currentStatus = status;
 
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td style="text-align: center; vertical-align: middle; font-weight: bold; color: #666;">${index + 1}</td>
                         <td style="text-align: center; vertical-align: middle;">${st.stuId}</td>
                         <td style="text-align: center; vertical-align: middle; font-weight: bold; cursor:pointer; color:var(--primary); text-decoration:underline;"
-                            onclick="openDailyStatus('${st.stuId}', '${st.stuName}', '${st.seatNum}', '')">
-                            ${st.stuName} 👆
+                            onclick="openDailyStatus('${st.stuId}', '${st.stuName}', '${st.seatNum}', '')">${st.stuName} 👆</td>
+                        <td style="text-align: center; vertical-align: middle;">
+                            <span style="font-size:12px; color:#666;">[${st.type}]</span><br><strong>${st.seatNum}</strong>
                         </td>
                         <td style="text-align: center; vertical-align: middle;">
-                            <span style="font-size:12px; color:#666;">[${st.type}]</span><br>
-                            <strong>${st.seatNum}</strong>
-                        </td>
-                        <td style="text-align: center; vertical-align: middle;">
-                            <span style="display:inline-block; background:${statusBg}; color:${statusColor}; font-weight:bold; padding:6px 12px; border-radius:8px; border: 1px solid ${statusColor}; min-width: 60px;">
-                                ${status}
-                            </span>
+                            <span style="display:inline-block; background:${statusBg}; color:${statusColor}; font-weight:bold; padding:6px 12px; border-radius:8px; border: 1px solid ${statusColor}; min-width: 60px;">${status}</span>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -2796,15 +2787,18 @@
                     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color:#dc3545; font-weight:bold;">해당 타임에 신청한 학생이 없습니다.</td></tr>`;
                 }
 
+                // 🌟 [추가] 박스 그리기에 쓰기 위해 현재 필터링된 학생 전체 목록 저장
+                window.currentTimeStudents = targetStudents;
 
-
-                // 요약 정보 갱신 (표 형태로 디자인 변경)
+                // 요약 정보 갱신 (마우스 클릭 효과 및 클릭 이벤트 추가)
                 const summaryDiv = document.getElementById('time-list-summary');
-                summaryDiv.style.padding = "0";     // 기존 흰색 테두리 박스 초기화
-                summaryDiv.style.border = "none";
-                summaryDiv.style.background = "transparent";
+                summaryDiv.style.padding = "0"; summaryDiv.style.border = "none"; summaryDiv.style.background = "transparent";
 
                 summaryDiv.innerHTML = `
+                    <style>
+                        .sum-btn { cursor: pointer; transition: 0.2s; position: relative; }
+                        .sum-btn:hover { background-color: #e2e3e5 !important; filter: brightness(0.95); transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 10; border-radius: 4px; }
+                    </style>
                     <table style="border-collapse: collapse; text-align: center; font-size: 13px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; margin: 0;">
                         <thead>
                             <tr style="background: #f8f9fa;">
@@ -2824,20 +2818,102 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td style="padding: 8px 12px; font-weight: 900; font-size: 15px; border-right: 1px solid #ddd; color: #0d6efd;">${stat.total}명</td>
-                                <td style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd;">${stat.fixed}명</td>
-                                <td style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #198754;">${stat.autoIssued}명</td>
-                                <td style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #dc3545;">${stat.autoUnissued}명</td>
-                                <td style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--primary);">${stat.present}명</td>
-                                <td style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #fd7e14;">${stat.out}명</td>
-                                <td style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--gray);">${stat.finish}명</td>
-                                <td style="padding: 8px 12px; font-weight: bold; color: var(--danger);">${stat.absent}명</td>
+                                <td class="sum-btn" onclick="showTimeGrid('all')" style="padding: 8px 12px; font-weight: 900; font-size: 15px; border-right: 1px solid #ddd; color: #0d6efd;">${stat.total}명</td>
+                                <td class="sum-btn" onclick="showTimeGrid('fixed')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd;">${stat.fixed}명</td>
+                                <td class="sum-btn" onclick="showTimeGrid('autoIssued')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #198754;">${stat.autoIssued}명</td>
+                                <td class="sum-btn" onclick="showTimeGrid('autoUnissued')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #dc3545;">${stat.autoUnissued}명</td>
+                                <td class="sum-btn" onclick="showTimeGrid('present')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--primary);">${stat.present}명</td>
+                                <td class="sum-btn" onclick="showTimeGrid('out')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #fd7e14;">${stat.out}명</td>
+                                <td class="sum-btn" onclick="showTimeGrid('finish')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--gray);">${stat.finish}명</td>
+                                <td class="sum-btn" onclick="showTimeGrid('absent')" style="padding: 8px 12px; font-weight: bold; color: var(--danger);">${stat.absent}명</td>
                             </tr>
                         </tbody>
                     </table>
                 `;
             }
 
+            // 👇 [새로 추가] 숫자를 누르면 아래로 네모 박스가 내려오는 기능 👇
+            function showTimeGrid(category) {
+                const container = document.getElementById('time-grid-area');
+                if (!container || !window.currentTimeStudents) return;
+
+                let filtered = [];
+                let title = "";
+
+                // 클릭한 조건에 맞춰 학생 걸러내기
+                window.currentTimeStudents.forEach(st => {
+                    let match = false;
+                    if (category === 'all') { match = true; title = "총 신청자"; }
+                    else if (category === 'fixed' && st.type === "고정석") { match = true; title = "고정석 신청"; }
+                    else if (category === 'autoIssued' && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
+                    else if (category === 'autoUnissued' && st.type === "자율석" && st.seatNum === "미발권") { match = true; title = "자율석 (미발권)"; }
+                    else if (category === 'present' && st.currentStatus === "참여") { match = true; title = "🟢 현재 참여 중"; }
+                    else if (category === 'out' && st.currentStatus === "외출") { match = true; title = "🟡 현재 외출 중"; }
+                    else if (category === 'finish' && st.currentStatus === "귀가") { match = true; title = "⚪ 최종 귀가 완료"; }
+                    else if (category === 'absent' && st.currentStatus === "미참여") { match = true; title = "🔴 미참여 (결석/미입실)"; }
+
+                    if (match) filtered.push(st);
+                });
+
+                if (filtered.length === 0) {
+                    container.innerHTML = `<div style="padding:20px; text-align:center; color:#dc3545; font-weight:bold; background:#fff; border-radius:10px; margin-bottom:15px; border:1px solid #ddd;">해당 조건에 맞는 학생이 없습니다.</div>`;
+                    container.style.display = 'block';
+                    return;
+                }
+
+                // 화면 구성 (제목 및 닫기 버튼)
+                let html = `
+                    <div style="padding: 15px; background: #f8f9fa; border-radius: 12px; margin-bottom: 20px; border: 2px solid #b6d4fe; box-shadow: inset 0 0 10px rgba(0,0,0,0.02);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; border-bottom: 2px solid #dee2e6; padding-bottom: 8px;">
+                            <span style="font-weight: 900; color: #0d6efd; font-size: 16px;">🔍 [${title}] 명단 상세 보기 (${filtered.length}명)</span>
+                            <button onclick="document.getElementById('time-grid-area').style.display='none'" style="background:transparent; border:none; color:#6c757d; font-weight:bold; cursor:pointer; font-size:14px;">✖ 닫기</button>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px;">
+                `;
+
+                filtered.forEach(st => {
+                    // 1. 반 추출하기 (가운데 자리 숫자 추출)
+                    const stuIdStr = String(st.stuId);
+                    let classNum = "1";
+                    if (stuIdStr.length >= 4) {
+                        classNum = stuIdStr.slice(0, -2).substring(1); // 3701 -> 7
+                    } else {
+                        classNum = stuIdStr;
+                    }
+
+                    // 2. 무지개색 (빨주노초파남) 반별 컬러 배정
+                    let classBorderColor = "#ccc";
+                    if (classNum === "1") classBorderColor = "#ff4d4d"; // 빨강
+                    else if (classNum === "2") classBorderColor = "#fd7e14"; // 주황
+                    else if (classNum === "3") classBorderColor = "#ffc107"; // 노랑
+                    else if (classNum === "4") classBorderColor = "#198754"; // 초록
+                    else if (classNum === "5") classBorderColor = "#0d6efd"; // 파랑
+                    else if (classNum === "6") classBorderColor = "#6610f2"; // 남색
+
+                    // 3. 고정/자율/미발권 배경색 배정
+                    let bgCol = "#ffffff";
+                    if (st.type === "고정석") bgCol = "#fff3cd"; // 연노랑
+                    else if (st.type === "자율석" && st.seatNum !== "미발권") bgCol = "#d1e7dd"; // 연초록
+                    else if (st.type === "자율석" && st.seatNum === "미발권") bgCol = "#f8d7da"; // 연빨강
+
+                    // 4. 네모 박스 그리기 (클릭하면 기존처럼 출결 변경 모달이 열립니다)
+                    html += `
+                        <div onclick="openDailyStatus('${st.stuId}', '${st.stuName}', '${st.seatNum}', '')" 
+                             style="background: ${bgCol}; border: 1px solid #ddd; border-top: 5px solid ${classBorderColor}; border-radius: 8px; padding: 10px 5px; text-align: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.2s;"
+                             onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" 
+                             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.05)';">
+                            <div style="font-size: 11px; color: #555; letter-spacing: -0.5px;">${st.stuId}</div>
+                            <div style="font-size: 14px; font-weight: 900; color: #222; margin: 4px 0;">${st.stuName}</div>
+                            <div style="font-size: 11px; font-weight: bold; color: #666;">${st.seatNum === '미발권' ? '<span style="color:#dc3545;">미발권</span>' : st.seatNum}</div>
+                        </div>
+                    `;
+                });
+
+                html += `</div></div>`;
+                container.innerHTML = html;
+                container.style.display = 'block';
+            }
+            // 👆 [새로 추가 끝] 👆
         </script>
     </div> <!-- 👈 닫는 태그 추가 -->
 </body>
