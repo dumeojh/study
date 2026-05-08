@@ -536,15 +536,14 @@ async function adminLogout() {
                 <style>@keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.2); } 100% { transform: scale(1); } }</style>
             `;
 
-            // 1.5초(1500ms) 뒤에 자동으로 화면 새로고침 (권한 차단)
+            // 1.5초 뒤에 메인 페이지로 이동
             setTimeout(() => {
-                location.href = 'index.html'; // 👈 location.reload() 대신 이 코드를 넣으세요!
+                location.href = 'index.html';
             }, 1500);
-        }, 1500);
 
-    } catch (error) {
-        alert("로그아웃 중 오류가 발생했습니다.");
-        closeModal();
-    }
-};
-}
+        } catch (error) {
+            alert("로그아웃 중 오류가 발생했습니다.");
+            closeModal();
+        }
+    }; // btn-logout-confirm.onclick 종료
+} // adminLogout 함수 종료
