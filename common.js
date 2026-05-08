@@ -45,7 +45,8 @@ async function requireAdminAuth() {
                     <p style="margin:0 0 25px 0; font-size:13px; color:#666; line-height:1.4;">
                         비밀번호를 입력해주세요.<br><span style="color:#dc3545;">(입력 시 별표로 표시됩니다)</span>
                     </p>
-                    <input type="password" id="admin-pwd-input" placeholder="Password" 
+                    <input type="password" id="admin-pwd-input" placeholder="Password"  autocomplete="new-password"
+
                         style="width:100%; padding:12px; border:2px solid #ddd; border-radius:10px; margin-bottom:15px; font-size:16px; text-align:center; box-sizing:border-box; outline:none; transition:0.2s;">
                     <button id="admin-login-btn" style="width:100%; padding:12px; background:#007bff; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:16px;">로그인</button>
                     <p style="margin-top:15px; font-size:11px; color:#999;">인증 상태는 오늘 자정까지 유지됩니다.</p>
