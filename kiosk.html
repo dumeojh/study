@@ -445,9 +445,15 @@
             focusScanner();
         }
 
+
+        ///////////////////////////////////////////////////////////////
         async function executeLogic(id, studentName) {
             scannerInput.value = ""; nameInput.value = "";
             const now = new Date();
+            // 👇👇 [추가할 부분] 바코드가 인식된 '바로 지금 이 순간'의 오늘 날짜를 구합니다. 👇👇
+            const realTodayStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+
+
             const currentMonthStr = (now.getMonth() + 1) + "월";
             const todayDayEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][now.getDay()];
 
@@ -473,7 +479,7 @@
                     const { data: ticketData, error: ticketError } = await supabaseClient
                         .from('daily_reservations')
                         .select('seat_num')
-                        .eq('date', todayStr)
+                        .eq('date', realTodayStr) // <--- 여기 수정
                         .eq('stu_id', id)
                         .maybeSingle();
 
@@ -483,7 +489,8 @@
                     }
                 }
 
-                const logId = `${todayStr}_${id}`;
+                const logId = `${realTodayStr}_${id}`; // <--- 여기 수정 (DB 고유 ID 생성)
+
                 const { data: logData, error: logError } = await supabaseClient
                     .from('attendance_logs')
                     .select('*')
@@ -523,6 +530,9 @@
 
             } catch (e) { showReceipt("오류", "통신 실패", "연결 상태 확인 요망", e.message, "#dc3545"); }
         }
+
+
+
 
         function showSmartSelection(id, name) {
             document.getElementById('r-name').innerText = `🙋 ${name} 학생`;
