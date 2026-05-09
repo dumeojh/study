@@ -73,8 +73,9 @@
 }
 
 /* 특수 */
-
-/* 2. 파티션(벽) 디자인 (타입 6 ~ 16) 공통 배경 투명화 */
+/* =======================================================
+   2. 파티션(벽) 디자인 (타입 6 ~ 16) - 절대 좌표 보정 완벽판
+   ======================================================= */
 .seat-6,
 .seat-7,
 .seat-8,
@@ -87,88 +88,189 @@
 .seat-15,
 .seat-16 {
     background-color: transparent;
-    /* 흰색(#fff) 바탕을 없애고 투명하게 만들어 빈 공간과 일치시킴 */
+    background-image: none;
+    /* 기존 그라데이션 오차 유발 방식 제거 */
+    position: relative;
+    /* 선을 정중앙에 고정하기 위한 기준점 */
 }
 
-
-
-/* 가로/세로/교차 파티션 (두께 2px, 항상 정중앙 50% 기준) */
-.seat-6 {
-    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
+/* 파티션 공통 선 속성 */
+.seat-6::before,
+.seat-6::after,
+.seat-7::before,
+.seat-7::after,
+.seat-8::before,
+.seat-8::after,
+.seat-9::before,
+.seat-9::after,
+.seat-10::before,
+.seat-10::after,
+.seat-11::before,
+.seat-11::after,
+.seat-12::before,
+.seat-12::after,
+.seat-13::before,
+.seat-13::after,
+.seat-14::before,
+.seat-14::after,
+.seat-15::before,
+.seat-15::after,
+.seat-16::before,
+.seat-16::after {
+    content: '';
+    position: absolute;
+    background-color: #343a40;
 }
 
-.seat-7 {
-    background-image: linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
+/* 6: ━ (가로 전체) */
+.seat-6::before {
+    width: 100%;
+    height: 2px;
+    top: calc(50% - 1px);
+    left: 0;
 }
 
-.seat-8 {
-    background-image: linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
-        linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
-    background-position: center, right center;
-    background-size: 100% 100%, calc(50% + 1px) 100%;
-    background-repeat: no-repeat;
+/* 7: ┃ (세로 전체) */
+.seat-7::before {
+    width: 2px;
+    height: 100%;
+    left: calc(50% - 1px);
+    top: 0;
 }
 
-.seat-9 {
-    background-image: linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
-        linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
-    background-position: center, left center;
-    background-size: 100% 100%, calc(50% + 1px) 100%;
-    background-repeat: no-repeat;
+/* 8: ㅏ (세로 전체 + 오른쪽 반) */
+.seat-8::before {
+    width: 2px;
+    height: 100%;
+    left: calc(50% - 1px);
+    top: 0;
 }
 
-.seat-10 {
-    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
-        linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
-    background-position: center, bottom center;
-    background-size: 100% 100%, 100% calc(50% + 1px);
-    background-repeat: no-repeat;
+.seat-8::after {
+    width: calc(50% + 1px);
+    height: 2px;
+    top: calc(50% - 1px);
+    right: 0;
 }
 
-.seat-11 {
-    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
-        linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
-    background-position: center, top center;
-    background-size: 100% 100%, 100% calc(50% + 1px);
-    background-repeat: no-repeat;
+/* 9: ㅓ (세로 전체 + 왼쪽 반) */
+.seat-9::before {
+    width: 2px;
+    height: 100%;
+    left: calc(50% - 1px);
+    top: 0;
 }
 
-.seat-12 {
-    background-image: linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
-        linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
+.seat-9::after {
+    width: calc(50% + 1px);
+    height: 2px;
+    top: calc(50% - 1px);
+    left: 0;
 }
 
-/* 모서리 파티션 */
-.seat-13 {
-    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
-        linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
-    background-position: right center, bottom center;
-    background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
-    background-repeat: no-repeat;
+/* 10: ㅜ (가로 전체 + 아래쪽 반) */
+.seat-10::before {
+    width: 100%;
+    height: 2px;
+    top: calc(50% - 1px);
+    left: 0;
 }
 
-.seat-14 {
-    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
-        linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
-    background-position: left center, bottom center;
-    background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
-    background-repeat: no-repeat;
+.seat-10::after {
+    width: 2px;
+    height: calc(50% + 1px);
+    left: calc(50% - 1px);
+    bottom: 0;
 }
 
-.seat-15 {
-    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
-        linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
-    background-position: right center, top center;
-    background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
-    background-repeat: no-repeat;
+/* 11: ㅗ (가로 전체 + 위쪽 반) */
+.seat-11::before {
+    width: 100%;
+    height: 2px;
+    top: calc(50% - 1px);
+    left: 0;
 }
 
-.seat-16 {
-    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
-        linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
-    background-position: left center, top center;
-    background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
-    background-repeat: no-repeat;
+.seat-11::after {
+    width: 2px;
+    height: calc(50% + 1px);
+    left: calc(50% - 1px);
+    top: 0;
+}
+
+/* 12: ╋ (십자 전체) */
+.seat-12::before {
+    width: 100%;
+    height: 2px;
+    top: calc(50% - 1px);
+    left: 0;
+}
+
+.seat-12::after {
+    width: 2px;
+    height: 100%;
+    left: calc(50% - 1px);
+    top: 0;
+}
+
+/* 13: ┌ (아래쪽 반 + 오른쪽 반) */
+.seat-13::before {
+    width: 2px;
+    height: calc(50% + 1px);
+    left: calc(50% - 1px);
+    bottom: 0;
+}
+
+.seat-13::after {
+    width: calc(50% + 1px);
+    height: 2px;
+    top: calc(50% - 1px);
+    right: 0;
+}
+
+/* 14: ┐ (아래쪽 반 + 왼쪽 반) */
+.seat-14::before {
+    width: 2px;
+    height: calc(50% + 1px);
+    left: calc(50% - 1px);
+    bottom: 0;
+}
+
+.seat-14::after {
+    width: calc(50% + 1px);
+    height: 2px;
+    top: calc(50% - 1px);
+    left: 0;
+}
+
+/* 15: └ (위쪽 반 + 오른쪽 반) */
+.seat-15::before {
+    width: 2px;
+    height: calc(50% + 1px);
+    left: calc(50% - 1px);
+    top: 0;
+}
+
+.seat-15::after {
+    width: calc(50% + 1px);
+    height: 2px;
+    top: calc(50% - 1px);
+    right: 0;
+}
+
+/* 16: ┘ (위쪽 반 + 왼쪽 반) */
+.seat-16::before {
+    width: 2px;
+    height: calc(50% + 1px);
+    left: calc(50% - 1px);
+    top: 0;
+}
+
+.seat-16::after {
+    width: calc(50% + 1px);
+    height: 2px;
+    top: calc(50% - 1px);
+    left: 0;
 }
 
 /* =======================================================
