@@ -1351,6 +1351,79 @@
         function undo() { if (historyStack.length === 0) return; const p = JSON.parse(historyStack.pop()); rows = p.rows; cols = p.cols; seatMapData = p.grid; drawEditGrid(); }
         function calculateMinutes(n) { const s = document.getElementById(`t${n}-start`).value, e = document.getElementById(`t${n}-end`).value; if (s && e) { let d = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 60000; if (d < 0) d += 1440; document.getElementById(`t${n}-min`).innerText = d + "분"; } }
 
+        function saveHistory() { if (historyStack.length >= 20) historyStack.shift(); historyStack.push(JSON.stringify({ rows, cols, grid: seatMapData })); }
+        function undo() { if (historyStack.length === 0) return; const p = JSON.parse(historyStack.pop()); rows = p.rows; cols = p.cols; seatMapData = p.grid; drawEditGrid(); }
+        function calculateMinutes(n) { const s = document.getElementById(`t${n}-start`).value, e = document.getElementById(`t${n}-end`).value; if (s && e) { let d = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 60000; if (d < 0) d += 1440; document.getElementById(`t${n}-min`).innerText = d + "분"; } }
+
+        /* 👇 여기서부터 백업/복구 기능 함수 2개를 추가하세요 👇 */
+        function exportToFile() {
+            const dataStr = JSON.stringify({ rows, cols, grid: seatMapData }, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+
+            // 저장 파일명에 들어갈 '현재 날짜와 시간(YYYYMMDD_HHMMSS)' 생성
+            const now = new Date();
+            const dateStr = now.getFullYear().toString() +
+                String(now.getMonth() + 1).padStart(2, '0') +
+                String(now.getDate()).padStart(2, '0') + "_" +
+                String(now.getHours()).padStart(2, '0') +
+                String(now.getMinutes()).padStart(2, '0') +
+                String(now.getSeconds()).padStart(2, '0');
+
+            a.href = url;
+            a.download = `안성여고_도면백업_${dateStr}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importFromFile() {
+            if (!confirm("파일을 불러오면 현재 화면에 있는 도면은 덮어쓰기 됩니다. 계속하시겠습니까?")) return;
+
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+
+                        // 파일이 올바른 환경설정 백업 파일인지 검사
+                        if (importedData.rows && importedData.cols && importedData.grid) {
+                            saveHistory(); // 실수 방지를 위해 불러오기 전 상태도 1회 자동 히스토리 백업 (Ctrl+Z 가능)
+
+                            rows = importedData.rows;
+                            cols = importedData.cols;
+                            seatMapData = importedData.grid;
+
+                            // 상단 가로x세로 숫자 입력창 업데이트
+                            document.getElementById('grid-rows').value = rows;
+                            document.getElementById('grid-cols').value = cols;
+
+                            drawEditGrid(); // 화면 새로 그리기
+                            alert("✅ 도면을 성공적으로 불러왔습니다! (서버에 반영하려면 맨 아래 '🌐 도면 서버 배포' 버튼을 꼭 눌러주세요)");
+                        } else {
+                            alert("🚨 호환되지 않는 파일 형식입니다. (안성여고 백업 파일이 아닙니다)");
+                        }
+                    } catch (err) {
+                        alert("🚨 파일 읽기 오류: " + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+        /* 👆 여기까지 추가 👆 */
+
+        function resizeGrid() { if (!confirm("도면을 리셋하면 기존의 모든 좌석 배치가 삭제됩니다. 진행하시겠습니까?")) return; saveHistory(); rows = parseInt(document.getElementById('grid-rows').value); cols = parseInt(document.getElementById('grid-cols').value); seatMapData = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ type: 0, label: "" }))); drawEditGrid(); }
+
+
+
         function resizeGrid() { if (!confirm("도면을 리셋하면 기존의 모든 좌석 배치가 삭제됩니다. 진행하시겠습니까?")) return; saveHistory(); rows = parseInt(document.getElementById('grid-rows').value); cols = parseInt(document.getElementById('grid-cols').value); seatMapData = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ type: 0, label: "" }))); drawEditGrid(); }
         function modifyGrid(a) { saveHistory(); const i = parseInt(document.getElementById('target-index').value) - 1; if (i < 0) return; if (a === 'insertRow') { seatMapData.splice(i, 0, Array.from({ length: cols }, () => ({ type: 0, label: "" }))); rows++; } else if (a === 'deleteRow') { seatMapData.splice(i, 1); rows--; } else if (a === 'insertCol') { seatMapData.forEach(r => r.splice(i, 0, { type: 0, label: "" })); cols++; } else if (a === 'deleteCol') { seatMapData.forEach(r => r.splice(i, 1)); cols--; } drawEditGrid(); }
 
