@@ -1275,6 +1275,8 @@
             document.getElementById(tabId).classList.add('active');
             if (btn) btn.classList.add('active');
 
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+
             // 🌟 공통 날짜/교시 제어 박스 보이기/숨기기 처리
             const sharedControls = document.getElementById('daily-shared-controls');
             if (sharedControls) {
@@ -2747,6 +2749,12 @@
             // 🌟 추가됨: 날짜 변경 시 다시 그릴 수 있도록 현재 보고 있는 타임을 기억해둡니다.
             window.currentTimeListSlot = timeSlot;
             // 1. 기존 탭 비활성화 및 새 화면 활성화
+            // 👇👇 여기에 3줄을 추가해 주세요! (기존 타임 버튼 효과 초기화 후, 누른 버튼만 켜기) 👇👇
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+            const targetBtn = document.getElementById(`btn-time-${timeSlot}`);
+            if (targetBtn) targetBtn.classList.add('active');
+            // 👆👆 --
+
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-time-list').classList.add('active');
