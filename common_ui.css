@@ -72,7 +72,12 @@
 .seat-13,
 .seat-14,
 .seat-15,
-.seat-16 {
+.seat-16 .seat-19,
+/* 👈 대각선 추가 */
+.seat-20
+
+/* 👈 대각선 추가 */
+    {
     background-color: transparent;
     background-image: none;
     /* 기존 그라데이션 오차 유발 방식 제거 */
@@ -80,6 +85,8 @@
     /* 선을 정중앙에 고정하기 위한 기준점 */
     border: none !important;
     /* 👈 이 줄을 추가하세요! (셀 외곽선 완벽 제거) */
+    overflow: hidden;
+    /* 👈 이 줄을 반드시 추가하세요! (대각선이 칸 밖으로 삐져나가지 않도록 잘라줌) */
 }
 
 /* 파티션 공통 선 속성 */
@@ -259,6 +266,31 @@
     height: 2px;
     top: calc(50% - 1px);
     left: 0;
+}
+
+/* -------------------------------------------
+   추가: 대각선 파티션 (19, 20)
+   ------------------------------------------- */
+.seat-19::before,
+.seat-20::before {
+    content: '';
+    position: absolute;
+    background-color: #343a40;
+    width: 150%;
+    /* 대각선 길이를 위해 박스보다 길게 설정 */
+    height: 2px;
+    top: 50%;
+    left: 50%;
+}
+
+/* 19: ╱ (우상향 대각선) */
+.seat-19::before {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* 20: ╲ (우하향 대각선) */
+.seat-20::before {
+    transform: translate(-50%, -50%) rotate(45deg);
 }
 
 /* =======================================================
