@@ -2789,6 +2789,9 @@
             }
         }
 
+
+
+        ////////////////////////////////////////////////////////////////////
         function openTimeList(timeSlot) {
             // 🌟 추가됨: 날짜 변경 시 다시 그릴 수 있도록 현재 보고 있는 타임을 기억해둡니다.
             window.currentTimeListSlot = timeSlot;
@@ -2872,6 +2875,8 @@
                 }
             });
 
+
+
             // 🌟 [수정된 핵심 로직] 미신청 참여자 완벽 감지
             // 학생이 '귀가'했더라도, 과거 기록(history)이나 인정 시간이 있으면 잡아냅니다.
             Object.values(attendanceLogsData).forEach(log => {
@@ -2882,36 +2887,15 @@
                 let participatedInSlot = false;
 
                 // 조건 1. 현재 운영 교시와 조회 타임이 일치하고, 현재 교실에 있는 경우
+                // (최소 시간을 아직 못 채웠더라도, 지금 불법으로 앉아있다면 화면에 띄워서 확인해야 함)
                 const currentOpSlot = parseInt(document.getElementById('daily-time').value) || 1;
                 if (currentOpSlot === timeSlot && (log.status === "입실" || log.status === "복귀")) {
                     participatedInSlot = true;
                 }
 
-                // 조건 2. 학생의 출결 흔적(history)에 해당 타임 활동 기록이 있는 경우
-                if (log.history && log.history.length > 0) {
-                    log.history.forEach(h => {
-                        const tmMatch = h.match(/(\d{2}:\d{2})/);
-                        let slot = 0;
-                        if (tmMatch) {
-                            const timeStr = tmMatch[1];
-                            if (timeStr < currentSchedule.t1) slot = 0;
-                            else if (timeStr < currentSchedule.t2) slot = 1;
-                            else if (timeStr < currentSchedule.t3) slot = 2;
-                            else slot = 3;
-                        } else {
-                            if (h.includes("1타임") || h.includes("1T")) slot = 1;
-                            else if (h.includes("2타임") || h.includes("2T")) slot = 2;
-                            else if (h.includes("3타임") || h.includes("3T")) slot = 3;
-                        }
+                // 조건 2 삭제: 단순히 찍고 바로 나간 흔적(history)만으로는 참여자로 인정하지 않음.
 
-                        // 단순 결석/마감 기록이 아닌 진짜 활동 흔적인지 체크
-                        if (slot === timeSlot && !h.includes("결석") && !h.includes("누락") && !h.includes("마감")) {
-                            participatedInSlot = true;
-                        }
-                    });
-                }
-
-                // 조건 3. common.js의 인정 로직을 통해 공식적으로 해당 타임 인정을 받은 경우
+                // 조건 3. common.js의 인정 로직을 통해 공식적으로 환경설정의 '최소 인정 시간'을 채운 경우!
                 const recognizedSet = getRecognizedTimes(log, currentSchedule);
                 if (recognizedSet.has(timeSlot)) {
                     participatedInSlot = true;
@@ -2942,6 +2926,11 @@
                     });
                 }
             });
+
+
+
+
+
 
             let targetStudents = Array.from(targetStudentsMap.values());
 
