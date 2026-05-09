@@ -488,6 +488,9 @@
 
             <div id="daily-shared-controls"
                 style="display: flex; justify-content: center; align-items: center; gap: 25px; background: #ffffff; padding: 20px 30px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e9ecef;">
+
+
+
                 <div style="display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 10px 18px; border-radius: 10px; border: 1px solid #dee2e6; transition: 0.2s;"
                     onmouseover="this.style.borderColor='#b6d4fe'" onmouseout="this.style.borderColor='#dee2e6'">
                     <span style="font-size: 18px;">📅</span>
@@ -496,11 +499,14 @@
                         style="border: none; background: transparent; font-size: 16px; font-weight: 900; color: #333; outline: none; cursor: pointer; font-family: 'Malgun Gothic', sans-serif;">
                 </div>
 
+
+
                 <div style="display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 10px 18px; border-radius: 10px; border: 1px solid #dee2e6; transition: 0.2s;"
                     onmouseover="this.style.borderColor='#b6d4fe'" onmouseout="this.style.borderColor='#dee2e6'">
                     <span style="font-size: 18px;">🕒</span>
                     <span style="font-weight: bold; color: #6c757d; font-size: 14px;">운영 교시</span>
-                    <select id="daily-time" onchange="renderDailySupervisorMap(); renderDailyList();"
+                    <select id="daily-time"
+                        onchange="renderDailySupervisorMap(); renderDailyList(); if(document.getElementById('tab-time-list').classList.contains('active')){ openTimeList(window.currentTimeListSlot); }"
                         style="border: none; background: transparent; font-size: 16px; font-weight: 900; color: var(--primary); outline: none; cursor: pointer; font-family: 'Malgun Gothic', sans-serif;">
                         <option value="0">0타임 (정규 전)</option>
                         <option value="1" selected>1타임</option>
@@ -1250,7 +1256,7 @@
             // 🌟 공통 날짜/교시 제어 박스 보이기/숨기기 처리
             const sharedControls = document.getElementById('daily-shared-controls');
             if (sharedControls) {
-                if (tabId === 'tab-daily' || tabId === 'tab-daily-list') {
+                if (tabId === 'tab-daily' || tabId === 'tab-daily-list' || tabId === 'tab-time-list') {
                     sharedControls.style.display = 'flex'; // 두 탭에서는 보이게
                 } else {
                     sharedControls.style.display = 'none'; // 다른 탭에서는 숨기기
