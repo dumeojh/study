@@ -501,7 +501,8 @@
 
 
 
-                <div style="display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 10px 18px; border-radius: 10px; border: 1px solid #dee2e6; transition: 0.2s;"
+                <div id="daily-time-wrapper"
+                    style="display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 10px 18px; border-radius: 10px; border: 1px solid #dee2e6; transition: 0.2s;"
                     onmouseover="this.style.borderColor='#b6d4fe'" onmouseout="this.style.borderColor='#dee2e6'">
                     <span style="font-size: 18px;">🕒</span>
                     <span style="font-weight: bold; color: #6c757d; font-size: 14px;">운영 교시</span>
@@ -1262,6 +1263,18 @@
                     sharedControls.style.display = 'none'; // 다른 탭에서는 숨기기
                 }
             }
+
+            // 👇👇 여기에 8줄을 통째로 추가하세요! 👇👇
+            // 🌟 탭을 이동할 때 '운영 교시' 박스 보이기/숨기기 복구 처리
+            const timeWrapper = document.getElementById('daily-time-wrapper');
+            if (timeWrapper) {
+                if (tabId === 'tab-daily' || tabId === 'tab-daily-list') {
+                    timeWrapper.style.display = 'flex'; // 오늘 좌석표, 일일 현황에서는 다시 보이기
+                } else {
+                    timeWrapper.style.display = 'none';
+                }
+            }
+            // 👆👆 --------------------------------- 👆👆
 
             // 🌟 주의: 탭을 이동할 때마다 시간이 현재 시간으로 강제 리셋되는 현상을 막기 위해
             // autoSetCurrentTime() 호출을 제거하고 화면 렌더링만 바로 실행합니다.
@@ -2722,6 +2735,12 @@
                 // 👇 'none'으로 되어있던 것을 'flex'로 수정하여 숨기지 않고 계속 보여줍니다!
                 sharedControls.style.display = 'flex';
             }
+            // 👇👇 여기에 2줄을 추가하세요 (타임별 명단에서는 운영 교시 선택창 숨기기) 👇👇
+            const timeWrapper = document.getElementById('daily-time-wrapper');
+            if (timeWrapper) timeWrapper.style.display = 'none';
+            // 👆👆 ---
+
+
 
             const tbody = document.getElementById('time-list-body');
             tbody.innerHTML = '';
