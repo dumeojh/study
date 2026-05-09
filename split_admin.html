@@ -8,16 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- 👇 새로 만든 공통 자바스크립트 파일을 연결합니다 👇 -->
     <script src="common.js"></script>
+    <link rel="stylesheet" href="common_ui.css">
 
     <style>
-        :root {
-            --primary: #007bff;
-            --success: #28a745;
-            --warning: #ffc107;
-            --danger: #dc3545;
-            --gray: #6c757d;
-        }
-
         body {
             font-family: 'Malgun Gothic', sans-serif;
             background-color: #f0f2f5;
@@ -87,40 +80,7 @@
             display: block;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(5px);
-            }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* 🌟 버튼 눌림 애니메이션 (시각적 피드백) 🌟 */
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            color: white;
-            transition: all 0.15s ease;
-        }
-
-        .btn:not(:disabled):active {
-            transform: scale(0.94);
-            box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.25);
-            filter: brightness(0.9);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background-color: #adb5bd !important;
-        }
 
         .btn-primary {
             background: var(--primary);
@@ -186,28 +146,7 @@
             border: none;
         }
 
-        .seat-1 {
-            background: white;
-        }
 
-        .seat-2 {
-            background: white;
-        }
-
-        .seat-3 {
-            background: #e2e3e5;
-            color: #41464b;
-        }
-
-        .seat-4 {
-            background: #cff4fc;
-            color: #055160;
-        }
-
-        .seat-5 {
-            background: #f8d7da;
-            color: #842029;
-        }
 
         /* 상태별 색상 */
         .status-absent {

@@ -1,0 +1,178 @@
+/* common_ui.css - 좌석 및 파티션 공통 디자인 */
+
+/* 1. 기본 좌석 색상 (고정/자율/기둥 등) */
+.seat-1 {
+    background: #fff3cd;
+}
+
+/* 고정석 구역 */
+.seat-2 {
+    background: #d1e7dd;
+}
+
+/* 자율석 구역 */
+.seat-3 {
+    background: #e2e3e5;
+}
+
+/* 기둥(벽) */
+.seat-4 {
+    background: #cff4fc;
+}
+
+/* 문 */
+.seat-5 {
+    background: #f8d7da;
+}
+
+/* 특수 */
+
+/* 2. 파티션(벽) 디자인 (타입 6 ~ 16) */
+.seat-6,
+.seat-7,
+.seat-8,
+.seat-9,
+.seat-10,
+.seat-11,
+.seat-12,
+.seat-13,
+.seat-14,
+.seat-15,
+.seat-16 {
+    background-color: #fff;
+}
+
+/* 가로/세로/교차 파티션 */
+.seat-6 {
+    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+}
+
+.seat-7 {
+    background-image: linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+}
+
+.seat-8 {
+    background-image: linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
+        linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-position: center, right center;
+    background-size: 100% 100%, 50% 100%;
+    background-repeat: no-repeat;
+}
+
+.seat-9 {
+    background-image: linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
+        linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-position: center, left center;
+    background-size: 100% 100%, 50% 100%;
+    background-repeat: no-repeat;
+}
+
+.seat-10 {
+    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
+        linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-position: center, bottom center;
+    background-size: 100% 100%, 100% 50%;
+    background-repeat: no-repeat;
+}
+
+.seat-11 {
+    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
+        linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-position: center, top center;
+    background-size: 100% 100%, 100% 50%;
+    background-repeat: no-repeat;
+}
+
+.seat-12 {
+    background-image: linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
+        linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+}
+
+/* 모서리 파티션 */
+.seat-13 {
+    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
+        linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-position: right center, bottom center;
+    background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
+    background-repeat: no-repeat;
+}
+
+.seat-14 {
+    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
+        linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-position: left center, bottom center;
+    background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
+    background-repeat: no-repeat;
+}
+
+.seat-15 {
+    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
+        linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-position: right center, top center;
+    background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
+    background-repeat: no-repeat;
+}
+
+.seat-16 {
+    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
+        linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-position: left center, top center;
+    background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
+    background-repeat: no-repeat;
+}
+
+/* =======================================================
+   1. 공통 테마 색상 및 애니메이션
+   ======================================================= */
+:root {
+    --primary: #007bff;
+    --success: #28a745;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --gray: #6c757d;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =======================================================
+   2. 공통 버튼 (클릭 애니메이션 포함)
+   ======================================================= */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    /* 둥글기 통일 */
+    cursor: pointer;
+    font-weight: bold;
+    color: white;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+}
+
+/* 버튼 클릭 시 눌리는 효과 (쫀득한 느낌) */
+.btn:not(:disabled):active {
+    transform: scale(0.94);
+    box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.25);
+    filter: brightness(0.9);
+}
+
+/* 버튼 비활성화 상태 */
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #adb5bd !important;
+}
+
+/* -------------------------------------------
+   아래부터는 기존 좌석/파티션 코드 
+   ------------------------------------------- */

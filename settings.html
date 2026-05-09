@@ -9,18 +9,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- 👇 새로 만든 공통 자바스크립트 파일을 연결합니다 👇 -->
     <script src="common.js"></script>
+    <link rel="stylesheet" href="common_ui.css">
 
 
 
     <style>
-        :root {
-            --primary: #007bff;
-            --danger: #dc3545;
-            --success: #28a745;
-            --gray: #6c757d;
-            --warning: #ffc107;
-        }
-
         body {
             font-family: 'Malgun Gothic', sans-serif;
             background-color: #f4f7f9;
@@ -241,34 +234,9 @@
             background: #fff;
         }
 
-        .seat-1 {
-            background: #fff3cd;
-        }
 
-        .seat-2 {
-            background: #d1e7dd;
-        }
 
-        .seat-3 {
-            background: #e2e3e5;
-        }
 
-        .seat-4 {
-            background: #cff4fc;
-        }
-
-        .seat-5 {
-            background: #f8d7da;
-        }
-
-        .btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            color: white;
-        }
 
         .btn-save {
             background: var(--primary);
@@ -278,17 +246,7 @@
             font-size: 18px;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
 
         /* 학생 검색 입력창 스타일 수정 */
         #priority-search-input {
@@ -385,129 +343,6 @@
             border-color: #86b7fe;
             outline: none;
             box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
-        }
-
-
-        /* -------------------------------------------
-           도면 설계 파티션(벽) 디자인 (타입 6 ~ 12)
-           ------------------------------------------- */
-        .seat-6,
-        .seat-7,
-        .seat-8,
-        .seat-9,
-        .seat-10,
-        .seat-11,
-        .seat-12 {
-            background-color: #fff;
-        }
-
-        /* 6: 가로벽 (━) */
-        .seat-6 {
-            background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
-        }
-
-        /* 7: 세로벽 (┃) */
-        .seat-7 {
-            background-image: linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
-        }
-
-        /* 8: ㅏ (├) */
-        .seat-8 {
-            background-image:
-                linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-                /* 세로줄 */
-                linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
-            /* 가로줄 */
-            background-position: center, right center;
-            background-size: 100% 100%, 50% 100%;
-            background-repeat: no-repeat;
-        }
-
-        /* 9: ㅓ (┤) */
-        .seat-9 {
-            background-image:
-                linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-                linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
-            background-position: center, left center;
-            background-size: 100% 100%, 50% 100%;
-            background-repeat: no-repeat;
-        }
-
-        /* 10: ㅜ (┬) */
-        .seat-10 {
-            background-image:
-                linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-                linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
-            background-position: center, bottom center;
-            background-size: 100% 100%, 100% 50%;
-            background-repeat: no-repeat;
-        }
-
-        /* 11: ㅗ (┴) */
-        .seat-11 {
-            background-image:
-                linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-                linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
-            background-position: center, top center;
-            background-size: 100% 100%, 100% 50%;
-            background-repeat: no-repeat;
-        }
-
-        /* 12: 십자 (╋) */
-        .seat-12 {
-            background-image:
-                linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-                linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
-        }
-
-        /* -------------------------------------------
-           도면 설계 모서리 파티션 추가 (타입 13 ~ 16)
-           ------------------------------------------- */
-        .seat-13,
-        .seat-14,
-        .seat-15,
-        .seat-16 {
-            background-color: #fff;
-        }
-
-        /* 13: ┌ (좌상단 모서리) */
-        .seat-13 {
-            background-image:
-                linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-                linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
-            background-position: right center, bottom center;
-            background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
-            background-repeat: no-repeat;
-        }
-
-        /* 14: ┐ (우상단 모서리 - ㄱ 모양) */
-        .seat-14 {
-            background-image:
-                linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-                linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
-            background-position: left center, bottom center;
-            background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
-            background-repeat: no-repeat;
-        }
-
-        /* 15: └ (좌하단 모서리 - ㄴ 모양) */
-        .seat-15 {
-            background-image:
-                linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-                linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
-            background-position: right center, top center;
-            background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
-            background-repeat: no-repeat;
-        }
-
-        /* 16: ┘ (우하단 모서리) */
-        .seat-16 {
-            background-image:
-                linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-                linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
-            background-position: left center, top center;
-            background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
-            background-repeat: no-repeat;
         }
     </style>
 </head>
