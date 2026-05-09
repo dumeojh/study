@@ -460,6 +460,56 @@
                 linear-gradient(to right, transparent 18px, #343a40 18px, #343a40 24px, transparent 24px),
                 linear-gradient(to bottom, transparent 18px, #343a40 18px, #343a40 24px, transparent 24px);
         }
+
+        /* -------------------------------------------
+           도면 설계 모서리 파티션 추가 (타입 13 ~ 16)
+           ------------------------------------------- */
+        .seat-13,
+        .seat-14,
+        .seat-15,
+        .seat-16 {
+            background-color: #fff;
+        }
+
+        /* 13: ┌ (좌상단 모서리) */
+        .seat-13 {
+            background-image:
+                linear-gradient(to bottom, transparent 18px, #343a40 18px, #343a40 24px, transparent 24px),
+                linear-gradient(to right, transparent 18px, #343a40 18px, #343a40 24px, transparent 24px);
+            background-position: right center, bottom center;
+            background-size: calc(50% + 3px) 100%, 100% calc(50% + 3px);
+            background-repeat: no-repeat;
+        }
+
+        /* 14: ┐ (우상단 모서리 - ㄱ 모양) */
+        .seat-14 {
+            background-image:
+                linear-gradient(to bottom, transparent 18px, #343a40 18px, #343a40 24px, transparent 24px),
+                linear-gradient(to right, transparent 18px, #343a40 18px, #343a40 24px, transparent 24px);
+            background-position: left center, bottom center;
+            background-size: calc(50% + 3px) 100%, 100% calc(50% + 3px);
+            background-repeat: no-repeat;
+        }
+
+        /* 15: └ (좌하단 모서리 - ㄴ 모양) */
+        .seat-15 {
+            background-image:
+                linear-gradient(to bottom, transparent 18px, #343a40 18px, #343a40 24px, transparent 24px),
+                linear-gradient(to right, transparent 18px, #343a40 18px, #343a40 24px, transparent 24px);
+            background-position: right center, top center;
+            background-size: calc(50% + 3px) 100%, 100% calc(50% + 3px);
+            background-repeat: no-repeat;
+        }
+
+        /* 16: ┘ (우하단 모서리) */
+        .seat-16 {
+            background-image:
+                linear-gradient(to bottom, transparent 18px, #343a40 18px, #343a40 24px, transparent 24px),
+                linear-gradient(to right, transparent 18px, #343a40 18px, #343a40 24px, transparent 24px);
+            background-position: left center, top center;
+            background-size: calc(50% + 3px) 100%, 100% calc(50% + 3px);
+            background-repeat: no-repeat;
+        }
     </style>
 </head>
 
@@ -742,7 +792,7 @@
 
 
             <div class="tool-bar" style="flex-wrap: wrap; gap: 8px;">
-                <button class="tool-btn seat-0 selected" onclick="selectTool(0, this)">⬜통로</button>
+                <button class="tool-btn seat-0 selected" onclick="selectTool(0, this)">⬜통로(지우개)</button>
                 <button class="tool-btn seat-1" onclick="selectTool(1, this)">🟨고정</button>
                 <button class="tool-btn seat-2" onclick="selectTool(2, this)">🟩자율</button>
                 <button class="tool-btn seat-3" onclick="selectTool(3, this)">⬛기둥(벽)</button>
@@ -754,6 +804,10 @@
                     style="font-size:13px; font-weight:bold; align-self:center; color:#555; margin-right: 5px;">파티션:</span>
                 <button class="tool-btn seat-6" onclick="selectTool(6, this)">━</button>
                 <button class="tool-btn seat-7" onclick="selectTool(7, this)">┃</button>
+                <button class="tool-btn seat-13" onclick="selectTool(13, this)">┌</button>
+                <button class="tool-btn seat-14" onclick="selectTool(14, this)">┐(ㄱ)</button>
+                <button class="tool-btn seat-15" onclick="selectTool(15, this)">└(ㄴ)</button>
+                <button class="tool-btn seat-16" onclick="selectTool(16, this)">┘</button>
                 <button class="tool-btn seat-8" onclick="selectTool(8, this)">ㅏ</button>
                 <button class="tool-btn seat-9" onclick="selectTool(9, this)">ㅓ</button>
                 <button class="tool-btn seat-11" onclick="selectTool(11, this)">ㅗ</button>
