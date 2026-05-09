@@ -2753,6 +2753,27 @@
 
             document.getElementById('time-list-title').innerText = `🕒 ${timeSlot}타임 신청자 명단 (${targetDateStr})`;
 
+            // 👇👇 여기에 아래의 '운영일 체크 로직'을 통째로 추가하세요! 👇👇
+            const dayIdx = targetDateObj.getDay();
+            let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
+            let reason = "";
+
+            if (globalCalendarSchedule.data[targetDateStr] !== undefined) {
+                isOperating = globalCalendarSchedule.data[targetDateStr].active;
+                reason = globalCalendarSchedule.data[targetDateStr].reason || "정규휴무";
+            }
+
+            if (!isOperating) {
+                tbody.innerHTML = `<tr><td colspan="5" style="padding:50px; text-align:center; color:var(--danger); font-weight:bold; font-size: 16px;">🚨 오늘은 야간 자율학습을 운영하지 않습니다.<br><span style="font-size: 13px; color: #666; font-weight: normal;">(사유: ${reason})</span></td></tr>`;
+                document.getElementById('time-list-summary').innerHTML = `<span style="color:var(--danger);">운영 중지일</span>`;
+                document.getElementById('time-grid-area').style.display = 'none'; // 혹시 열려있는 네모 박스 명단 숨기기
+                window.currentTimeStudents = []; // 데이터 비우기
+                return; // 🌟 더 이상 아래 코드를 실행하지 않고 여기서 함수를 종료합니다!
+            }
+            // 👆👆 -------------------------------------------------------- 👆👆
+
+
+
             let targetStudentsMap = new Map();
 
             // 3. 해당 요일에 버튼의 타임(1, 2, 3)을 신청한 학생만 필터링
