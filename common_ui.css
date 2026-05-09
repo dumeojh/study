@@ -42,7 +42,22 @@
     background-color: #fff;
 }
 
-/* 가로/세로/교차 파티션 */
+/* 2. 파티션(벽) 디자인 (타입 6 ~ 16) */
+.seat-6,
+.seat-7,
+.seat-8,
+.seat-9,
+.seat-10,
+.seat-11,
+.seat-12,
+.seat-13,
+.seat-14,
+.seat-15,
+.seat-16 {
+    background-color: #fff;
+}
+
+/* 가로/세로/교차 파티션 (두께 2px) */
 .seat-6 {
     background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
 }
@@ -88,7 +103,7 @@
         linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
 }
 
-/* 모서리 파티션 */
+/* 모서리 파티션 (오프셋 보정) */
 .seat-13 {
     background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
         linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
