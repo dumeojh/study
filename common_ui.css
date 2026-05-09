@@ -27,7 +27,7 @@
 
 /* 특수 */
 
-/* 2. 파티션(벽) 디자인 (타입 6 ~ 16) */
+/* 2. 파티션(벽) 디자인 (타입 6 ~ 16) 공통 배경 투명화 */
 .seat-6,
 .seat-7,
 .seat-8,
@@ -39,38 +39,11 @@
 .seat-14,
 .seat-15,
 .seat-16 {
-    background-color: #fff;
+    background-color: transparent;
+    /* 흰색(#fff) 바탕을 없애고 투명하게 만들어 빈 공간과 일치시킴 */
 }
 
-/* 2. 파티션(벽) 디자인 (타입 6 ~ 16) */
-.seat-6,
-.seat-7,
-.seat-8,
-.seat-9,
-.seat-10,
-.seat-11,
-.seat-12,
-.seat-13,
-.seat-14,
-.seat-15,
-.seat-16 {
-    background-color: #fff;
-}
 
-/* 2. 파티션(벽) 디자인 (타입 6 ~ 16) - 정중앙 자동 보정 완벽판 */
-.seat-6,
-.seat-7,
-.seat-8,
-.seat-9,
-.seat-10,
-.seat-11,
-.seat-12,
-.seat-13,
-.seat-14,
-.seat-15,
-.seat-16 {
-    background-color: #fff;
-}
 
 /* 가로/세로/교차 파티션 (두께 2px, 항상 정중앙 50% 기준) */
 .seat-6 {
