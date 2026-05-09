@@ -1199,6 +1199,10 @@
 
             renderDailySupervisorMap();
             renderDailyList();
+            // 👇👇 이 3줄을 함수의 맨 마지막에 추가해주세요 👇👇
+            if (document.getElementById('tab-time-list').classList.contains('active') && window.currentTimeListSlot) {
+                openTimeList(window.currentTimeListSlot);
+            }
         }
 
         // 2. 날짜 레이블 업데이트 전용 함수 추가
