@@ -2757,20 +2757,16 @@
             }
         }
 
-
-
         function openTimeList(timeSlot) {
             // 1. 기존 탭 비활성화 및 새 화면 활성화
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-time-list').classList.add('active');
-            // 👇 여기에 공통 컨트롤(조회 날짜/운영 교시)을 숨기는 코드를 추가합니다 👇
+
             const sharedControls = document.getElementById('daily-shared-controls');
             if (sharedControls) {
                 sharedControls.style.display = 'none';
             }
-            // 👆 추가 완료 👆
-
 
             const tbody = document.getElementById('time-list-body');
             tbody.innerHTML = '';
@@ -2797,7 +2793,6 @@
                 }
             });
 
-
             dailyReservationsData.forEach(res => {
                 if (res.times && String(res.times).includes(String(timeSlot))) {
                     targetStudentsMap.set(String(res.stuId), {
@@ -2809,14 +2804,56 @@
                 }
             });
 
-            // 🌟 [추가] 미신청 참여자(미신청자 중 현재 입실/복귀 상태인 학생) 감지 로직
+            // 🌟 [수정된 핵심 로직] 미신청 참여자 완벽 감지
+            // 학생이 '귀가'했더라도, 과거 기록(history)이나 인정 시간이 있으면 잡아냅니다.
             Object.values(attendanceLogsData).forEach(log => {
                 const sId = String(log.stuId);
-                if ((log.status === "입실" || log.status === "복귀") && !targetStudentsMap.has(sId)) {
+
+                if (targetStudentsMap.has(sId)) return; // 이미 정상 신청자 명단에 있으면 패스
+
+                let participatedInSlot = false;
+
+                // 조건 1. 현재 운영 교시와 조회 타임이 일치하고, 현재 교실에 있는 경우
+                const currentOpSlot = parseInt(document.getElementById('daily-time').value) || 1;
+                if (currentOpSlot === timeSlot && (log.status === "입실" || log.status === "복귀")) {
+                    participatedInSlot = true;
+                }
+
+                // 조건 2. 학생의 출결 흔적(history)에 해당 타임 활동 기록이 있는 경우
+                if (log.history && log.history.length > 0) {
+                    log.history.forEach(h => {
+                        const tmMatch = h.match(/(\d{2}:\d{2})/);
+                        let slot = 0;
+                        if (tmMatch) {
+                            const timeStr = tmMatch[1];
+                            if (timeStr < currentSchedule.t1) slot = 0;
+                            else if (timeStr < currentSchedule.t2) slot = 1;
+                            else if (timeStr < currentSchedule.t3) slot = 2;
+                            else slot = 3;
+                        } else {
+                            if (h.includes("1타임") || h.includes("1T")) slot = 1;
+                            else if (h.includes("2타임") || h.includes("2T")) slot = 2;
+                            else if (h.includes("3타임") || h.includes("3T")) slot = 3;
+                        }
+
+                        // 단순 결석/마감 기록이 아닌 진짜 활동 흔적인지 체크
+                        if (slot === timeSlot && !h.includes("결석") && !h.includes("누락") && !h.includes("마감")) {
+                            participatedInSlot = true;
+                        }
+                    });
+                }
+
+                // 조건 3. common.js의 인정 로직을 통해 공식적으로 해당 타임 인정을 받은 경우
+                const recognizedSet = getRecognizedTimes(log, currentSchedule);
+                if (recognizedSet.has(timeSlot)) {
+                    participatedInSlot = true;
+                }
+
+                // 위 조건 중 하나라도 만족하면 미신청 참여자로 등록!
+                if (participatedInSlot) {
                     let foundSeat = "미확인";
                     let foundType = "미신청(참여)";
 
-                    // 원래 이 학생의 좌석 정보 가져오기 시도
                     const appEntry = Object.values(applicationData).find(app => String(app.stuId) === sId && app.targetMonth === targetMonthStr);
                     if (appEntry) {
                         if (appEntry.type === "고정석") foundSeat = appEntry.seatNum;
@@ -2833,7 +2870,7 @@
                         stuName: log.stuName,
                         seatNum: foundSeat,
                         type: foundType,
-                        isExtended: true // 미신청(참여) 꼬리표 붙이기
+                        isExtended: true // 미신청(참여) 꼬리표
                     });
                 }
             });
@@ -2844,14 +2881,14 @@
             targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
 
 
-            // 4. 상황 계산 및 표 그리기 (stat.extended 추가)
+            // 4. 상황 계산 및 표 그리기
             let stat = { total: 0, extended: 0, fixed: 0, autoIssued: 0, autoUnissued: 0, present: 0, absent: 0, out: 0, finish: 0 };
 
             targetStudents.forEach((st, index) => {
                 if (st.isExtended) {
-                    stat.extended++; // 미신청 참여자 카운트
+                    stat.extended++; // 미신청 참여자 카운트 
                 } else {
-                    stat.total++; // 정상 신청자 카운트
+                    stat.total++;
                     if (st.type === "고정석") stat.fixed++;
                     else {
                         if (st.seatNum === "미발권") stat.autoUnissued++;
@@ -2865,7 +2902,6 @@
                 let statusBg = "#fff0f0";
 
                 if (st.isExtended) {
-                    // 미신청 참여자는 무조건 참여 중인 상태임
                     status = "미신청(참여)"; statusColor = "#d63384"; statusBg = "#ffe5ec"; stat.present++;
                 } else if (log) {
                     if (log.status === "입실" || log.status === "복귀") {
@@ -2880,7 +2916,6 @@
                     else stat.absent++;
                 } else stat.absent++;
 
-                // 🌟 [추가] 나중에 네모 박스를 그릴 때 상태를 알기 위해 현재 상태 저장
                 st.currentStatus = status;
 
                 const tr = document.createElement('tr');
@@ -2899,20 +2934,14 @@
                 tbody.appendChild(tr);
             });
 
-
-
-
-
-
-
             if (targetStudents.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color:#dc3545; font-weight:bold;">해당 타임에 신청한 학생이 없습니다.</td></tr>`;
             }
 
-            // 🌟 [추가] 박스 그리기에 쓰기 위해 현재 필터링된 학생 전체 목록 저장
+            // 박스 그리기에 쓰기 위해 현재 필터링된 학생 전체 목록 저장
             window.currentTimeStudents = targetStudents;
 
-            // 요약 정보 갱신 (마우스 클릭 효과 및 클릭 이벤트 추가)
+            // 요약 정보 갱신
             const summaryDiv = document.getElementById('time-list-summary');
             summaryDiv.style.padding = "0"; summaryDiv.style.border = "none"; summaryDiv.style.background = "transparent";
 
@@ -2945,9 +2974,6 @@
                                 <td class="sum-btn" onclick="showTimeGrid('managed')" style="padding: 8px 12px; font-weight: 900; font-size: 16px; border-right: 1px solid #ddd; color: #5b21b6; background: #faf5ff;">${stat.fixed + stat.autoIssued}명</td>
                                 <td class="sum-btn" onclick="showTimeGrid('extended')" style="padding: 8px 12px; font-weight: 900; font-size: 15px; border-right: 1px solid #ddd; color: #d63384; background: #fff0f7;">${stat.extended}명</td>
                                 <td class="sum-btn" onclick="showTimeGrid('fixed')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd;">${stat.fixed}명</td>
-                             
-                             
-                             
                                 <td class="sum-btn" onclick="showTimeGrid('autoIssued')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #198754;">${stat.autoIssued}명</td>
                                 <td class="sum-btn" onclick="showTimeGrid('autoUnissued')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #dc3545;">${stat.autoUnissued}명</td>
                                 <td class="sum-btn" onclick="showTimeGrid('present')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--primary);">${stat.present}명</td>
