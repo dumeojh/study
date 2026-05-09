@@ -630,9 +630,11 @@
                 <button class="tool-btn seat-1" onclick="selectTool(1, this)">🟨고정</button>
                 <button class="tool-btn seat-2" onclick="selectTool(2, this)">🟩자율</button>
                 <button class="tool-btn seat-3" onclick="selectTool(3, this)">⬛기둥(벽)</button>
-                <button class="tool-btn seat-4" onclick="selectTool(4, this)">🟦문</button>
-                <button class="tool-btn seat-5" onclick="selectTool(5, this)">🟥특수</button>
 
+                <button class="tool-btn seat-4" onclick="selectTool(4, this)">🚪출입구</button>
+                <button class="tool-btn seat-5" onclick="selectTool(5, this)">👩‍🏫교사석</button>
+                <button class="tool-btn seat-17" onclick="selectTool(17, this)">🪟창가</button>
+                <button class="tool-btn seat-18" onclick="selectTool(18, this)">🗄️사물함</button>
                 <div style="width: 100%; height: 0; border-bottom: 1px dashed #ccc; margin: 2px 0;"></div>
                 <span
                     style="font-size:13px; font-weight:bold; align-self:center; color:#555; margin-right: 5px;">파티션:</span>
@@ -1210,6 +1212,9 @@
         function resizeGrid() { if (!confirm("도면을 리셋하면 기존의 모든 좌석 배치가 삭제됩니다. 진행하시겠습니까?")) return; saveHistory(); rows = parseInt(document.getElementById('grid-rows').value); cols = parseInt(document.getElementById('grid-cols').value); seatMapData = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ type: 0, label: "" }))); drawEditGrid(); }
         function modifyGrid(a) { saveHistory(); const i = parseInt(document.getElementById('target-index').value) - 1; if (i < 0) return; if (a === 'insertRow') { seatMapData.splice(i, 0, Array.from({ length: cols }, () => ({ type: 0, label: "" }))); rows++; } else if (a === 'deleteRow') { seatMapData.splice(i, 1); rows--; } else if (a === 'insertCol') { seatMapData.forEach(r => r.splice(i, 0, { type: 0, label: "" })); cols++; } else if (a === 'deleteCol') { seatMapData.forEach(r => r.splice(i, 1)); cols--; } drawEditGrid(); }
 
+
+
+        ///////////////////////////////////////////////////////////////
         function drawEditGrid() {
             const g = document.getElementById('seat-grid');
             g.innerHTML = '';
@@ -1218,16 +1223,30 @@
                 const d = document.createElement('div');
                 d.className = `seat-cell seat-${cell.type}`;
                 d.innerText = cell.label;
+
+
+
                 d.onclick = () => {
                     saveHistory();
-                    if ([1, 2, 5].includes(currentTool)) {
+                    if ([1, 2].includes(currentTool)) {
                         const newLabel = prompt("좌석 번호(라벨)를 입력하세요:", cell.label);
                         if (newLabel !== null) cell.label = newLabel;
                         else return;
+                    } else if (currentTool === 4) {
+                        cell.label = "🚪\n출입구";
+                    } else if (currentTool === 5) {
+                        cell.label = "👩‍🏫\n교사석";
+                    } else if (currentTool === 17) {
+                        cell.label = "🪟\n창가";
+                    } else if (currentTool === 18) {
+                        cell.label = "🗄️\n사물함";
+                    } else {
+                        cell.label = "";
                     }
                     cell.type = currentTool;
                     drawEditGrid();
                 };
+
                 g.appendChild(d);
             }));
         }

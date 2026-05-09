@@ -15,14 +15,61 @@
     background: #e2e3e5;
 }
 
-/* 기둥(벽) */
-.seat-4 {
-    background: #cff4fc;
+/* 1. 기본 좌석 색상 (고정/자율/기둥 등) */
+.seat-1 {
+    background: #fff3cd;
 }
 
-/* 문 */
+/* 고정석 구역 */
+.seat-2 {
+    background: #d1e7dd;
+}
+
+/* 자율석 구역 */
+.seat-3 {
+    background: #e2e3e5;
+}
+
+/* 기둥(벽) */
+
+/* 👇 여기서부터 아래로 덮어쓰세요 👇 */
+/* 4: 출입구(문) */
+.seat-4 {
+    background: #cff4fc;
+    border: 2px dashed #0dcaf0;
+    color: #055160;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+
+/* 5: 교사석(특수) */
 .seat-5 {
     background: #f8d7da;
+    border: 2px solid #dc3545;
+    color: #842029;
+    font-weight: bold;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+/* 17: 창가 */
+.seat-17 {
+    background: #e0f7fa;
+    border-right: 5px solid #00acc1;
+    border-left: 1px solid #b2ebf2;
+    color: #006064;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+
+/* 18: 사물함 */
+.seat-18 {
+    background: #f3e5f5;
+    border: 2px solid #ab47bc;
+    color: #4a148c;
+    font-weight: bold;
+    border-radius: 4px;
+    box-sizing: border-box;
 }
 
 /* 특수 */
