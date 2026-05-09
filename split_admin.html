@@ -1908,20 +1908,49 @@
             const resEntry = dailyReservationsData.find(res => String(res.stuId) === String(stuId) && res.date === targetDateStr);
             if (resEntry && resEntry.times) rawTimes = resEntry.times;
 
-            // 👇👇 여기에 '신청 타임' 박스를 그려주는 코드를 추가하세요! (0T 제외) 👇👇
+            // 👇👇 여기서부터 교체해 주세요! 👇👇
             let appliedBadges = "";
+            let resultBadges = "";
+
+            // 공통 함수를 사용하여 실제로 인정받은 타임을 계산합니다.
+            const recognizedSet = getRecognizedTimes(log, currentSchedule);
+
             [1, 2, 3].forEach(t => {
                 const isApplied = rawTimes.includes(String(t));
+                const isRecognized = recognizedSet.has(t);
+
+                // 1. [신청 타임] 배지 그리기
                 if (isApplied) {
                     // 신청한 타임: 진한 회색 바탕에 흰 글씨
                     appliedBadges += `<span style="background:#6c757d; color:white; padding:3px 8px; border-radius:4px; font-size:12px; margin:0 3px; display:inline-block; text-align:center; min-width:18px; font-weight:bold; box-shadow:0 1px 2px rgba(0,0,0,0.1);">${t}T</span>`;
                 } else {
-                    // 🌟 수정됨: 미신청 타임: 흐린 빨간색 바탕에 빨간 점선 테두리로 강조 🌟
+                    // 미신청 타임: 흐린 빨간색 바탕에 빨간 점선 테두리로 강조
                     appliedBadges += `<span style="border:1px dashed #dc3545; color:#dc3545; background:#fff0f0; padding:2px 7px; border-radius:4px; font-size:12px; margin:0 3px; display:inline-block; text-align:center; min-width:18px;">${t}T</span>`;
                 }
+
+                // 2. [참여 결과] 배지 그리기 (일일 현황판 스타일 적용)
+                if (isRecognized) {
+                    // 인정됨(출석): 파란색 바탕
+                    resultBadges += `<span style="background:#0d6efd; color:white; padding:3px 8px; border-radius:4px; font-size:12px; margin:0 3px; display:inline-block; text-align:center; min-width:18px; font-weight:bold; box-shadow:0 1px 2px rgba(0,0,0,0.1);">${t}T</span>`;
+                } else if (isApplied) {
+                    // 신청했는데 미인정(결석/누락): 빨간색 바탕
+                    resultBadges += `<span style="border:1px solid #dc3545; color:#dc3545; background:#fff0f0; padding:2px 7px; border-radius:4px; font-size:12px; margin:0 3px; display:inline-block; text-align:center; min-width:18px; font-weight:bold;">${t}T</span>`;
+                } else {
+                    // 신청 안 했고 인정도 안 됨: 회색 흐린 점선
+                    resultBadges += `<span style="border:1px dashed #adb5bd; color:#adb5bd; background:transparent; padding:2px 7px; border-radius:4px; font-size:12px; margin:0 3px; display:inline-block; text-align:center; min-width:18px;">${t}T</span>`;
+                }
             });
-            document.getElementById('ds-applied-times').innerHTML = `<span style="font-size: 13px; font-weight: bold; color: #555; margin-right: 5px;">✅ 신청 타임:</span>` + appliedBadges;
-            // 👆👆 ---------------------------
+
+            // 보기 좋게 정렬된 하나의 둥근 박스로 묶어서 출력합니다.
+            document.getElementById('ds-applied-times').innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 6px; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e9ecef; width: max-content; margin: 10px auto;">
+                    <div style="display: flex; align-items: center;"><span style="font-size: 13px; font-weight: bold; color: #555; width: 75px; text-align: left;">✅ 신청 타임</span>${appliedBadges}</div>
+                    <div style="display: flex; align-items: center;"><span style="font-size: 13px; font-weight: bold; color: #555; width: 75px; text-align: left;">🎯 참여 결과</span>${resultBadges}</div>
+                </div>
+            `;
+            // 👆👆 여기까지 교체해 주세요! 👆👆
+
+
             // 학생의 출결 기록(log.history)이 존재할 경우 타임라인 조립
             if (log && log.history && log.history.length > 0) {
                 let groupedHistory = { 0: [], 1: [], 2: [], 3: [] };
