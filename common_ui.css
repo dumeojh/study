@@ -1,19 +1,5 @@
 /* common_ui.css - 좌석 및 파티션 공통 디자인 */
 
-/* 1. 기본 좌석 색상 (고정/자율/기둥 등) */
-.seat-1 {
-    background: #fff3cd;
-}
-
-/* 고정석 구역 */
-.seat-2 {
-    background: #d1e7dd;
-}
-
-/* 자율석 구역 */
-.seat-3 {
-    background: #e2e3e5;
-}
 
 /* 1. 기본 좌석 색상 (고정/자율/기둥 등) */
 .seat-1 {
