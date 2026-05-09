@@ -628,6 +628,9 @@
 
 
             <div class="tool-bar" style="flex-wrap: wrap; gap: 8px;">
+                <button class="tool-btn" onclick="undo()"
+                    style="border-color: var(--warning); color: #856404; background: #fff3cd; margin-right: 10px;">↩️
+                    되돌리기 (Ctrl+Z)</button>
                 <button class="tool-btn seat-0 selected" onclick="selectTool(0, this)">⬜통로(지우개)</button>
                 <button class="tool-btn seat-1" onclick="selectTool(1, this)">🟨고정</button>
                 <button class="tool-btn seat-2" onclick="selectTool(2, this)">🟩자율</button>
@@ -935,6 +938,16 @@
         let allStudentData = [];
         let currentTool = 0, seatMapData = [], rows = 20, cols = 30, currentSchedule = {}, historyStack = [];
         let defaultOperatingDays = [1, 2, 3, 4, 5];
+
+        // 🌟 키보드 단축키 (Ctrl+Z) 감지 이벤트 (도면설계 탭에서만 작동) 🌟
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('tab-seats').classList.contains('active')) {
+                if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+                    e.preventDefault(); // 브라우저 기본 되돌리기 방지
+                    undo();
+                }
+            }
+        });
 
         function updateClassFilterOptions() {
             const select = document.getElementById('class-filter-select');
