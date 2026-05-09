@@ -236,7 +236,31 @@
             background: #fff;
         }
 
+        /* 👇 여기서부터 추가 👇 */
+        /* 도면 드래그 및 다중 선택 효과 */
+        .seat-cell[draggable="true"] {
+            cursor: grab;
+        }
 
+        .seat-cell[draggable="true"]:active {
+            cursor: grabbing;
+            opacity: 0.8;
+            transform: scale(0.95);
+        }
+
+        .highlight-select {
+            background-color: rgba(111, 66, 193, 0.2) !important;
+            border: 2px dashed #6f42c1 !important;
+        }
+
+        .selected-seat {
+            outline: 3px solid #6f42c1 !important;
+            outline-offset: -3px;
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(111, 66, 193, 0.6);
+        }
+
+        /* 👆 여기까지 추가 👆 */
 
 
 
@@ -631,8 +655,13 @@
                 <button class="tool-btn" onclick="undo()"
                     style="border-color: var(--warning); color: #856404; background: #fff3cd; margin-right: 10px;">↩️
                     되돌리기 (Ctrl+Z)</button>
+
+                <button class="tool-btn" onclick="selectTool(99, this)"
+                    style="border-color: #6f42c1; color: #6f42c1; background: #f3e8ff;">🖱️ 이동(드래그)</button>
+
                 <button class="tool-btn seat-0 selected" onclick="selectTool(0, this)">⬜통로(지우개)</button>
                 <button class="tool-btn seat-1" onclick="selectTool(1, this)">🟨고정</button>
+
                 <button class="tool-btn seat-2" onclick="selectTool(2, this)">🟩자율</button>
                 <button class="tool-btn seat-3" onclick="selectTool(3, this)">⬛기둥(벽)</button>
 
@@ -939,6 +968,92 @@
         let currentTool = 0, seatMapData = [], rows = 20, cols = 30, currentSchedule = {}, historyStack = [];
         let defaultOperatingDays = [1, 2, 3, 4, 5];
 
+        // 👇 여기서부터 드래그를 위한 변수 및 함수 전체를 붙여넣으세요 👇
+        let isDragging = false, isSelecting = false;
+        let selectedSeats = [], drawStart = null, drawEnd = null;
+
+        document.addEventListener('mouseup', () => {
+            if (isSelecting) {
+                isSelecting = false;
+                if (drawStart && drawEnd) finalizeSelection(drawStart.r, drawStart.c, drawEnd.r, drawEnd.c);
+                drawStart = null; drawEnd = null;
+            }
+        });
+
+        function highlightAreaSelect(r1, c1, r2, c2) {
+            document.querySelectorAll('#seat-grid .seat-cell').forEach(el => el.classList.remove('highlight-select'));
+            const minR = Math.min(r1, r2), maxR = Math.max(r1, r2), minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
+            for (let i = minR; i <= maxR; i++) {
+                for (let j = minC; j <= maxC; j++) {
+                    const el = document.querySelector(`.seat-cell[data-r="${i}"][data-c="${j}"]`);
+                    if (el) el.classList.add('highlight-select');
+                }
+            }
+        }
+
+        function finalizeSelection(r1, c1, r2, c2) {
+            document.querySelectorAll('#seat-grid .seat-cell').forEach(el => el.classList.remove('highlight-select'));
+            const minR = Math.min(r1, r2), maxR = Math.max(r1, r2), minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
+            let newSelected = [];
+            for (let i = minR; i <= maxR; i++) {
+                for (let j = minC; j <= maxC; j++) {
+                    if (seatMapData[i][j].type !== 0) newSelected.push({ r: i, c: j, ...seatMapData[i][j] });
+                }
+            }
+            selectedSeats = newSelected;
+            reapplySelectionVisuals();
+        }
+
+        function clearSelection() {
+            selectedSeats = [];
+            document.querySelectorAll('#seat-grid .seat-cell').forEach(el => el.classList.remove('selected-seat'));
+        }
+
+        function reapplySelectionVisuals() {
+            document.querySelectorAll('#seat-grid .seat-cell').forEach(el => el.classList.remove('selected-seat'));
+            selectedSeats.forEach(seat => {
+                const el = document.querySelector(`.seat-cell[data-r="${seat.r}"][data-c="${seat.c}"]`);
+                if (el) el.classList.add('selected-seat');
+            });
+        }
+
+        function moveSelection(draggedR, draggedC, targetR, targetC) {
+            const dr = targetR - draggedR;
+            const dc = targetC - draggedC;
+            if (dr === 0 && dc === 0) return;
+
+            let canMove = true;
+            for (let seat of selectedSeats) {
+                const nR = seat.r + dr, nC = seat.c + dc;
+                if (nR < 0 || nR >= rows || nC < 0 || nC >= cols) { canMove = false; break; }
+                if (seatMapData[nR][nC].type !== 0) {
+                    const isOwnGroup = selectedSeats.some(s => s.r === nR && s.c === nC);
+                    if (!isOwnGroup) { canMove = false; break; }
+                }
+            }
+            if (!canMove) return alert("이동할 수 없는 위치이거나 겹치는 요소가 있습니다.");
+
+            saveHistory(); // 이동 전 되돌리기 백업
+            selectedSeats.forEach(seat => seatMapData[seat.r][seat.c] = { type: 0, label: "" });
+            selectedSeats.forEach(seat => {
+                seat.r += dr; seat.c += dc;
+                seatMapData[seat.r][seat.c] = { type: seat.type, label: seat.label };
+            });
+            drawEditGrid();
+        }
+
+        // 툴 변경 시 기존 선택 영역 해제 기능 추가 (기존 selectTool 함수 덮어쓰기)
+        function selectTool(t, b) {
+            currentTool = t;
+            document.querySelectorAll('.tool-btn').forEach(x => x.classList.remove('selected'));
+            b.classList.add('selected');
+            clearSelection();
+        }
+        /* 👆 여기까지 추가 👆 */
+
+
+
+
         // 🌟 키보드 단축키 (Ctrl+Z) 감지 이벤트 (도면설계 탭에서만 작동) 🌟
         document.addEventListener('keydown', (e) => {
             if (document.getElementById('tab-seats').classList.contains('active')) {
@@ -1229,40 +1344,93 @@
 
 
 
-        ///////////////////////////////////////////////////////////////
+
+
         function drawEditGrid() {
             const g = document.getElementById('seat-grid');
             g.innerHTML = '';
             g.style.gridTemplateColumns = `repeat(${cols}, 42px)`;
-            seatMapData.forEach(row => row.forEach(cell => {
+
+            seatMapData.forEach((row, ri) => row.forEach((cell, ci) => {
                 const d = document.createElement('div');
                 d.className = `seat-cell seat-${cell.type}`;
                 d.innerText = cell.label;
 
+                // 🌟 셀의 행(row)과 열(col) 데이터 부여
+                d.dataset.r = ri;
+                d.dataset.c = ci;
 
+                // 🌟 드래그 앤 드롭 이벤트 부여
+                if (cell.type !== 0) {
+                    d.draggable = true;
+                    d.ondragstart = (e) => {
+                        if (currentTool !== 99) return; // '이동(드래그)' 도구일 때만 드래그 시작
+                        if (isSelecting) { e.preventDefault(); return; }
+                        isDragging = true;
+
+                        const isSelected = selectedSeats.some(s => s.r === ri && s.c === ci);
+                        if (!isSelected) {
+                            selectedSeats = [{ r: ri, c: ci, ...seatMapData[ri][ci] }];
+                            reapplySelectionVisuals();
+                        }
+                        e.dataTransfer.setData('application/json', JSON.stringify({ r: ri, c: ci }));
+                    };
+                    d.ondragend = () => { setTimeout(() => isDragging = false, 100); };
+                }
+
+                d.ondragover = (e) => e.preventDefault();
+                d.ondrop = (e) => {
+                    e.preventDefault();
+                    if (currentTool !== 99) return;
+                    if (!e.dataTransfer.getData('application/json')) return;
+                    const data = JSON.parse(e.dataTransfer.getData('application/json'));
+                    moveSelection(data.r, data.c, ri, ci);
+                };
+
+                d.onmousedown = (e) => {
+                    if (currentTool === 99) {
+                        if (cell.type !== 0) {
+                            const isSelected = selectedSeats.some(s => s.r === ri && s.c === ci);
+                            if (!isSelected) {
+                                clearSelection();
+                                selectedSeats.push({ r: ri, c: ci, ...cell });
+                                reapplySelectionVisuals();
+                            }
+                        } else {
+                            // 빈칸 클릭 후 드래그 시 '다중 선택 박스' 생성
+                            isSelecting = true; drawStart = { r: ri, c: ci }; drawEnd = { r: ri, c: ci };
+                            clearSelection();
+                            highlightAreaSelect(drawStart.r, drawStart.c, drawEnd.r, drawEnd.c);
+                        }
+                    }
+                };
+
+                d.onmouseenter = () => {
+                    if (isSelecting) {
+                        drawEnd = { r: ri, c: ci };
+                        highlightAreaSelect(drawStart.r, drawStart.c, drawEnd.r, drawEnd.c);
+                    }
+                };
+
+                // 기존 클릭/수정 로직
                 d.onclick = () => {
-                    // [수정] 프롬프트에서 취소했을 때 불필요한 저장이 생기지 않도록 위치 변경
+                    if (isDragging || currentTool === 99) return; // 드래그 중이거나 이동 도구일 때는 무시
+
                     if ([1, 2].includes(currentTool)) {
                         const newLabel = prompt("좌석 번호(라벨)를 입력하세요:", cell.label);
                         if (newLabel !== null) {
-                            saveHistory(); // 내용이 변경될 때만 히스토리 저장
+                            saveHistory();
                             cell.label = newLabel;
                         } else {
-                            return; // 취소하면 아무것도 안 함
+                            return;
                         }
                     } else {
-                        saveHistory(); // 다른 도구일 때는 클릭 즉시 히스토리 저장
-                        if (currentTool === 4) {
-                            cell.label = "🚪\n출입구";
-                        } else if (currentTool === 5) {
-                            cell.label = "👩‍🏫\n교사석";
-                        } else if (currentTool === 17) {
-                            cell.label = "🪟\n창가";
-                        } else if (currentTool === 18) {
-                            cell.label = "🗄️\n사물함";
-                        } else {
-                            cell.label = "";
-                        }
+                        saveHistory();
+                        if (currentTool === 4) { cell.label = "🚪\n출입구"; }
+                        else if (currentTool === 5) { cell.label = "👩‍🏫\n교사석"; }
+                        else if (currentTool === 17) { cell.label = "🪟\n창가"; }
+                        else if (currentTool === 18) { cell.label = "🗄️\n사물함"; }
+                        else { cell.label = ""; }
                     }
                     cell.type = currentTool;
                     drawEditGrid();
@@ -1270,7 +1438,11 @@
 
                 g.appendChild(d);
             }));
+
+            reapplySelectionVisuals(); // 화면을 다시 그릴 때 기존 선택 영역 유지
         }
+
+
 
         async function saveCalendarSchedule() {
             updateDefaultDays();
