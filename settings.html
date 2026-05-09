@@ -1355,10 +1355,6 @@
         function undo() { if (historyStack.length === 0) return; const p = JSON.parse(historyStack.pop()); rows = p.rows; cols = p.cols; seatMapData = p.grid; drawEditGrid(); }
         function calculateMinutes(n) { const s = document.getElementById(`t${n}-start`).value, e = document.getElementById(`t${n}-end`).value; if (s && e) { let d = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 60000; if (d < 0) d += 1440; document.getElementById(`t${n}-min`).innerText = d + "분"; } }
 
-        function saveHistory() { if (historyStack.length >= 20) historyStack.shift(); historyStack.push(JSON.stringify({ rows, cols, grid: seatMapData })); }
-        function undo() { if (historyStack.length === 0) return; const p = JSON.parse(historyStack.pop()); rows = p.rows; cols = p.cols; seatMapData = p.grid; drawEditGrid(); }
-        function calculateMinutes(n) { const s = document.getElementById(`t${n}-start`).value, e = document.getElementById(`t${n}-end`).value; if (s && e) { let d = (new Date(`1970-01-01T${e}`) - new Date(`1970-01-01T${s}`)) / 60000; if (d < 0) d += 1440; document.getElementById(`t${n}-min`).innerText = d + "분"; } }
-
         /* 👇 여기서부터 백업/복구 기능 함수 2개를 추가하세요 👇 */
         function exportToFile() {
             const dataStr = JSON.stringify({ rows, cols, grid: seatMapData }, null, 2);
@@ -1423,8 +1419,6 @@
             input.click();
         }
         /* 👆 여기까지 추가 👆 */
-
-        function resizeGrid() { if (!confirm("도면을 리셋하면 기존의 모든 좌석 배치가 삭제됩니다. 진행하시겠습니까?")) return; saveHistory(); rows = parseInt(document.getElementById('grid-rows').value); cols = parseInt(document.getElementById('grid-cols').value); seatMapData = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ type: 0, label: "" }))); drawEditGrid(); }
 
 
 
