@@ -627,11 +627,24 @@
 
         <div id="tab-seats" class="card">
 
-
-
             <h3>🪑 자율학습실 좌석 도면 설계</h3>
+
+            <div
+                style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ffeeba; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <b style="color: #856404;">💾 도면 파일로 PC에 백업/복구하기</b>
+                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">만일의 사태를 대비해 완성한 도면을 PC에 파일로 보관해두거나 불러올 수
+                        있습니다.</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn" style="background: #fd7e14;" onclick="exportToFile()">⬇️ 도면 다운로드</button>
+                    <button class="btn" style="background: #20c997;" onclick="importFromFile()">📂 파일 불러오기</button>
+                </div>
+            </div>
             <div
                 style="background: #f1f3f5; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+
+
                 <div>가로 <input type="number" id="grid-cols" value="30" style="width:45px;"> X 세로 <input type="number"
                         id="grid-rows" value="20" style="width:45px;"> <button class="btn"
                         style="background:var(--gray); padding: 5px 8px; font-size:11px;"
