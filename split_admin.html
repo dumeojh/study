@@ -2987,7 +2987,8 @@
         }
 
 
-        // 👇 [새로 추가] 숫자를 누르면 아래로 네모 박스가 내려오는 기능 👇
+
+        // 👇 [수정] 숫자를 누르면 아래로 네모 박스가 내려오는 기능 (무지개색 제거) 👇
         function showTimeGrid(category) {
             const container = document.getElementById('time-grid-area');
             if (!container || !window.currentTimeStudents) return;
@@ -2995,17 +2996,14 @@
             let filtered = [];
             let title = "";
 
-
             window.currentTimeStudents.forEach(st => {
                 let match = false;
                 if (category === 'all') { match = true; title = "총 신청자"; }
                 else if (category === 'managed' && (st.type === "고정석" || (st.type === "자율석" && st.seatNum !== "미발권"))) { match = true; title = "🎯 실 관리 대상 (고정석 + 발권완료)"; }
-                // 👇 연장 학습 필터 추가
                 else if (category === 'extended' && st.isExtended) { match = true; title = "🔥 미신청자 (참여 중)"; }
                 else if (category === 'fixed' && st.type === "고정석") { match = true; title = "고정석 신청"; }
                 else if (category === 'autoIssued' && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
                 else if (category === 'autoUnissued' && st.type === "자율석" && st.seatNum === "미발권") { match = true; title = "자율석 (미발권)"; }
-                // 👇 연장 학습자도 참여 명단에 포함되도록 수정
                 else if (category === 'present' && (st.currentStatus === "참여" || st.currentStatus === "미신청(참여)")) { match = true; title = "🟢 현재 참여 중"; }
                 else if (category === 'out' && st.currentStatus === "외출") { match = true; title = "🟡 현재 외출 중"; }
                 else if (category === 'finish' && st.currentStatus === "귀가") { match = true; title = "⚪ 최종 귀가 완료"; }
@@ -3031,25 +3029,9 @@
                 `;
 
             filtered.forEach(st => {
-                // 1. 반 추출하기 (가운데 자리 숫자 추출)
-                const stuIdStr = String(st.stuId);
-                let classNum = "1";
-                if (stuIdStr.length >= 4) {
-                    classNum = stuIdStr.slice(0, -2).substring(1);
-                } else {
-                    classNum = stuIdStr;
-                }
+                // 👇 반별 무지개 색상 지정 로직 모두 삭제됨 👇
 
-                // 2. 무지개색 (빨주노초파남) 반별 컬러 배정
-                let classBorderColor = "#ccc";
-                if (classNum === "1") classBorderColor = "#ff4d4d";
-                else if (classNum === "2") classBorderColor = "#fd7e14";
-                else if (classNum === "3") classBorderColor = "#ffc107";
-                else if (classNum === "4") classBorderColor = "#198754";
-                else if (classNum === "5") classBorderColor = "#0d6efd";
-                else if (classNum === "6") classBorderColor = "#6610f2";
-
-                // 👇 3. 새로 추가된 로직: 현재 출결 상태를 가져와서 좌석표와 동일한 CSS 클래스 산출
+                // 1. 현재 출결 상태를 가져와서 좌석표와 동일한 CSS 클래스 산출
                 const log = attendanceLogsData[String(st.stuId)];
                 let cssClass = "status-absent"; // 기본값: 미입실 (빨간 점선)
 
@@ -3070,7 +3052,7 @@
                     }
                 }
 
-                // 👇 4. 네모 박스 그리기 (CSS 클래스 적용 및 폰트 색상 자동 맞춤)
+                // 2. 네모 박스 그리기 (CSS 클래스 적용 및 통일된 상단 띠 적용)
                 html += `
                         <div onclick="openDailyStatus('${st.stuId}', '${st.stuName}', '${st.seatNum}', '')" 
                              class="${cssClass}"
@@ -3078,7 +3060,7 @@
                              onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" 
                              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.05)';">
                             
-                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: ${classBorderColor};"></div>
+                            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: rgba(0,0,0,0.1);"></div>
                             
                             <div style="font-size: 11px; letter-spacing: -0.5px; color: inherit; opacity: 0.8; margin-top: 3px;">${st.stuId}</div>
                             <div style="font-size: 14px; font-weight: 900; color: inherit; margin: 4px 0;">${st.stuName}</div>
