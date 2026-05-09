@@ -844,6 +844,7 @@
                 <div style="text-align: center; margin-top: 15px;">
                     <h2 id="ds-name" style="margin: 0; color: var(--primary);">이름</h2>
                     <p id="ds-info" style="color: #555; margin: 8px 0; font-weight: bold;">학번: - | 좌석: -</p>
+                    <div id="ds-applied-times" style="margin: 8px 0;"></div>
                     <p id="ds-phone"
                         style="background: #eef6ff; padding: 8px; border-radius: 5px; font-size: 13px; margin: 5px 0;">
                         📞 연락처 정보 없음</p>
@@ -1906,7 +1907,20 @@
             if (appEntry && appEntry[targetDay]) rawTimes = appEntry[targetDay];
             const resEntry = dailyReservationsData.find(res => String(res.stuId) === String(stuId) && res.date === targetDateStr);
             if (resEntry && resEntry.times) rawTimes = resEntry.times;
-
+            // 👇👇 여기에 '신청 타임' 박스를 그려주는 코드를 추가하세요! (0T 제외) 👇👇
+            let appliedBadges = "";
+            [1, 2, 3].forEach(t => {
+                const isApplied = rawTimes.includes(String(t));
+                if (isApplied) {
+                    // 신청한 타임: 진한 회색 바탕에 흰 글씨
+                    appliedBadges += `<span style="background:#6c757d; color:white; padding:3px 8px; border-radius:4px; font-size:12px; margin:0 3px; display:inline-block; text-align:center; min-width:18px; font-weight:bold; box-shadow:0 1px 2px rgba(0,0,0,0.1);">${t}T</span>`;
+                } else {
+                    // 미신청 타임: 투명 바탕에 흐린 점선 테두리
+                    appliedBadges += `<span style="border:1px dashed #adb5bd; color:#adb5bd; background:transparent; padding:2px 7px; border-radius:4px; font-size:12px; margin:0 3px; display:inline-block; text-align:center; min-width:18px;">${t}T</span>`;
+                }
+            });
+            document.getElementById('ds-applied-times').innerHTML = `<span style="font-size: 13px; font-weight: bold; color: #555; margin-right: 5px;">✅ 신청 타임:</span>` + appliedBadges;
+            // 👆👆 ---------------------------
             // 학생의 출결 기록(log.history)이 존재할 경우 타임라인 조립
             if (log && log.history && log.history.length > 0) {
                 let groupedHistory = { 0: [], 1: [], 2: [], 3: [] };
