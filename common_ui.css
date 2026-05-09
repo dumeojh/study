@@ -57,80 +57,95 @@
     background-color: #fff;
 }
 
-/* 가로/세로/교차 파티션 (두께 2px) */
+/* 2. 파티션(벽) 디자인 (타입 6 ~ 16) - 정중앙 자동 보정 완벽판 */
+.seat-6,
+.seat-7,
+.seat-8,
+.seat-9,
+.seat-10,
+.seat-11,
+.seat-12,
+.seat-13,
+.seat-14,
+.seat-15,
+.seat-16 {
+    background-color: #fff;
+}
+
+/* 가로/세로/교차 파티션 (두께 2px, 항상 정중앙 50% 기준) */
 .seat-6 {
-    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
 }
 
 .seat-7 {
-    background-image: linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-image: linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
 }
 
 .seat-8 {
-    background-image: linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-        linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-image: linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
+        linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
     background-position: center, right center;
-    background-size: 100% 100%, 50% 100%;
+    background-size: 100% 100%, calc(50% + 1px) 100%;
     background-repeat: no-repeat;
 }
 
 .seat-9 {
-    background-image: linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-        linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-image: linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
+        linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
     background-position: center, left center;
-    background-size: 100% 100%, 50% 100%;
+    background-size: 100% 100%, calc(50% + 1px) 100%;
     background-repeat: no-repeat;
 }
 
 .seat-10 {
-    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-        linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
+        linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
     background-position: center, bottom center;
-    background-size: 100% 100%, 100% 50%;
+    background-size: 100% 100%, 100% calc(50% + 1px);
     background-repeat: no-repeat;
 }
 
 .seat-11 {
-    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-        linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
+        linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
     background-position: center, top center;
-    background-size: 100% 100%, 100% 50%;
+    background-size: 100% 100%, 100% calc(50% + 1px);
     background-repeat: no-repeat;
 }
 
 .seat-12 {
-    background-image: linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-        linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-image: linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
+        linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
 }
 
-/* 모서리 파티션 (오프셋 보정) */
+/* 모서리 파티션 */
 .seat-13 {
-    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-        linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
+        linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
     background-position: right center, bottom center;
     background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
     background-repeat: no-repeat;
 }
 
 .seat-14 {
-    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-        linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
+        linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
     background-position: left center, bottom center;
     background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
     background-repeat: no-repeat;
 }
 
 .seat-15 {
-    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-        linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
+        linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
     background-position: right center, top center;
     background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
     background-repeat: no-repeat;
 }
 
 .seat-16 {
-    background-image: linear-gradient(to bottom, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px),
-        linear-gradient(to right, transparent 20px, #343a40 20px, #343a40 22px, transparent 22px);
+    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px)),
+        linear-gradient(to right, transparent calc(50% - 1px), #343a40 calc(50% - 1px), #343a40 calc(50% + 1px), transparent calc(50% + 1px));
     background-position: left center, top center;
     background-size: calc(50% + 1px) 100%, 100% calc(50% + 1px);
     background-repeat: no-repeat;
