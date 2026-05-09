@@ -2700,6 +2700,8 @@
         }
 
         function openTimeList(timeSlot) {
+            // 🌟 추가됨: 날짜 변경 시 다시 그릴 수 있도록 현재 보고 있는 타임을 기억해둡니다.
+            window.currentTimeListSlot = timeSlot;
             // 1. 기존 탭 비활성화 및 새 화면 활성화
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -2707,7 +2709,8 @@
 
             const sharedControls = document.getElementById('daily-shared-controls');
             if (sharedControls) {
-                sharedControls.style.display = 'none';
+                // 👇 'none'으로 되어있던 것을 'flex'로 수정하여 숨기지 않고 계속 보여줍니다!
+                sharedControls.style.display = 'flex';
             }
 
             const tbody = document.getElementById('time-list-body');
