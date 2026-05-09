@@ -1240,23 +1240,29 @@
                 d.innerText = cell.label;
 
 
-
                 d.onclick = () => {
-                    saveHistory();
+                    // [수정] 프롬프트에서 취소했을 때 불필요한 저장이 생기지 않도록 위치 변경
                     if ([1, 2].includes(currentTool)) {
                         const newLabel = prompt("좌석 번호(라벨)를 입력하세요:", cell.label);
-                        if (newLabel !== null) cell.label = newLabel;
-                        else return;
-                    } else if (currentTool === 4) {
-                        cell.label = "🚪\n출입구";
-                    } else if (currentTool === 5) {
-                        cell.label = "👩‍🏫\n교사석";
-                    } else if (currentTool === 17) {
-                        cell.label = "🪟\n창가";
-                    } else if (currentTool === 18) {
-                        cell.label = "🗄️\n사물함";
+                        if (newLabel !== null) {
+                            saveHistory(); // 내용이 변경될 때만 히스토리 저장
+                            cell.label = newLabel;
+                        } else {
+                            return; // 취소하면 아무것도 안 함
+                        }
                     } else {
-                        cell.label = "";
+                        saveHistory(); // 다른 도구일 때는 클릭 즉시 히스토리 저장
+                        if (currentTool === 4) {
+                            cell.label = "🚪\n출입구";
+                        } else if (currentTool === 5) {
+                            cell.label = "👩‍🏫\n교사석";
+                        } else if (currentTool === 17) {
+                            cell.label = "🪟\n창가";
+                        } else if (currentTool === 18) {
+                            cell.label = "🗄️\n사물함";
+                        } else {
+                            cell.label = "";
+                        }
                     }
                     cell.type = currentTool;
                     drawEditGrid();
