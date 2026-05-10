@@ -1042,7 +1042,78 @@
             return baseSet; // 강제승인이 없으면 기존 학생 정상 기록 반환
         }
 
+        // 👇👇 1단계 추가: 학생의 상태와 디자인을 한 번에 판별해주는 마법의 공통 함수 👇👇
+        function getStudentStatusInfo(log, seatType) {
+            // 기본값 세팅 (출결 기록이 없을 때 = 미입실)
+            let info = {
+                rawStatus: log ? log.status : "미입실", // 원본 텍스트
+                timeGridText: "미참여",                 // N타임 명단에서 보여줄 텍스트
+                color: "var(--danger)",                // 글씨 색상
+                bg: "#fff0f0",                         // 배경 색상
+                cssClass: "status-absent",             // 네모 박스 및 좌석표 CSS 클래스
+                mapFilter: "absent",                   // 🧑‍🏫 오늘 감독용 좌석표 필터 기준
+                listFilter: "미입실"                    // 📋 일일 현황표 필터 기준
+            };
 
+            if (!log) return info;
+
+            const status = log.status;
+            const historyStr = log.history ? log.history.join('') : '';
+            const isTeacherAbsent = historyStr.includes('빈자리');
+            const isTeacherPresent = historyStr.includes('교사인정') || historyStr.includes('수동');
+
+            if (status === "미입실") {
+                info.timeGridText = "미참여";
+                info.color = "var(--danger)";
+                info.bg = "#fff0f0";
+                info.listFilter = "미입실";
+                if (isTeacherAbsent) {
+                    info.cssClass = "status-admin-absent";
+                    info.mapFilter = "admin-out";
+                } else {
+                    info.cssClass = "status-absent";
+                    info.mapFilter = "absent";
+                }
+            }
+            else if (status === "귀가(누락)") {
+                info.timeGridText = "귀가(누락)";
+                info.color = "#dc3545";
+                info.bg = "#fff0f0";
+                info.cssClass = "status-missing-tag";
+                info.mapFilter = "absent";
+                info.listFilter = "누락";
+            }
+            else if (status === "외출") {
+                info.timeGridText = "외출";
+                info.color = "#fd7e14";
+                info.bg = "#fff3cd";
+                info.cssClass = "status-out";
+                info.mapFilter = "out";
+                info.listFilter = "외출";
+            }
+            else if (status === "귀가") {
+                info.timeGridText = "귀가";
+                info.color = "var(--gray)";
+                info.bg = "#f8f9fa";
+                info.cssClass = "status-finish";
+                info.mapFilter = "finish";
+                info.listFilter = "귀가";
+            }
+            else if (status === "입실" || status === "복귀") {
+                info.timeGridText = "참여";
+                info.color = "var(--primary)";
+                info.bg = "#e7f1ff";
+                info.listFilter = "입실";
+                if (isTeacherPresent) {
+                    info.cssClass = "status-admin-present";
+                    info.mapFilter = "admin-in";
+                } else {
+                    info.cssClass = seatType === "고정석" ? "status-present-fixed" : "status-present-auto";
+                    info.mapFilter = seatType === "고정석" ? "fixed" : "auto";
+                }
+            }
+            return info;
+        }
 
         // =========================================================
         // 2. 기초 데이터 불러오기 (도면 모드 선택 기능 적용)
@@ -1443,25 +1514,16 @@
                         } else {
                             target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#1565c0;">${d.stuName}</span>`;
 
-                            if (log) {
-                                const isTeacherAbsent = log.history && log.history.join('').includes('빈자리');
-                                const isTeacherPresent = log.history && log.history.join('').includes('교사인정');
 
-                                if (log.status === "미입실") {
-                                    if (isTeacherAbsent) { target.classList.add('status-admin-absent'); statusType = "admin-out"; }
-                                    else { target.classList.add('status-absent'); statusType = "absent"; }
-                                }
-                                else if (log.status === "귀가(누락)") { target.classList.add('status-missing-tag'); statusType = "absent"; }
-                                else if (log.status === "외출") { target.classList.add('status-out'); statusType = "out"; }
-                                else if (log.status === "귀가") { target.classList.add('status-finish'); statusType = "finish"; }
-                                else {
-                                    if (isTeacherPresent) { target.classList.add('status-admin-present'); statusType = "admin-in"; }
-                                    else { target.classList.add('status-present-fixed'); statusType = "fixed"; }
-                                }
-                            } else {
-                                target.classList.add('status-absent');
-                                statusType = "absent";
-                            }
+
+
+                            // 🌟 리팩토링: 공통 함수 한 줄로 색상과 필터값 받아오기
+                            const statusInfo = getStudentStatusInfo(log, "고정석");
+                            target.classList.add(statusInfo.cssClass);
+                            statusType = statusInfo.mapFilter;
+
+
+
                         }
                         target.dataset.statusType = statusType; // 태그 부착
                         target.style.cursor = "pointer";
@@ -1489,25 +1551,15 @@
                         } else {
                             target.innerHTML = `${d.seatNum}<br><span style="font-size:10px; color:#2e7d32;">${d.stuName}</span>`;
 
-                            if (log) {
-                                const isTeacherAbsent = log.history && log.history.join('').includes('빈자리');
-                                const isTeacherPresent = log.history && log.history.join('').includes('교사인정');
 
-                                if (log.status === "미입실") {
-                                    if (isTeacherAbsent) { target.classList.add('status-admin-absent'); statusType = "admin-out"; }
-                                    else { target.classList.add('status-absent'); statusType = "absent"; }
-                                }
-                                else if (log.status === "귀가(누락)") { target.classList.add('status-missing-tag'); statusType = "absent"; }
-                                else if (log.status === "외출") { target.classList.add('status-out'); statusType = "out"; }
-                                else if (log.status === "귀가") { target.classList.add('status-finish'); statusType = "finish"; }
-                                else {
-                                    if (isTeacherPresent) { target.classList.add('status-admin-present'); statusType = "admin-in"; }
-                                    else { target.classList.add('status-present-auto'); statusType = "auto"; }
-                                }
-                            } else {
-                                target.classList.add('status-absent');
-                                statusType = "absent";
-                            }
+
+                            // 🌟 리팩토링: 공통 함수 한 줄로 색상과 필터값 받아오기
+                            const statusInfo = getStudentStatusInfo(log, "자율석");
+                            target.classList.add(statusInfo.cssClass);
+                            statusType = statusInfo.mapFilter;
+
+
+
                         }
                         target.dataset.statusType = statusType; // 태그 부착
 
@@ -1746,27 +1798,21 @@
                     }
                 }
 
+                // 🌟 리팩토링: 공통 함수 호출
+                const statusInfo = getStudentStatusInfo(log, st.type);
+                statusColor = statusInfo.color;
 
+                // 통계 카운트 
+                if (statusInfo.listFilter === "미입실") stat.absent++;
+                else if (statusInfo.listFilter === "누락") { stat.missing++; stat.absent++; }
+                else if (statusInfo.listFilter === "입실") stat.present++;
+                else if (statusInfo.listFilter === "외출") stat.out++;
+                else if (statusInfo.listFilter === "귀가") stat.finish++;
 
-
-                // 👇 미입실과 누락을 명확히 분리하여 카운트합니다.
-                if (status === "미입실") { statusColor = "var(--danger)"; stat.absent++; }
-                else if (status === "귀가(누락)") { statusColor = "var(--danger)"; stat.missing++; stat.absent++; } // 누락자도 전체 결석(absent) 파이에는 포함
-                else if (status === "입실" || status === "복귀") { statusColor = "var(--primary)"; stat.present++; }
-                else if (status === "외출") { statusColor = "#fd7e14"; stat.out++; }
-                else if (status === "귀가") { statusColor = "var(--gray)"; stat.finish++; }
-
-
-                let mappedGroup = "미입실";
-                if (status === "입실" || status === "복귀") mappedGroup = "입실";
-                else if (status === "외출") mappedGroup = "외출";
-                else if (status === "귀가") mappedGroup = "귀가";
-                else if (status === "귀가(누락)") mappedGroup = "누락";
-
-                // 👇 새로 추가한 '승인' 필터 작동 로직
+                // 새로 추가한 '승인' 필터 작동 로직
                 if (statusFilter === "승인") {
                     if (!log || !log.history || !log.history.some(h => h.startsWith('🛠️[강제승인]'))) return;
-                } else if (statusFilter !== "all" && mappedGroup !== statusFilter) {
+                } else if (statusFilter !== "all" && statusInfo.listFilter !== statusFilter) {
                     return;
                 }
 
@@ -3062,31 +3108,31 @@
                 if (log && log.history && log.history.some(h => h.startsWith('🛠️[강제승인]'))) {
                     stat.adminApproved++;
                 }
-                // 👆👆 -------------------------------------------------------- 👆👆
-                let status = "미참여";
-                let statusColor = "var(--danger)";
-                let statusBg = "#fff0f0";
+
+
+
+                // 🌟 리팩토링: 공통 함수 호출
+                const statusInfo = getStudentStatusInfo(log, st.type);
+                let status = statusInfo.timeGridText;
+                let statusColor = statusInfo.color;
+                let statusBg = statusInfo.bg;
 
                 if (st.isExtended) {
                     status = "미신청(참여)"; statusColor = "#d63384"; statusBg = "#ffe5ec"; stat.present++;
-                } else if (log) {
-                    if (log.status === "입실" || log.status === "복귀") {
-                        status = "참여"; statusColor = "var(--primary)"; statusBg = "#e7f1ff"; stat.present++;
-                    }
-                    else if (log.status === "외출") {
-                        status = "외출"; statusColor = "#fd7e14"; statusBg = "#fff3cd"; stat.out++;
-                    }
-                    // 👇 기존 알고리즘을 활용하여 귀가(누락)을 붉은색 오류로 별도 표시하고 stat.missing을 올립니다.
-                    else if (log.status === "귀가(누락)") {
-                        status = "귀가(누락)"; statusColor = "#dc3545"; statusBg = "#fff0f0"; stat.missing++;
-                    }
-                    else if (log.status === "귀가") {
-                        status = "귀가"; statusColor = "var(--gray)"; statusBg = "#f8f9fa"; stat.finish++;
-                    }
+                    st.currentStatus = "미신청(참여)";
+                } else {
+                    if (statusInfo.listFilter === "입실") stat.present++;
+                    else if (statusInfo.listFilter === "외출") stat.out++;
+                    else if (statusInfo.listFilter === "누락") stat.missing++;
+                    else if (statusInfo.listFilter === "귀가") stat.finish++;
                     else stat.absent++;
-                } else stat.absent++;
 
-                st.currentStatus = status;
+                    st.currentStatus = statusInfo.timeGridText;
+                }
+
+
+
+
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -3258,20 +3304,12 @@
                 const log = attendanceLogsData[String(st.stuId)];
                 let cssClass = "status-absent";
 
-                if (log) {
-                    const isTeacherAbsent = log.history && log.history.join('').includes('빈자리');
-                    const isTeacherPresent = log.history && log.history.join('').includes('교사인정');
 
-                    if (log.status === "미입실") {
-                        cssClass = isTeacherAbsent ? "status-admin-absent" : "status-absent";
-                    }
-                    else if (log.status === "귀가(누락)") { cssClass = "status-missing-tag"; }
-                    else if (log.status === "외출") { cssClass = "status-out"; }
-                    else if (log.status === "귀가") { cssClass = "status-finish"; }
-                    else {
-                        if (isTeacherPresent) { cssClass = "status-admin-present"; }
-                        else { cssClass = st.type === "고정석" ? "status-present-fixed" : "status-present-auto"; }
-                    }
+
+
+                if (log) {
+                    // 🌟 리팩토링: 길고 복잡했던 조건문을 딱 한 줄로!
+                    cssClass = getStudentStatusInfo(log, st.type).cssClass;
                 }
 
                 html += `
