@@ -628,6 +628,7 @@
                                     <option value="all">전체 보기</option>
                                     <option value="미입실">🔴 순수 미입실 (결석)</option>
                                     <option value="누락">🚨 귀가 누락 (태그 미완료)</option>
+                                    <option value="승인">🛠️ 관리자 강제 승인 (처리완료)</option>
                                     <option value="입실">🟢 입실 완료 (정상/복귀)</option>
                                     <option value="외출">🟡 외출 중</option>
                                     <option value="귀가">⚪ 귀가 완료</option>
@@ -1638,12 +1639,16 @@
             if (sortBy === "id") targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
             else if (sortBy === "seat") targetStudents.sort((a, b) => String(a.seatNum).localeCompare(String(b.seatNum), undefined, { numeric: true }));
 
-
-
-            let stat = { total: targetStudents.length, present: 0, out: 0, absent: 0, finish: 0 };
+            // 👇 missing과 adminApproved 변수를 추가합니다.
+            let stat = { total: targetStudents.length, present: 0, out: 0, absent: 0, finish: 0, missing: 0, adminApproved: 0 };
 
             targetStudents.forEach(st => {
                 const log = attendanceLogsData[String(st.stuId)];
+                // 👇 강제 승인 카운트 올리기
+                if (log && log.history && log.history.some(h => h.startsWith('🛠️[강제승인]'))) {
+                    stat.adminApproved++;
+                }
+
                 let status = "미입실"; let statusColor = "var(--danger)";
                 let historyHtml = `<span style="color:#aaa; font-size:11px;">기록 없음</span>`;
                 let groupedHistory = { 0: [], 1: [], 2: [], 3: [] };
@@ -1711,7 +1716,12 @@
                     }
                 }
 
-                if (status === "미입실" || status === "귀가(누락)") { statusColor = "var(--danger)"; stat.absent++; }
+
+
+
+                // 👇 미입실과 누락을 명확히 분리하여 카운트합니다.
+                if (status === "미입실") { statusColor = "var(--danger)"; stat.absent++; }
+                else if (status === "귀가(누락)") { statusColor = "var(--danger)"; stat.missing++; stat.absent++; } // 누락자도 전체 결석(absent) 파이에는 포함
                 else if (status === "입실" || status === "복귀") { statusColor = "var(--primary)"; stat.present++; }
                 else if (status === "외출") { statusColor = "#fd7e14"; stat.out++; }
                 else if (status === "귀가") { statusColor = "var(--gray)"; stat.finish++; }
@@ -1721,9 +1731,16 @@
                 if (status === "입실" || status === "복귀") mappedGroup = "입실";
                 else if (status === "외출") mappedGroup = "외출";
                 else if (status === "귀가") mappedGroup = "귀가";
-                else if (status === "귀가(누락)") mappedGroup = "누락"; // 👈 귀가(누락) 상태인 학생만 따로 분류
+                else if (status === "귀가(누락)") mappedGroup = "누락";
 
-                if (statusFilter !== "all" && mappedGroup !== statusFilter) return;
+                // 👇 새로 추가한 '승인' 필터 작동 로직
+                if (statusFilter === "승인") {
+                    if (!log || !log.history || !log.history.some(h => h.startsWith('🛠️[강제승인]'))) return;
+                } else if (statusFilter !== "all" && mappedGroup !== statusFilter) {
+                    return;
+                }
+
+
 
                 // 공통 함수(common.js)를 호출하여 완벽하게 통합된 인정 타임(Set)을 바로 가져옵니다.
                 let recognizedSet = getFinalRecognizedTimes(log, currentSchedule);
@@ -1862,8 +1879,29 @@
 
 
 
-
-            document.getElementById('daily-list-summary').innerHTML = `전체 대상: ${stat.total}명 | <span style="color:var(--primary);">입실: ${stat.present}명</span> | <span style="color:#fd7e14;">외출: ${stat.out}명</span> | <span style="color:var(--gray);">귀가: ${stat.finish}명</span> | <span style="color:var(--danger);">미입실: ${stat.absent}명</span>`;
+            // 👇 단순 텍스트를 직관적인 버튼 표로 교체
+            document.getElementById('daily-list-summary').innerHTML = `
+                <div style="display: flex; gap: 15px; align-items: center; justify-content: flex-end; width: 100%;">
+                    <span style="font-size: 13px; color: #555; white-space: nowrap;">
+                        전체: <b>${stat.total}</b>명 | <span style="color:var(--primary);">입실: <b>${stat.present}</b>명</span> | <span style="color:#fd7e14;">외출: <b>${stat.out}</b>명</span> | <span style="color:var(--gray);">귀가: <b>${stat.finish}</b>명</span> | <span style="color:var(--danger);">미입실(결석): <b>${stat.absent - stat.missing}</b>명</span>
+                    </span>
+                    
+                    <table style="border-collapse: collapse; text-align: center; font-size: 13px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid #8b5cf6; margin: 0; white-space: nowrap;">
+                        <thead>
+                            <tr>
+                                <th style="padding: 4px 10px; border-bottom: 1px solid #d8b4fe; border-right: 1px dashed #d8b4fe; color: #dc3545; background: #fff0f0; font-weight: 900; font-size: 12px; line-height: 1.4;">🚨 귀가 누락<br><span style="font-size:10px; font-weight:normal;">(태그 미완료)</span></th>
+                                <th style="padding: 4px 10px; border-bottom: 1px solid #d8b4fe; color: #5b21b6; background: #f3e8ff; font-weight: 900; font-size: 12px; line-height: 1.4;">🛠️ 관리자<br>강제 승인</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 6px 10px; font-weight: 900; font-size: 15px; color: #dc3545; background: #fffaf0; border-right: 1px dashed #d8b4fe; cursor: pointer; transition: 0.2s;" onmouseover="this.style.filter='brightness(0.95)'" onmouseout="this.style.filter='brightness(1)'" onclick="document.getElementById('filter-daily-status').value='누락'; renderDailyList();">${stat.missing}명</td>
+                                <td style="padding: 6px 10px; font-weight: 900; font-size: 15px; color: #5b21b6; background: #f3e8ff; cursor: pointer; transition: 0.2s;" onmouseover="this.style.filter='brightness(0.95)'" onmouseout="this.style.filter='brightness(1)'" onclick="document.getElementById('filter-daily-status').value='승인'; renderDailyList();">${stat.adminApproved}명</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
 
 
@@ -3110,21 +3148,6 @@
                         </table>
 
 
-
-<table style="border-collapse: collapse; text-align: center; font-size: 13px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid #8b5cf6; margin: 0; white-space: nowrap;">
-                            <thead>
-                                <tr>
-                                    <th style="padding: 6px 12px; border-bottom: 1px solid #d8b4fe; border-right: 1px dashed #d8b4fe; color: #dc3545; background: #fff0f0; font-weight: 900; font-size: 12px; line-height: 1.4;">🚨 귀가 누락<br><span style="font-size:10px; font-weight:normal;">(태그 미완료)</span></th>
-                                    <th style="padding: 6px 12px; border-bottom: 1px solid #d8b4fe; color: #5b21b6; background: #f3e8ff; font-weight: 900; font-size: 12px; line-height: 1.4;">🛠️ 관리자<br>강제 승인</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="sum-btn" onclick="showTimeGrid('missing')" style="padding: 8px 12px; font-weight: 900; font-size: 16px; color: #dc3545; background: #fffaf0; border-right: 1px dashed #d8b4fe; height: 100%; vertical-align: middle;">${stat.missing}명</td>
-                                    <td class="sum-btn admin-sum-btn" onclick="showTimeGrid('adminApproved')" style="padding: 8px 12px; font-weight: 900; font-size: 16px; color: #5b21b6; background: #f3e8ff; height: 100%; vertical-align: middle;">${stat.adminApproved}명</td>
-                                </tr>
-                            </tbody>
-                        </table>
 
 
 
