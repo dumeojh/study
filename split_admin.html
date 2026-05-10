@@ -2987,8 +2987,7 @@
 
 
             // 4. 상황 계산 및 표 그리기
-            let stat = { total: 0, extended: 0, fixed: 0, autoIssued: 0, autoUnissued: 0, present: 0, absent: 0, out: 0, finish: 0, adminApproved: 0 };
-
+            let stat = { total: 0, extended: 0, fixed: 0, autoIssued: 0, autoUnissued: 0, present: 0, absent: 0, out: 0, finish: 0, missing: 0, adminApproved: 0 };
             targetStudents.forEach((st, index) => {
                 if (st.isExtended) {
                     stat.extended++; // 미신청 참여자 카운트 
@@ -3020,7 +3019,11 @@
                     else if (log.status === "외출") {
                         status = "외출"; statusColor = "#fd7e14"; statusBg = "#fff3cd"; stat.out++;
                     }
-                    else if (log.status === "귀가" || log.status === "귀가(누락)") {
+                    // 👇 기존 알고리즘을 활용하여 귀가(누락)을 붉은색 오류로 별도 표시하고 stat.missing을 올립니다.
+                    else if (log.status === "귀가(누락)") {
+                        status = "귀가(누락)"; statusColor = "#dc3545"; statusBg = "#fff0f0"; stat.missing++;
+                    }
+                    else if (log.status === "귀가") {
                         status = "귀가"; statusColor = "var(--gray)"; statusBg = "#f8f9fa"; stat.finish++;
                     }
                     else stat.absent++;
@@ -3105,19 +3108,26 @@
                             </tbody>
                         </table>
 
-                        <table style="border-collapse: collapse; text-align: center; font-size: 13px; background: #f3e8ff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid #8b5cf6; margin: 0; white-space: nowrap;">
+
+
+<table style="border-collapse: collapse; text-align: center; font-size: 13px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid #8b5cf6; margin: 0; white-space: nowrap;">
                             <thead>
                                 <tr>
-                                    <th style="padding: 6px 12px; border-bottom: 1px solid #d8b4fe; color: #5b21b6; font-weight: 900; font-size: 12px; line-height: 1.4;">🛠️ 관리자<br>강제 승인</th>
+                                    <th style="padding: 6px 12px; border-bottom: 1px solid #d8b4fe; border-right: 1px dashed #d8b4fe; color: #dc3545; background: #fff0f0; font-weight: 900; font-size: 12px; line-height: 1.4;">🚨 귀가 누락<br><span style="font-size:10px; font-weight:normal;">(태그 미완료)</span></th>
+                                    <th style="padding: 6px 12px; border-bottom: 1px solid #d8b4fe; color: #5b21b6; background: #f3e8ff; font-weight: 900; font-size: 12px; line-height: 1.4;">🛠️ 관리자<br>강제 승인</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td class="sum-btn admin-sum-btn" onclick="showTimeGrid('adminApproved')" style="padding: 8px 12px; font-weight: 900; font-size: 16px; color: #5b21b6; height: 100%; vertical-align: middle;">${stat.adminApproved}명</td>
+                                    <td class="sum-btn" onclick="showTimeGrid('missing')" style="padding: 8px 12px; font-weight: 900; font-size: 16px; color: #dc3545; background: #fffaf0; border-right: 1px dashed #d8b4fe; height: 100%; vertical-align: middle;">${stat.missing}명</td>
+                                    <td class="sum-btn admin-sum-btn" onclick="showTimeGrid('adminApproved')" style="padding: 8px 12px; font-weight: 900; font-size: 16px; color: #5b21b6; background: #f3e8ff; height: 100%; vertical-align: middle;">${stat.adminApproved}명</td>
                                 </tr>
                             </tbody>
                         </table>
-                        
+
+
+
+
                     </div>
                 `;
         }
@@ -3141,9 +3151,13 @@
                 else if (category === 'autoIssued' && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
                 else if (category === 'autoUnissued' && st.type === "자율석" && st.seatNum === "미발권") { match = true; title = "자율석 (미발권)"; }
                 else if (category === 'present' && (st.currentStatus === "참여" || st.currentStatus === "미신청(참여)")) { match = true; title = "🟢 현재 참여 중"; }
+
+
                 else if (category === 'out' && st.currentStatus === "외출") { match = true; title = "🟡 현재 외출 중"; }
                 else if (category === 'finish' && st.currentStatus === "귀가") { match = true; title = "⚪ 최종 귀가 완료"; }
                 else if (category === 'absent' && st.currentStatus === "미참여") { match = true; title = "🔴 미참여 (결석/미입실)"; }
+                // 👇 귀가 누락 필터 추가
+                else if (category === 'missing' && st.currentStatus === "귀가(누락)") { match = true; title = "🚨 귀가 누락 (태그 미완료)"; }
                 // 👇 이 한 줄을 추가해 주세요! 👇
                 else if (category === 'adminApproved') {
                     const log = attendanceLogsData[String(st.stuId)];
