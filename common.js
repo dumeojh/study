@@ -140,9 +140,22 @@ function getRecognizedTimes(log, currentScheduleData) {
     const schedule = currentScheduleData || {};
     let recognizedSet = new Set(); // 인정받은 타임(1, 2, 3)을 담는 바구니
 
-    if (!log || log.status === "미입실" || log.status === "귀가(누락)") return recognizedSet;
-
+    if (!log) return recognizedSet;
     const history = log.history || [];
+
+    // 👇👇 🌟 0순위: 관리자 강제 승인(최우선 반영) 🌟 👇👇
+    const overrideLog = history.find(h => h.startsWith('🛠️[강제승인]'));
+    if (overrideLog) {
+        if (overrideLog.includes('0타임')) return recognizedSet; // 0타임이면 빈 바구니
+        if (overrideLog.includes('1')) recognizedSet.add(1);
+        if (overrideLog.includes('2')) recognizedSet.add(2);
+        if (overrideLog.includes('3')) recognizedSet.add(3);
+        return recognizedSet; // 강제 승인이 있으면 학생 기록 깡그리 무시하고 여기서 계산 종료!
+    }
+    // 👆👆 ------------------------------------------- 👆👆
+
+    // 강제 승인이 없는 학생에 한해서만 기존 상태 감지
+    if (log.status === "미입실" || log.status === "귀가(누락)") return recognizedSet;
 
     // 1) 관리자 수동 인정(교사) 체크
     history.forEach(h => {
