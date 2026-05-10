@@ -2702,7 +2702,8 @@
                 if (pastLogs && pastLogs.length > 0) {
                     for (let log of pastLogs) {
                         let newHistory = log.history || [];
-                        newHistory.push(`시스템 자동 마감 (태그 누락)`);
+
+                        newHistory.push(`🚨 귀가 누락 (태그 미완료)`);
                         await supabaseClient.from("attendance_logs").update({
                             status: "귀가(누락)",
                             last_update_time: new Date().toISOString(),
