@@ -135,6 +135,15 @@ function startMidnightLogoutChecker() {
 // 👆👆 [추가 끝] 👆👆
 
 
+
+// 👇👇 1단계: 어디서든 쓸 수 있게 밖으로 꺼낸 공통 함수 👇👇
+function timeToMin(timeStr) {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+}
+
+
 // 2. 공통 타임 인정 계산 함수 (환경설정 시간/기준 완벽 연동 버전)
 function getRecognizedTimes(log, currentScheduleData) {
     const schedule = currentScheduleData || {};
@@ -166,12 +175,18 @@ function getRecognizedTimes(log, currentScheduleData) {
         });
     });
 
-    // 시간(HH:MM)을 '분(minute)' 단위로 변환하는 헬퍼 함수
-    const timeToMin = (tmStr) => {
-        if (!tmStr) return 0;
-        const [h, m] = tmStr.split(':').map(Number);
-        return h * 60 + m;
-    };
+
+
+    /*
+        // 시간(HH:MM)을 '분(minute)' 단위로 변환하는 헬퍼 함수
+        const timeToMin = (tmStr) => {
+            if (!tmStr) return 0;
+            const [h, m] = tmStr.split(':').map(Number);
+            return h * 60 + m;
+        };
+    
+    */
+
 
     // 2) 실제 자리에 앉아있던 '체류 구간(Intervals)' 추출하기
     let events = [];
@@ -206,6 +221,8 @@ function getRecognizedTimes(log, currentScheduleData) {
 
     // 아직 집에 안 간 경우 (입실 중)
     if (currentIn !== null) {
+
+        //////////////////////////
         const now = new Date();
         const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
 

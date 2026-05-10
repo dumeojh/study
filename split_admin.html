@@ -1139,10 +1139,10 @@
                 const t3_end = sched.t3_end || "21:30";
 
 
-
+                //////////////////////////////////////////
                 const now = new Date();
                 const currentMin = now.getHours() * 60 + now.getMinutes();
-                const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+
 
                 let defaultSlot = 0;
                 if (currentMin >= timeToMin(currentSchedule.t3)) defaultSlot = 3;
@@ -1337,12 +1337,15 @@
                 t3 = schedDoc.value.t3 || t3;
             }
 
+            //////////////////////////////////////
             const now = new Date();
             const currentMin = now.getHours() * 60 + now.getMinutes();
-            const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+
 
             let defaultSlot = 0;
             if (currentMin >= timeToMin(t3)) defaultSlot = 3;
+
+
             else if (currentMin >= timeToMin(t2)) defaultSlot = 2;
             else if (currentMin >= timeToMin(t1)) defaultSlot = 1;
 
@@ -1654,18 +1657,18 @@
             const searchKeyword = searchInput ? searchInput.value.trim() : "";
             // 👆👆 [여기까지 추가] 👆👆
 
+
+
             const timeSelectVal = parseInt(document.getElementById('daily-time').value);
             let currentSlot = isNaN(timeSelectVal) ? 1 : timeSelectVal;
 
             // 🌟 여기서부터 추가: 현재 시간이 3T 종료 시간을 넘었는지 확인
             const now = new Date();
             const currentMin = now.getHours() * 60 + now.getMinutes();
-            const [endH, endM] = (currentSchedule.t3_end || "21:30").split(':').map(Number);
-            if (currentMin >= endH * 60 + endM) {
+            // 🌟 리팩토링: 공통 함수를 사용하여 계산 간소화!
+            if (currentMin >= timeToMin(currentSchedule.t3_end || "21:30")) {
                 currentSlot = 4; // 야자 최종 종료 시간이 지나면 가상의 4타임으로 취급하여 모두 마감 처리
             }
-            // 🌟 여기까지 추가 완료  
-
 
             let targetStudentsMap = new Map();
 
@@ -3197,12 +3200,10 @@
                     <style>
                         .sum-btn { cursor: pointer; transition: 0.2s; position: relative; }
                         .sum-btn:hover { background-color: #e2e3e5 !important; filter: brightness(0.95); transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 10; border-radius: 4px; }
-                        .admin-sum-btn:hover { background-color: #e0c8ff !important; filter: brightness(0.95); transform: scale(1.1); box-shadow: 0 4px 10px rgba(91,33,182,0.2); z-index: 10; border-radius: 4px; }
                     </style>
                     <div style="display: flex; gap: 15px; align-items: stretch; justify-content: flex-end; width: 100%; overflow-x: auto; padding-bottom: 5px;">
                         
-                        <table style="border-collapse: collapse; text-align: center; font-size: 13px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; margin: 0; white-space: nowrap;">
-                            <thead>
+                        <table style="border-collapse: collapse; text-align: center; font-size: 13px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5 <thead>
 <tr style="background: #f8f9fa;">
                                     <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #333;">총 신청자</th>
                                     
