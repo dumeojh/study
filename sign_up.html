@@ -7,6 +7,7 @@
     <meta name="color-scheme" content="light">
     <title>안성여고 야간 자율학습 신청</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
 
     <style>
         :root {
@@ -376,12 +377,7 @@
     </div>
 
     <script>
-        // =========================================================
-        // 1. Supabase 초기화
-        // =========================================================
-        const SUPABASE_URL = 'https://hqiijssfdullpfpfidbz.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxaWlqc3NmZHVsbHBmcGZpZGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTUyOTgsImV4cCI6MjA5MjY3MTI5OH0.FxDFaCsqE2EwHUCbzt15aPkpFcIjXr-chjd01d87-vs';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 
         // =========================================================
         // 2. 전역 변수 및 기초 UI 설정
