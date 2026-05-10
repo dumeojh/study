@@ -2965,7 +2965,7 @@
 
 
             // 4. 상황 계산 및 표 그리기
-            let stat = { total: 0, extended: 0, fixed: 0, autoIssued: 0, autoUnissued: 0, present: 0, absent: 0, out: 0, finish: 0 };
+            let stat = { total: 0, extended: 0, fixed: 0, autoIssued: 0, autoUnissued: 0, present: 0, absent: 0, out: 0, finish: 0, adminApproved: 0 };
 
             targetStudents.forEach((st, index) => {
                 if (st.isExtended) {
@@ -2980,6 +2980,11 @@
                 }
 
                 const log = attendanceLogsData[String(st.stuId)];
+                // 👇👇 [추가] 이 학생이 강제 승인 태그를 가지고 있는지 검사해서 숫자 올리기 👇👇
+                if (log && log.history && log.history.some(h => h.startsWith('🛠️[강제승인]'))) {
+                    stat.adminApproved++;
+                }
+                // 👆👆 -------------------------------------------------------- 👆👆
                 let status = "미참여";
                 let statusColor = "var(--danger)";
                 let statusBg = "#fff0f0";
@@ -3028,47 +3033,68 @@
             const summaryDiv = document.getElementById('time-list-summary');
             summaryDiv.style.padding = "0"; summaryDiv.style.border = "none"; summaryDiv.style.background = "transparent";
 
+
+
+            // 👇👇 여기서부터 교체해주세요 👇👇
             summaryDiv.innerHTML = `
                     <style>
                         .sum-btn { cursor: pointer; transition: 0.2s; position: relative; }
                         .sum-btn:hover { background-color: #e2e3e5 !important; filter: brightness(0.95); transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 10; border-radius: 4px; }
+                        .admin-sum-btn:hover { background-color: #e0c8ff !important; filter: brightness(0.95); transform: scale(1.1); box-shadow: 0 4px 10px rgba(91,33,182,0.2); z-index: 10; border-radius: 4px; }
                     </style>
-                    <table style="border-collapse: collapse; text-align: center; font-size: 13px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; margin: 0;">
-                        <thead>
-                            <tr style="background: #f8f9fa;">
-                                <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #333;">총 신청자</th>
-                                <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #5b21b6; background: #f3e8ff; font-weight: 900;">🎯 관리 대상<br><span style="font-size:10px; font-weight:normal;">(고정+발권)</span></th>
-                                <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #d63384; background: #fff0f7; font-weight: 900;">🔥 미신청(참여)</th>
-                                <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #856404; background: #fff3cd;">고정석</th>
-                                <th colspan="2" style="padding: 4px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #0f5132; background: #d1e7dd;">자율석</th>
-                                <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 12px;">🟢 참여</th>
-                                <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 12px;">🟡 외출</th>
-                                <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 12px;">⚪ 귀가</th>
-                                <th rowspan="2" style="padding: 6px 12px; border-bottom: 1px solid #ddd; font-size: 12px;">🔴 미참여</th>
-                            </tr>
-                            <tr style="background: #f8f9fa;">
-                                <th style="padding: 4px 10px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 11px; background: #e2e3e5; color: #41464b;">발권완료</th>
-                                <th style="padding: 4px 10px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 11px; background: #f8d7da; color: #842029;">미발권</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="sum-btn" onclick="showTimeGrid('all')" style="padding: 8px 12px; font-weight: 900; font-size: 15px; border-right: 1px solid #ddd; color: #0d6efd;">${stat.total}명</td>
-                                <td class="sum-btn" onclick="showTimeGrid('managed')" style="padding: 8px 12px; font-weight: 900; font-size: 16px; border-right: 1px solid #ddd; color: #5b21b6; background: #faf5ff;">${stat.fixed + stat.autoIssued}명</td>
-                                <td class="sum-btn" onclick="showTimeGrid('extended')" style="padding: 8px 12px; font-weight: 900; font-size: 15px; border-right: 1px solid #ddd; color: #d63384; background: #fff0f7;">${stat.extended}명</td>
-                                <td class="sum-btn" onclick="showTimeGrid('fixed')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd;">${stat.fixed}명</td>
-                                <td class="sum-btn" onclick="showTimeGrid('autoIssued')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #198754;">${stat.autoIssued}명</td>
-                                <td class="sum-btn" onclick="showTimeGrid('autoUnissued')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #dc3545;">${stat.autoUnissued}명</td>
-                                <td class="sum-btn" onclick="showTimeGrid('present')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--primary);">${stat.present}명</td>
-                                <td class="sum-btn" onclick="showTimeGrid('out')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #fd7e14;">${stat.out}명</td>
-                                <td class="sum-btn" onclick="showTimeGrid('finish')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--gray);">${stat.finish}명</td>
-                                <td class="sum-btn" onclick="showTimeGrid('absent')" style="padding: 8px 12px; font-weight: bold; color: var(--danger);">${stat.absent}명</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div style="display: flex; gap: 15px; align-items: stretch; justify-content: flex-end; width: 100%; overflow-x: auto; padding-bottom: 5px;">
+                        
+                        <table style="border-collapse: collapse; text-align: center; font-size: 13px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; margin: 0; white-space: nowrap;">
+                            <thead>
+                                <tr style="background: #f8f9fa;">
+                                    <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #333;">총 신청자</th>
+                                    <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #5b21b6; background: #f3e8ff; font-weight: 900;">🎯 관리 대상<br><span style="font-size:10px; font-weight:normal;">(고정+발권)</span></th>
+                                    <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #d63384; background: #fff0f7; font-weight: 900;">🔥 미신청(참여)</th>
+                                    <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #856404; background: #fff3cd;">고정석</th>
+                                    <th colspan="2" style="padding: 4px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #0f5132; background: #d1e7dd;">자율석</th>
+                                    <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 12px;">🟢 참여</th>
+                                    <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 12px;">🟡 외출</th>
+                                    <th rowspan="2" style="padding: 6px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 12px;">⚪ 귀가</th>
+                                    <th rowspan="2" style="padding: 6px 12px; border-bottom: 1px solid #ddd; font-size: 12px;">🔴 미참여</th>
+                                </tr>
+                                <tr style="background: #f8f9fa;">
+                                    <th style="padding: 4px 10px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 11px; background: #e2e3e5; color: #41464b;">발권완료</th>
+                                    <th style="padding: 4px 10px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 11px; background: #f8d7da; color: #842029;">미발권</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="sum-btn" onclick="showTimeGrid('all')" style="padding: 8px 12px; font-weight: 900; font-size: 15px; border-right: 1px solid #ddd; color: #0d6efd;">${stat.total}명</td>
+                                    <td class="sum-btn" onclick="showTimeGrid('managed')" style="padding: 8px 12px; font-weight: 900; font-size: 16px; border-right: 1px solid #ddd; color: #5b21b6; background: #faf5ff;">${stat.fixed + stat.autoIssued}명</td>
+                                    <td class="sum-btn" onclick="showTimeGrid('extended')" style="padding: 8px 12px; font-weight: 900; font-size: 15px; border-right: 1px solid #ddd; color: #d63384; background: #fff0f7;">${stat.extended}명</td>
+                                    <td class="sum-btn" onclick="showTimeGrid('fixed')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd;">${stat.fixed}명</td>
+                                    <td class="sum-btn" onclick="showTimeGrid('autoIssued')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #198754;">${stat.autoIssued}명</td>
+                                    <td class="sum-btn" onclick="showTimeGrid('autoUnissued')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #dc3545;">${stat.autoUnissued}명</td>
+                                    <td class="sum-btn" onclick="showTimeGrid('present')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--primary);">${stat.present}명</td>
+                                    <td class="sum-btn" onclick="showTimeGrid('out')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #fd7e14;">${stat.out}명</td>
+                                    <td class="sum-btn" onclick="showTimeGrid('finish')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--gray);">${stat.finish}명</td>
+                                    <td class="sum-btn" onclick="showTimeGrid('absent')" style="padding: 8px 12px; font-weight: bold; color: var(--danger);">${stat.absent}명</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table style="border-collapse: collapse; text-align: center; font-size: 13px; background: #f3e8ff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 2px solid #8b5cf6; margin: 0; white-space: nowrap;">
+                            <thead>
+                                <tr>
+                                    <th style="padding: 6px 12px; border-bottom: 1px solid #d8b4fe; color: #5b21b6; font-weight: 900; font-size: 12px; line-height: 1.4;">🛠️ 관리자<br>강제 승인</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="sum-btn admin-sum-btn" onclick="showTimeGrid('adminApproved')" style="padding: 8px 12px; font-weight: 900; font-size: 16px; color: #5b21b6; height: 100%; vertical-align: middle;">${stat.adminApproved}명</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                    </div>
                 `;
         }
-
+        // 👆👆 여기까지 교체 👆👆
 
 
         // 👇 [수정] 숫자를 누르면 아래로 네모 박스가 내려오는 기능 (무지개색 제거) 👇
@@ -3091,7 +3117,13 @@
                 else if (category === 'out' && st.currentStatus === "외출") { match = true; title = "🟡 현재 외출 중"; }
                 else if (category === 'finish' && st.currentStatus === "귀가") { match = true; title = "⚪ 최종 귀가 완료"; }
                 else if (category === 'absent' && st.currentStatus === "미참여") { match = true; title = "🔴 미참여 (결석/미입실)"; }
-
+                // 👇 이 한 줄을 추가해 주세요! 👇
+                else if (category === 'adminApproved') {
+                    const log = attendanceLogsData[String(st.stuId)];
+                    if (log && log.history && log.history.some(h => h.startsWith('🛠️[강제승인]'))) {
+                        match = true; title = "🛠️ 관리자 강제 승인 적용자";
+                    }
+                }
                 if (match) filtered.push(st);
             });
 
