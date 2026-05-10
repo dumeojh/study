@@ -268,10 +268,13 @@
     <script>
 
         let serverRoster = {};
+
+
         let serverBarcodes = {};
         let currentStatus = "입실";
         const todayObj = new Date();
-        const todayStr = todayObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+        // 🌟 리팩토링: 길게 쓰던 날짜 변환 코드를 공통 함수로 교체!
+        const todayStr = getTodayString();
 
 
 

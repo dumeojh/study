@@ -295,11 +295,15 @@
 
         let schoolSchedule = null;
         let serverRoster = {};
+
         let seatMapData = []; let layoutRows = 0; let layoutCols = 0;
 
         let todayObj = new Date();
-        const todayStr = todayObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+        // 🌟 리팩토링: 길게 쓰던 날짜 변환 코드를 공통 함수로 교체!
+        const todayStr = getTodayString();
         const currentMonthStr = (todayObj.getMonth() + 1) + "월";
+
+
         const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
         const todayDayEng = daysEng[todayObj.getDay()];
 
