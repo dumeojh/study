@@ -3111,10 +3111,39 @@
             // 박스 그리기에 쓰기 위해 현재 필터링된 학생 전체 목록 저장
             window.currentTimeStudents = targetStudents;
 
+
+
+
+            /////////////////////////////////////////////////////////////////////////////////
             // 요약 정보 갱신
             const summaryDiv = document.getElementById('time-list-summary');
             summaryDiv.style.padding = "0"; summaryDiv.style.border = "none"; summaryDiv.style.background = "transparent";
+            // 👇👇 [추가] 1T, 2T 상관없이 무조건 하루 전체 누락/승인자 명단을 직접 계산합니다 👇👇
+            let dailyMissingList = [];
+            let dailyApprovedList = [];
 
+            Object.values(attendanceLogsData).forEach(log => {
+                let isMissing = log.status === "귀가(누락)";
+                let isApproved = log.history && log.history.some(h => h.startsWith('🛠️[강제승인]'));
+
+                if (isMissing || isApproved) {
+                    let foundSeat = "미확인"; let foundType = "-";
+                    const appEntry = Object.values(applicationData).find(app => String(app.stuId) === String(log.stuId) && app.targetMonth === targetMonthStr);
+                    if (appEntry) { foundSeat = appEntry.seatNum; foundType = appEntry.type; }
+                    const resEntry = dailyReservationsData.find(res => String(res.stuId) === String(log.stuId) && res.date === targetDateStr);
+                    if (resEntry) { foundSeat = resEntry.seatNum; foundType = "자율석"; }
+
+                    const stData = { stuId: log.stuId, stuName: log.stuName, seatNum: foundSeat, type: foundType, currentStatus: log.status };
+
+                    if (isMissing) dailyMissingList.push(stData);
+                    if (isApproved) dailyApprovedList.push(stData);
+                }
+            });
+
+            // 계산된 전체 명단을 화면에 띄울 수 있도록 잠시 보관해 둡니다.
+            window.dailyMissingList = dailyMissingList;
+            window.dailyApprovedList = dailyApprovedList;
+            // 👆👆 [추가 끝] 👆👆
 
 
             // 👇👇 여기서부터 교체해주세요 👇👇
@@ -3160,63 +3189,62 @@
                                     <td class="sum-btn" onclick="showTimeGrid('present')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--primary);">${stat.present}명</td>
                                     <td class="sum-btn" onclick="showTimeGrid('out')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: #fd7e14;">${stat.out}명</td>
                       
-                      
 <td class="sum-btn" onclick="showTimeGrid('finish')" style="padding: 8px 12px; font-weight: bold; border-right: 1px solid #ddd; color: var(--gray);">${stat.finish}명</td>
                                     <td class="sum-btn" onclick="showTimeGrid('absent')" style="padding: 8px 12px; font-weight: bold; color: var(--danger);">${stat.absent}명</td>
                                 </tr>
                             </tbody>
                         </table>
 
-                        ${getAdminSummaryTableHtml(stat.missing, stat.adminApproved, 'time')}
+                        ${getAdminSummaryTableHtml(window.dailyMissingList.length, window.dailyApprovedList.length, 'time')}
 
                     </div>
                 `;
         }
 
 
-
-
         // 👇 [수정] 숫자를 누르면 아래로 네모 박스가 내려오는 기능 (무지개색 제거) 👇
         function showTimeGrid(category) {
             const container = document.getElementById('time-grid-area');
-            if (!container || !window.currentTimeStudents) return;
+            if (!container) return; // 🌟 조건 완화 (!window.currentTimeStudents 제거 완료)
 
             let filtered = [];
             let title = "";
 
-            window.currentTimeStudents.forEach(st => {
-                let match = false;
-                if (category === 'all') { match = true; title = "총 신청자"; }
-                else if (category === 'managed' && (st.type === "고정석" || (st.type === "자율석" && st.seatNum !== "미발권"))) { match = true; title = "🎯 실 관리 대상 (고정석 + 발권완료)"; }
-                else if (category === 'extended' && st.isExtended) { match = true; title = "🔥 미신청자 (참여 중)"; }
-                else if (category === 'fixed' && st.type === "고정석") { match = true; title = "고정석 신청"; }
-                else if (category === 'autoIssued' && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
-                else if (category === 'autoUnissued' && st.type === "자율석" && st.seatNum === "미발권") { match = true; title = "자율석 (미발권)"; }
-                else if (category === 'present' && (st.currentStatus === "참여" || st.currentStatus === "미신청(참여)")) { match = true; title = "🟢 현재 참여 중"; }
+            // 🌟 1. 새로 추가된 하루 전체 데이터 로직 🌟
+            if (category === 'missing') {
+                filtered = window.dailyMissingList || [];
+                title = "🚨 하루 전체 귀가 누락 (태그 미완료)";
+            } else if (category === 'adminApproved') {
+                filtered = window.dailyApprovedList || [];
+                title = "🛠️ 하루 전체 관리자 강제 승인 적용자";
+            }
+            // 🌟 2. 그 외 기존 타임별 명단 처리 로직 🌟
+            else {
+                if (!window.currentTimeStudents) return;
+                window.currentTimeStudents.forEach(st => {
+                    let match = false;
+                    if (category === 'all') { match = true; title = "총 신청자"; }
+                    else if (category === 'managed' && (st.type === "고정석" || (st.type === "자율석" && st.seatNum !== "미발권"))) { match = true; title = "🎯 실 관리 대상 (고정석 + 발권완료)"; }
+                    else if (category === 'extended' && st.isExtended) { match = true; title = "🔥 미신청자 (참여 중)"; }
+                    else if (category === 'fixed' && st.type === "고정석") { match = true; title = "고정석 신청"; }
+                    else if (category === 'autoIssued' && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
+                    else if (category === 'autoUnissued' && st.type === "자율석" && st.seatNum === "미발권") { match = true; title = "자율석 (미발권)"; }
+                    else if (category === 'present' && (st.currentStatus === "참여" || st.currentStatus === "미신청(참여)")) { match = true; title = "🟢 현재 참여 중"; }
+                    else if (category === 'out' && st.currentStatus === "외출") { match = true; title = "🟡 현재 외출 중"; }
+                    else if (category === 'finish' && st.currentStatus === "귀가") { match = true; title = "⚪ 최종 귀가 완료"; }
+                    else if (category === 'absent' && st.currentStatus === "미참여") { match = true; title = "🔴 미참여 (결석/미입실)"; }
 
+                    if (match) filtered.push(st);
+                });
+            }
 
-                else if (category === 'out' && st.currentStatus === "외출") { match = true; title = "🟡 현재 외출 중"; }
-                else if (category === 'finish' && st.currentStatus === "귀가") { match = true; title = "⚪ 최종 귀가 완료"; }
-                else if (category === 'absent' && st.currentStatus === "미참여") { match = true; title = "🔴 미참여 (결석/미입실)"; }
-                // 👇 귀가 누락 필터 추가
-                else if (category === 'missing' && st.currentStatus === "귀가(누락)") { match = true; title = "🚨 귀가 누락 (태그 미완료)"; }
-                // 👇 이 한 줄을 추가해 주세요! 👇
-                else if (category === 'adminApproved') {
-                    const log = attendanceLogsData[String(st.stuId)];
-                    if (log && log.history && log.history.some(h => h.startsWith('🛠️[강제승인]'))) {
-                        match = true; title = "🛠️ 관리자 강제 승인 적용자";
-                    }
-                }
-                if (match) filtered.push(st);
-            });
-
+            // 🌟 3. 여기서부터는 네모 박스를 화면에 그려주는 부분 (선생님 파일에 있던 정상 코드) 🌟
             if (filtered.length === 0) {
                 container.innerHTML = `<div style="padding:20px; text-align:center; color:#dc3545; font-weight:bold; background:#fff; border-radius:10px; margin-bottom:15px; border:1px solid #ddd;">해당 조건에 맞는 학생이 없습니다.</div>`;
                 container.style.display = 'block';
                 return;
             }
 
-            // 화면 구성 (제목 및 닫기 버튼)
             let html = `
                     <div style="padding: 15px; background: #f8f9fa; border-radius: 12px; margin-bottom: 20px; border: 2px solid #b6d4fe; box-shadow: inset 0 0 10px rgba(0,0,0,0.02);">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; border-bottom: 2px solid #dee2e6; padding-bottom: 8px;">
@@ -3227,11 +3255,8 @@
                 `;
 
             filtered.forEach(st => {
-                // 👇 반별 무지개 색상 지정 로직 모두 삭제됨 👇
-
-                // 1. 현재 출결 상태를 가져와서 좌석표와 동일한 CSS 클래스 산출
                 const log = attendanceLogsData[String(st.stuId)];
-                let cssClass = "status-absent"; // 기본값: 미입실 (빨간 점선)
+                let cssClass = "status-absent";
 
                 if (log) {
                     const isTeacherAbsent = log.history && log.history.join('').includes('빈자리');
@@ -3244,13 +3269,11 @@
                     else if (log.status === "외출") { cssClass = "status-out"; }
                     else if (log.status === "귀가") { cssClass = "status-finish"; }
                     else {
-                        // 입실 또는 복귀 상태
                         if (isTeacherPresent) { cssClass = "status-admin-present"; }
                         else { cssClass = st.type === "고정석" ? "status-present-fixed" : "status-present-auto"; }
                     }
                 }
 
-                // 2. 네모 박스 그리기 (CSS 클래스 적용 및 통일된 상단 띠 적용)
                 html += `
                         <div onclick="openDailyStatus('${st.stuId}', '${st.stuName}', '${st.seatNum}', '')" 
                              class="${cssClass}"
@@ -3259,7 +3282,6 @@
                              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.05)';">
                             
                             <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: rgba(0,0,0,0.1);"></div>
-                            
                             <div style="font-size: 11px; letter-spacing: -0.5px; color: inherit; opacity: 0.8; margin-top: 3px;">${st.stuId}</div>
                             <div style="font-size: 14px; font-weight: 900; color: inherit; margin: 4px 0;">${st.stuName}</div>
                             <div style="font-size: 11px; font-weight: bold; color: inherit; opacity: 0.9;">${st.seatNum === '미발권' ? '미발권' : st.seatNum}</div>
