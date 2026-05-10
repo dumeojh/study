@@ -2847,6 +2847,15 @@
             const tbody = document.getElementById('time-list-body');
             tbody.innerHTML = '';
 
+            // 👇👇 여기에 5줄을 추가해 주세요! (타임 탭을 바꿀 때 열려있던 네모 박스 명단 강제 닫기) 👇👇
+            const gridArea = document.getElementById('time-grid-area');
+            if (gridArea) {
+                gridArea.style.display = 'none';
+                gridArea.innerHTML = '';
+            }
+            // 👆👆 --
+
+
             // 2. 현재 조회 중인 날짜 정보 추출
             const targetDateStr = document.getElementById('daily-date').value;
             const targetDateObj = new Date(targetDateStr);
