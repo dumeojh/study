@@ -3340,17 +3340,24 @@
                 filtered = window.dailyApprovedList || [];
                 title = "🛠️ 하루 전체 관리자 강제 승인 적용자";
             }
+
+
+
             // 🌟 2. 그 외 기존 타임별 명단 처리 로직 🌟
             else {
                 if (!window.currentTimeStudents) return;
                 window.currentTimeStudents.forEach(st => {
                     let match = false;
-                    if (category === 'all') { match = true; title = "총 신청자"; }
-                    else if (category === 'managed' && (st.type === "고정석" || (st.type === "자율석" && st.seatNum !== "미발권"))) { match = true; title = "🎯 실 관리 대상 (고정석 + 발권완료)"; }
+
+                    // 👇👇 수정됨: 미신청(참여) 꼬리표(!st.isExtended)가 없는 학생만 정식 신청 통계 명단에 넣습니다!
+                    if (category === 'all' && !st.isExtended) { match = true; title = "총 신청자"; }
+                    else if (category === 'managed' && !st.isExtended && (st.type === "고정석" || (st.type === "자율석" && st.seatNum !== "미발권"))) { match = true; title = "🎯 실 관리 대상 (고정석 + 발권완료)"; }
                     else if (category === 'extended' && st.isExtended) { match = true; title = "🔥 미신청자 (참여 중)"; }
-                    else if (category === 'fixed' && st.type === "고정석") { match = true; title = "고정석 신청"; }
-                    else if (category === 'autoIssued' && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
-                    else if (category === 'autoUnissued' && st.type === "자율석" && st.seatNum === "미발권") { match = true; title = "자율석 (미발권)"; }
+                    else if (category === 'fixed' && !st.isExtended && st.type === "고정석") { match = true; title = "고정석 신청"; }
+                    else if (category === 'autoIssued' && !st.isExtended && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
+                    else if (category === 'autoUnissued' && !st.isExtended && st.type === "자율석" && st.seatNum === "미발권") { match = true; title = "자율석 (미발권)"; }
+
+                    // 🟢 상태값(참여, 외출, 귀가, 미참여)은 정식 신청자와 미신청자를 모두 합쳐서 보여줍니다.
                     else if (category === 'present' && (st.currentStatus === "참여" || st.currentStatus === "미신청(참여)")) { match = true; title = "🟢 현재 참여 중"; }
                     else if (category === 'out' && st.currentStatus === "외출") { match = true; title = "🟡 현재 외출 중"; }
                     else if (category === 'finish' && st.currentStatus === "귀가") { match = true; title = "⚪ 최종 귀가 완료"; }
