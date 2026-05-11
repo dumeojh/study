@@ -3067,17 +3067,30 @@
                 }
             });
 
+            // 👇👇 수정됨: 당일 발권 데이터를 합칠 때, '월별 신청 여부'를 철저히 검사합니다 👇👇
             dailyReservationsData.forEach(res => {
-                if (res.times && String(res.times).includes(String(timeSlot))) {
-                    targetStudentsMap.set(String(res.stuId), {
-                        stuId: res.stuId,
-                        stuName: res.stuName,
-                        seatNum: res.seatNum,
-                        type: "자율석"
-                    });
+                const sId = String(res.stuId);
+
+                // 1) 이미 월별 정식 신청자 명단에 들어있는 학생이라면?
+                if (targetStudentsMap.has(sId)) {
+                    // 정식 신청자이므로 좌석 번호만 업데이트 (이 학생들은 '발권완료' 통계로 정상 집계됨)
+                    let existing = targetStudentsMap.get(sId);
+                    existing.seatNum = res.seatNum;
+                }
+                // 2) 월별 정식 신청자가 아닌데, 키오스크에서 발권(예약)을 받아 기록이 있는 학생이라면?
+                else {
+                    if (res.times && String(res.times).includes(String(timeSlot))) {
+                        targetStudentsMap.set(sId, {
+                            stuId: res.stuId,
+                            stuName: res.stuName,
+                            seatNum: res.seatNum,
+                            type: "자율석",
+                            isExtended: true // 🌟 핵심: '미신청(참여)' 꼬리표 부착! (발권 수치에 섞이지 않고 미신청 카운트로 분리)
+                        });
+                    }
                 }
             });
-
+            // 👆👆 여기까지 변경 완료 👆👆
 
 
             // 🌟 [수정된 핵심 로직] 미신청 참여자 완벽 감지
