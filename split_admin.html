@@ -2137,12 +2137,12 @@
                         let allTagsInline = [];
                         [0, 1, 2, 3].forEach(t => {
                             const hasLogs = groupedHistory[t].length > 0;
-                            const isApplied = rawTimes.includes(String(t));
+                            const isApplied = orgTimes.includes(String(t));
+                            const isTicketed = ticketTimes.includes(String(t));
+                            const isExpectedToAttend = isApplied || isTicketed;
 
-                            // 해당 타임에 흔적(기록)이 있거나, 신청했던 타임이면 표시
-                            const shouldShowSlot = (t === 0 && hasLogs) || (t > 0 && (isApplied || hasLogs));
-
-
+                            // 🌟 isApplied 대신 isExpectedToAttend를 사용하여 흔적 표시
+                            const shouldShowSlot = (t === 0 && hasLogs) || (t > 0 && (isExpectedToAttend || hasLogs));
 
 
                             if (shouldShowSlot) {
