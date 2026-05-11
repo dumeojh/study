@@ -2837,63 +2837,59 @@
 
         async function autoSweepPastAttendance() {
             try {
-                // 1. 환경설정에서 마감 기준 시간 가져오기
                 const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
-                if (schedDoc && schedDoc.value && schedDoc.value.autoClose === false) return; // 자동 마감이 꺼져있으면 중단
+                if (schedDoc && schedDoc.value && schedDoc.value.autoClose === false) return;
 
+                const today = new Date();
                 const todayStr = getTodayString();
 
-                // 2. 현재 시간과 마감 시간(분 단위) 비교 로직 추가 🌟
-                const now = new Date();
-                const currentMin = now.getHours() * 60 + now.getMinutes();
-                let autoCloseTimeStr = "22:00"; // 기본값
+                // 🌟 [현명한 방식] 조회 시작 날짜 설정 (예: 7일 전)
+                const weekAgo = new Date();
+                weekAgo.setDate(today.getDate() - 7);
+                const startDateStr = weekAgo.toISOString().split('T')[0];
 
+                const currentMin = today.getHours() * 60 + today.getMinutes();
+                let autoCloseTimeStr = "22:00";
                 if (schedDoc && schedDoc.value && schedDoc.value.autoCloseTime) {
                     autoCloseTimeStr = schedDoc.value.autoCloseTime;
                 }
-
-                // 마감 시간을 분(minute)으로 변환 (common.js의 timeToMin 활용)
                 const closeMin = timeToMin(autoCloseTimeStr);
 
-                // 3. 쿼리 생성: 마감 시간이 지났으면 오늘 포함(lte), 안 지났으면 어제까지만(lt) 🌟
+                // 🌟 쿼리 최적화: .gte('date', startDateStr) 추가
                 let query = supabaseClient
                     .from('attendance_logs')
-                    .select('*');
+                    .select('*')
+                    .gte('date', startDateStr); // 7일 전부터만 가져오기 (성능 최적화 핵심)
 
                 if (currentMin >= closeMin) {
-                    query = query.lte('date', todayStr); // 오늘(todayStr)보다 작거나 '같은' 날짜 모두 검사
+                    query = query.lte('date', todayStr);
                 } else {
-                    query = query.lt('date', todayStr);  // 오늘(todayStr)보다 '작은'(어제 이전) 날짜만 검사
+                    query = query.lt('date', todayStr);
                 }
 
-                // 4. 귀가 처리가 안 된 학생 찾기
-                const { data: pastLogs, error: fetchError } = await query
+                const { data: recentLogs, error: fetchError } = await query
                     .neq('status', '귀가')
                     .neq('status', '귀가(누락)');
 
                 if (fetchError) throw fetchError;
 
-                // 5. 누락자 강제 마감 처리
-                if (pastLogs && pastLogs.length > 0) {
-                    let updateCount = 0;
-                    for (let log of pastLogs) {
+                if (recentLogs && recentLogs.length > 0) {
+                    for (let log of recentLogs) {
                         let newHistory = log.history || [];
-                        newHistory.push(`🚨 귀가 누락 (자동 마감)`); // 문구를 조금 바꿔서 자동 마감임을 명시
+                        newHistory.push(`🚨 귀가 누락 (자동 마감)`);
 
                         await supabaseClient.from("attendance_logs").update({
                             status: "귀가(누락)",
                             last_update_time: new Date().toISOString(),
                             history: newHistory
                         }).eq("id", log.id);
-                        updateCount++;
                     }
-                    console.log(`✅ 자동 마감 완료: 총 ${updateCount}명 처리됨`);
-
-                    // 데이터가 변경되었으므로 화면 새로고침
                     loadDailyDataAndRender();
                 }
             } catch (e) { console.error("자동 마감 중 오류:", e); }
         }
+
+
 
         //   autoSweepPastAttendance();
 
