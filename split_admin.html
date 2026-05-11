@@ -446,6 +446,100 @@
             pointer-events: none;
             filter: grayscale(100%);
         }
+
+        /* 🖨️ 일일 현황 명단 인쇄 전용 스타일 */
+        @media print {
+
+            /* A4 가로 방향 및 여백 설정 */
+            @page {
+                size: landscape;
+                margin: 15mm;
+            }
+
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+
+            /* 화면용 UI 요소 숨기기 (상단 메뉴, 탭, 검색창, 버튼 등) */
+            .header-area,
+            .tab-menu,
+            #daily-shared-controls,
+            .btn,
+            button,
+            input,
+            select {
+                display: none !important;
+            }
+
+            /* 현재 활성화된 탭만 인쇄 (다른 탭 내용 숨김) */
+            .tab-content {
+                display: none !important;
+            }
+
+            .tab-content.active {
+                display: block !important;
+            }
+
+            /* 표가 잘리지 않도록 스크롤 속성 해제 및 컨테이너 여백 초기화 */
+            .container {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+
+            div[style*="overflow"] {
+                overflow: visible !important;
+            }
+
+            /* 인쇄 시 표 디자인 최적화 */
+            table {
+                width: 100% !important;
+                border: 2px solid #000 !important;
+            }
+
+            th,
+            td {
+                padding: 6px 8px !important;
+                font-size: 11pt !important;
+                border: 1px solid #555 !important;
+            }
+
+            /* 통계/검색창을 감싸는 박스의 테두리와 배경색 제거 */
+            .form-card {
+                border: none !important;
+                padding: 0 !important;
+                background: transparent !important;
+                margin-bottom: 15px !important;
+            }
+
+            /* 태그 및 색상이 흑백으로 날아가지 않도록 강제 출력 */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* 평소 화면에는 숨겨두었던 인쇄 전용 '날짜 제목'을 표시 */
+            #daily-list-date-display {
+                display: block !important;
+                text-align: center;
+                font-size: 22px;
+                font-weight: 900;
+                margin-bottom: 15px;
+                border-bottom: 2px solid #000;
+                padding-bottom: 10px;
+                color: black !important;
+            }
+        }
+
+        /* 화면에서는 인쇄용 제목 숨기기 */
+        @media screen {
+            #daily-list-date-display {
+                display: none;
+            }
+        }
     </style>
 </head>
 
@@ -608,7 +702,13 @@
                 <div id="supervisor-grid" class="seat-grid"></div>
             </div>
 
+
+
+
             <div id="tab-daily-list" class="tab-content">
+
+                <h3 id="daily-list-date-display">📅 일일 현황 명단</h3>
+
                 <div class="form-card" style="margin-bottom: 15px; padding: 15px;">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -640,13 +740,17 @@
                                     onkeyup="renderDailyList()"
                                     style="padding: 6px; border-radius: 5px; border: 1px solid #ccc; margin-left: 5px; width: 140px;">
                             </div>
+                            <div>
+                                <button class="btn"
+                                    style="background:#6c757d; color:white; padding:6px 12px; font-size:13px; font-weight:bold;"
+                                    onclick="window.print()">🖨️ 명단 인쇄</button>
+                            </div>
                         </div>
                         <div id="daily-list-summary"
                             style="font-size: 14px; font-weight: bold; background: white; padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd;">
                         </div>
                     </div>
                 </div>
-
 
                 <div style="overflow-x:auto;">
                     <table>
