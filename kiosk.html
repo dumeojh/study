@@ -526,11 +526,14 @@
                     return;
                 }
 
-                const appData = appDataList[0];
+                // 👇 요일 제한 로직 삭제 (미신청 요일에도 입실 허용) 👇
+                /*
                 if (!appData[todayDayEng]) {
                     showReceipt(studentName, "입실 불가", "오늘 신청 아님", "오늘은 야자를 신청한 요일이 아닙니다.", "#dc3545");
                     return;
                 }
+                */
+                // 👆 ------------------------------------------------ 👆
 
                 if (appData.type === "자율석") {
                     const { data: ticketData, error: ticketError } = await supabaseClient

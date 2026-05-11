@@ -407,19 +407,36 @@
                     btn.innerText = "조회하기"; btn.disabled = false; return;
                 }
 
+
+
                 studentSchedule = data[todayDayEng];
+                let isExtra = false; // 미신청 추가 자습 여부 확인용
+
                 if (!studentSchedule) {
-                    alert("오늘은 자율학습을 신청한 요일이 아닙니다. 일정을 확인해주세요! 😊");
-                    btn.innerText = "조회하기"; btn.disabled = false; return;
+                    // 🌟 신청하지 않은 요일이어도 발권을 허용하고 의사 묻기
+                    if (confirm("오늘은 자율학습 신청 요일이 아닙니다.\n오늘 하루 자율석을 발권하여 자습하시겠습니까?")) {
+                        studentSchedule = "1,2,3"; // 미신청자는 오늘 1,2,3타임 모두 자리를 쓰는 것으로 기본 배정
+                        isExtra = true;
+                    } else {
+                        btn.innerText = "조회하기"; btn.disabled = false; return;
+                    }
                 }
 
                 document.getElementById('login-section').style.display = 'none';
                 document.getElementById('ticket-section').style.display = 'block';
 
+                // 미신청 참여인 경우 학생 화면에 표시할 안내 문구 변경
+                const timeInfoText = isExtra ? "<span style='color:#d63384; font-weight:bold;'>전체 타임 (미신청 추가 자습)</span>" : `[ ${studentSchedule} ] 타임`;
+
                 document.getElementById('student-info').innerHTML = `
                 <strong>${name} 학생, 환영합니다!</strong><br>
-                <span style="font-size:14px; color:#666;">오늘 예정된 자습: [ ${studentSchedule} ] 타임</span>
+                <span style="font-size:14px; color:#666;">오늘 예정된 자습: ${timeInfoText}</span>
             `;
+
+
+
+
+
 
                 // 중복 예약(이미 발권) 검사
                 const myTicket = todayReservations.find(r => r.stu_id === id);
