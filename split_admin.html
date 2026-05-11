@@ -3089,16 +3089,7 @@
 
                 let participatedInSlot = false;
 
-
-
                 ///////////////////////////////////////////////////// 
-                // 조건 1. 현재 운영 교시와 조회 타임이 일치하고, 현재 교실에 있는 경우
-                // (최소 시간을 아직 못 채웠더라도, 지금 불법으로 앉아있다면 화면에 띄워서 확인해야 함)
-                const currentOpSlot = parseInt(document.getElementById('daily-time').value) || 1;
-                if (currentOpSlot === timeSlot && (log.status === "입실" || log.status === "복귀")) {
-                    participatedInSlot = true;
-                }
-
                 // 조건 1. 현재 운영 교시와 조회 타임이 일치하고, 현재 교실에 있는 경우
                 // (최소 시간을 아직 못 채웠더라도, 지금 불법으로 앉아있다면 화면에 띄워서 확인해야 함)
                 const currentOpSlot = parseInt(document.getElementById('daily-time').value) || 1;
@@ -3134,13 +3125,6 @@
 
                 // 조건 3. common.js의 인정 로직을 통해 공식적으로 환경설정의 '최소 인정 시간'을 채운 경우!
                 const recognizedSet = getFinalRecognizedTimes(log, currentSchedule);
-
-                // 조건 3. common.js의 인정 로직을 통해 공식적으로 환경설정의 '최소 인정 시간'을 채운 경우!
-                const recognizedSet = getFinalRecognizedTimes(log, currentSchedule);
-
-
-
-
 
                 if (recognizedSet.has(timeSlot)) {
                     participatedInSlot = true;
