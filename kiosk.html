@@ -238,7 +238,15 @@
         <div class="clock" id="live-clock">00:00:00</div>
         <div class="date" id="live-date">2026년 00월 00일</div>
 
-        <div class="status-grid">
+        <div style="width: 100%; text-align: right; margin-bottom: 8px;">
+            <span onclick="toggleStatusGrid()"
+                style="cursor: pointer; color: #adb5bd; font-size: 13px; font-weight: bold; border-bottom: 1px dashed #adb5bd; transition: 0.2s;"
+                onmouseover="this.style.color='#495057'" onmouseout="this.style.color='#adb5bd'">
+                ▼ 수동 상태 버튼 펼치기
+            </span>
+        </div>
+
+        <div class="status-grid" id="status-grid-area" style="display: none;">
             <button class="status-btn btn-in selected" onclick="selectStatus('입실', this)">🟢 등교 입실</button>
             <button class="status-btn btn-out" onclick="selectStatus('외출', this)">🟡 잠시 외출</button>
             <button class="status-btn btn-return" onclick="selectStatus('복귀', this)">🔵 외출 복귀</button>
@@ -411,6 +419,25 @@
             }
             return result;
         }
+
+
+        // 수동 상태 버튼 접기/펼치기 함수
+        function toggleStatusGrid() {
+            const grid = document.getElementById('status-grid-area');
+            const btn = event.target;
+
+            if (grid.style.display === 'none') {
+                grid.style.display = 'grid';
+                btn.innerText = '▲ 수동 상태 버튼 접기';
+            } else {
+                grid.style.display = 'none';
+                btn.innerText = '▼ 수동 상태 버튼 펼치기';
+            }
+
+            // 버튼을 누른 후 키오스크가 멈추지 않도록 다시 바코드 입력창으로 포커스
+            focusScanner();
+        }
+
 
         async function processCheckInOut(isScanner) {
             let rawId = scannerInput.value.trim();
