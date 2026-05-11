@@ -534,6 +534,7 @@
                 }
                 */
                 // 👆 ------------------------------------------------ 👆
+                const appData = appDataList[0]; // 🚨 이 한 줄을 반드시 추가해 주세요!
 
                 if (appData.type === "자율석") {
                     const { data: ticketData, error: ticketError } = await supabaseClient
