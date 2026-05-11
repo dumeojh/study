@@ -761,11 +761,14 @@
                     classFilter.value = "all";
                 }
 
-                let theadHtml = `<tr>
-            <th style="width: 85px; position:sticky; left:0; background:#f8f9fa; z-index:2; white-space:nowrap;">학급</th>
-            <th style="width: 50px; position:sticky; left:85px; background:#f8f9fa; z-index:2; white-space:nowrap;">학번</th>
-            <th style="width: 85px; position:sticky; left:135px; background:#f8f9fa; z-index:2; border-right:2px solid #ccc; white-space:nowrap;">이름</th>`;
 
+
+
+                let theadHtml = `<tr>
+            <th style="width: 40px; position:sticky; left:0; background:#f8f9fa; z-index:2; white-space:nowrap;">연번</th>
+            <th style="width: 85px; position:sticky; left:40px; background:#f8f9fa; z-index:2; white-space:nowrap;">학급</th>
+            <th style="width: 50px; position:sticky; left:125px; background:#f8f9fa; z-index:2; white-space:nowrap;">학번</th>
+            <th style="width: 85px; position:sticky; left:175px; background:#f8f9fa; z-index:2; border-right:2px solid #ccc; white-space:nowrap;">이름</th>`;
                 for (let d = 1; d <= lastDate; d++) {
                     const dayIdx = new Date(year, month - 1, d).getDay();
                     let color = "#495057";
@@ -809,15 +812,20 @@
                 });
 
                 let html = "";
+
+
                 if (filteredData.length === 0) {
-                    html = `<tr><td colspan="${matrixLastDate + 4}" style="color:#6c757d; padding:30px; text-align:center;">조건에 맞는 학생 데이터가 없습니다.</td></tr>`;
+                    html = `<tr><td colspan="${matrixLastDate + 5}" style="color:#6c757d; padding:30px; text-align:center;">조건에 맞는 학생 데이터가 없습니다.</td></tr>`;
                 } else {
-                    filteredData.forEach(stat => {
+                    filteredData.forEach((stat, index) => {
                         html += `<tr>
-                    <td style="position:sticky; left:0; background:white; z-index:1; white-space:nowrap;">${stat.className}</td>
-                    <td style="position:sticky; left:85px; background:white; z-index:1; font-weight:bold; white-space:nowrap;">${stat.stu_id}</td>
+                    <td style="position:sticky; left:0; background:#f8f9fa; z-index:1; text-align:center; font-weight:bold; color:#6c757d; white-space:nowrap;">${index + 1}</td>
+                    <td style="position:sticky; left:40px; background:white; z-index:1; white-space:nowrap;">${stat.className}</td>
+                    <td style="position:sticky; left:125px; background:white; z-index:1; font-weight:bold; white-space:nowrap;">${stat.stu_id}</td>
           
-<td style="position:sticky; left:135px; background:white; z-index:1; font-weight:bold; border-right:2px solid #eee; cursor:pointer; color:var(--primary); text-decoration:underline; white-space:nowrap;" onclick="const [y, m] = document.getElementById('month-picker').value.split('-'); openSharedStudentCalendar('${stat.stu_id}', '${stat.stu_name}', parseInt(y), parseInt(m))">${stat.stu_name} 🔍</td>`;
+<td style="position:sticky; left:175px; background:white; z-index:1; font-weight:bold; border-right:2px solid #eee; cursor:pointer; color:var(--primary); text-decoration:underline; white-space:nowrap;" onclick="const [y, m] = document.getElementById('month-picker').value.split('-'); openSharedStudentCalendar('${stat.stu_id}', '${stat.stu_name}', parseInt(y), parseInt(m))">${stat.stu_name} 🔍</td>`;
+
+
                         for (let i = 0; i < matrixLastDate; i++) {
                             const count = stat.dailyCounts[i];
                             const display = count > 0 ? `<b style="color:#333;">${count}</b>` : `<span style="color:#ddd;">-</span>`;

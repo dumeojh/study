@@ -3326,7 +3326,7 @@
                                     
                                     <th style="padding: 10px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; color: #842029; background: #f8d7da;">자율석<br><span style="font-size:10px; font-weight:normal; color:#842029;">(미발권)</span></th>
 
-                                    <th style="padding: 10px 12px; border-top: 3px solid #4338ca; border-left: 3px solid #4338ca; border-right: 1px dashed #d8b4fe; border-bottom: 1px solid #ddd; color: #5b21b6; background: #f3e8ff; font-weight: 900;">🎯 관리 대상<br><span style="font-size:10px; font-weight:normal;">(고정+발권)</span></th>
+                                    <th style="padding: 10px 12px; border-top: 3px solid #4338ca; border-left: 3px solid #4338ca; border-right: 1px dashed #d8b4fe; border-bottom: 1px solid #ddd; color: #5b21b6; background: #f3e8ff; font-weight: 900;">🎯 관리 대상<br><span style="font-size:10px; font-weight:normal;">(고정+자율발권)</span></th>
                                     <th style="padding: 10px 12px; border-top: 3px solid #4338ca; border-right: 3px solid #4338ca; border-bottom: 1px solid #ddd; color: #d63384; background: #fff0f7; font-weight: 900;">🔥 미신청(참여)</th>
 
                                     <th style="padding: 10px 12px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; font-size: 12px;">🟢 참여</th>
@@ -3389,7 +3389,7 @@
 
                     // 👇👇 수정됨: 미신청(참여) 꼬리표(!st.isExtended)가 없는 학생만 정식 신청 통계 명단에 넣습니다!
                     if (category === 'all' && !st.isExtended) { match = true; title = "총 신청자"; }
-                    else if (category === 'managed' && !st.isExtended && (st.type === "고정석" || (st.type === "자율석" && st.seatNum !== "미발권"))) { match = true; title = "🎯 실 관리 대상 (고정석 + 발권완료)"; }
+                    else if (category === 'managed' && !st.isExtended && (st.type === "고정석" || (st.type === "자율석" && st.seatNum !== "미발권"))) { match = true; title = "🎯 실제 관리 대상 (고정석 + 발권완료)"; }
                     else if (category === 'extended' && st.isExtended) { match = true; title = "🔥 미신청자 (참여 중)"; }
                     else if (category === 'fixed' && !st.isExtended && st.type === "고정석") { match = true; title = "고정석 신청"; }
                     else if (category === 'autoIssued' && !st.isExtended && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
