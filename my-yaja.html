@@ -78,11 +78,16 @@
         <div id="result_area" class="hidden animate-fade-in">
             <div class="card p-6 mb-4 text-center">
                 <h2 id="user_name" class="text-xl font-bold text-gray-800 mb-4">학생 참여 현황</h2>
+
+
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-purple-50 p-4 rounded-xl">
+                    <div class="bg-purple-50 p-4 rounded-xl flex flex-col justify-center">
                         <p id="rank_title" class="text-gray-500 text-[10px] uppercase">월간 등수</p>
-                        <p class="text-2xl font-black text-purple-600"><span id="my_rank">-</span>위</p>
+                        <p class="text-2xl font-black text-purple-600 leading-none mt-1"><span id="my_rank">-</span>위
+                        </p>
+                        <p id="tie_count" class="text-[11px] text-purple-400 font-bold mt-1 hidden"></p>
                     </div>
+
                     <div class="bg-blue-50 p-4 rounded-xl">
                         <p id="count_title" class="text-gray-500 text-[10px] uppercase">월간 참여</p>
                         <p class="text-2xl font-black text-blue-600"><span id="total_count">-</span>회</p>
@@ -227,7 +232,13 @@
                 const rank = sortedIds.indexOf(currentStuId) + 1;
                 const myCount = counts[currentStuId] || 0;
 
-
+                // 👇 여기서부터 동석차 인원 계산 로직 추가 👇
+                let tieCount = 0;
+                if (myCount > 0) {
+                    // 나(currentStuId)를 제외하고, 나와 점수(횟수)가 같은 학생 수만 셉니다.
+                    tieCount = Object.keys(counts).filter(id => id !== currentStuId && counts[id] === myCount).length;
+                }
+                // 👆 여기까지 👆
 
 
                 // 2. 학생 정보 및 상세 로그 가져오기
@@ -263,6 +274,16 @@
                 document.getElementById('my_rank').innerText = rank;
                 document.getElementById('total_count').innerText = myCount;
                 document.getElementById('rank_title').innerText = `${targetMonthNum}월 등수`;
+
+                // 👇 동석차 인원 화면 업데이트 로직 추가 👇
+                const tieElement = document.getElementById('tie_count');
+                if (tieCount > 0) {
+                    tieElement.innerText = `(동점자 ${tieCount}명)`;
+                    tieElement.classList.remove('hidden');
+                } else {
+                    tieElement.classList.add('hidden');
+                }
+                // 👆 여기까지 👆
 
                 const logList = document.getElementById('log_list');
                 logList.className = "grid grid-cols-5 gap-2 mt-3";
