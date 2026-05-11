@@ -3115,13 +3115,36 @@
                     log.history.forEach(h => {
                         const tmMatch = h.match(/(\d{2}:\d{2})/);
                         let slot = 0;
+
                         if (tmMatch) {
                             const timeStr = tmMatch[1];
-                            if (timeStr < currentSchedule.t1) slot = 0;
-                            else if (timeStr < currentSchedule.t2) slot = 1;
-                            else if (timeStr < currentSchedule.t3) slot = 2;
-                            else slot = 3;
+                            // 환경설정에서 지정한 각 타임의 종료 시간 (없으면 기본값 사용)
+                            const t1_end = currentSchedule.t1_end || "18:10";
+                            const t2_end = currentSchedule.t2_end || "20:10";
+
+                            if (timeStr < currentSchedule.t1) {
+                                slot = 0;
+                            } else if (timeStr < currentSchedule.t2) {
+                                // 🌟 핵심: 1타임 종료(18:10) 후 저녁시간에 '입실/복귀'한 것은 2타임 참여로 간주
+                                if (timeStr > t1_end && (h.includes("입실") || h.includes("복귀"))) {
+                                    slot = 2;
+                                } else {
+                                    slot = 1; // 종료 후 귀가/외출은 1타임 활동으로 정상 인정
+                                }
+                            } else if (timeStr < currentSchedule.t3) {
+                                // 🌟 핵심: 2타임 종료(20:10) 후 쉬는시간에 '입실/복귀'한 것은 3타임 참여로 간주
+                                if (timeStr > t2_end && (h.includes("입실") || h.includes("복귀"))) {
+                                    slot = 3;
+                                } else {
+                                    slot = 2;
+                                }
+                            } else {
+                                slot = 3;
+                            }
                         } else {
+
+
+
                             // 수동 기록 감지
                             if (h.includes("1타임") || h.includes("1T")) slot = 1;
                             else if (h.includes("2타임") || h.includes("2T")) slot = 2;
