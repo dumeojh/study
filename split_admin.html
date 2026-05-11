@@ -2056,11 +2056,9 @@
             `;
         }
 
-
         ////////////////////////////////////////////////////////////////////////////////////
         function openDailyStatus(stuId, stuName, seatNum, phone) {
             document.getElementById('daily-status-modal').style.display = 'flex';
-            // 👇 이 1줄을 추가해 주세요! (뒷배경 스크롤 잠금) 👇
             document.body.style.overflow = 'hidden';
             document.getElementById('ds-name').innerText = stuName;
             document.getElementById('ds-info').innerText = `학번: ${stuId} | 좌석: ${seatNum}`;
@@ -2068,7 +2066,6 @@
             document.getElementById('ds-current-stu-id').value = stuId;
             document.getElementById('ds-current-stu-name').value = stuName;
 
-            // 🌟 추가됨: 모달 열 때 시간 칸에 '현재 시간'을 기본으로 꽂아줍니다.
             const now = new Date();
             document.getElementById('manual-time-input').value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
@@ -2089,388 +2086,398 @@
             const log = attendanceLogsData[String(stuId)];
             const recentLogDiv = document.getElementById('ds-recent-log');
 
+            let historyHtml = "";
+            const targetDateStr = document.getElementById('daily-date').value;
+            const targetDateObj = new Date(targetDateStr);
+            const targetDay = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][targetDateObj.getDay()];
+            const targetMonthStr = (targetDateObj.getMonth() + 1) + "월";
 
-            [0, 1, 2, 3].forEach(t => {
-                const hasLogs = groupedHistory[t].length > 0;
+            let orgTimes = "";
+            let ticketTimes = "";
+
+            const appEntry = Object.values(applicationData).find(app => String(app.stuId) === String(stuId) && app.targetMonth === targetMonthStr);
+            if (appEntry && appEntry[targetDay]) orgTimes = appEntry[targetDay];
+
+            const resEntry = dailyReservationsData.find(res => String(res.stuId) === String(stuId) && res.date === targetDateStr);
+            if (resEntry && resEntry.times) ticketTimes = resEntry.times;
+
+            let appliedBadges = "";
+            let resultBadges = "";
+            const recognizedSet = getFinalRecognizedTimes(log, currentSchedule);
+
+            [1, 2, 3].forEach(t => {
                 const isApplied = orgTimes.includes(String(t));
                 const isTicketed = ticketTimes.includes(String(t));
                 const isExpectedToAttend = isApplied || isTicketed;
+                const isRecognized = recognizedSet.has(t);
 
-                // 🌟 isApplied 대신 isExpectedToAttend를 사용하여 흔적 표시
-                const shouldShowSlot = (t === 0 && hasLogs) || (t > 0 && (isExpectedToAttend || hasLogs));
-
-                if (shouldShowSlot) {
-                    const slotLabel = t === 0 ? "0T" : `${t}T`;
-
-
-                    // 학생의 출결 기록(log.history)이 존재할 경우 타임라인 조립
-                    if (log && log.history && log.history.length > 0) {
-                        let groupedHistory = { 0: [], 1: [], 2: [], 3: [] };
-                        let overrideTag = ""; // 🌟 강제승인 태그 저장용
-
-                        // 시간대별로 기록(흔적) 분류하기
-                        log.history.forEach(h => {
-                            // 🌟 강제승인 태그는 타임라인에 그리지 않고 따로 빼둡니다.
-                            if (h.startsWith('🛠️[강제승인]')) {
-                                overrideTag = h;
-                                return;
-                            }
-                            const tmMatch = h.match(/(\d{2}:\d{2})/);
-                            let slot = 0;
-                            if (tmMatch) {
-                                const timeStr = tmMatch[1];
-                                if (timeStr < currentSchedule.t1) slot = 0;
-                                else if (timeStr < currentSchedule.t2) slot = 1;
-                                else if (timeStr < currentSchedule.t3) slot = 2;
-                                else slot = 3;
-                            } else {
-                                if (h.includes("1타임") || h.includes("1T")) slot = 1;
-                                else if (h.includes("2타임") || h.includes("2T")) slot = 2;
-                                else if (h.includes("3타임") || h.includes("3T")) slot = 3;
-                            }
-                            groupedHistory[slot].push(h);
-                        });
-
-
-
-                        ///////////////////////////////////////////////////////////////////////
-                        let allTagsInline = [];
-                        [0, 1, 2, 3].forEach(t => {
-                            const hasLogs = groupedHistory[t].length > 0;
-                            const isApplied = orgTimes.includes(String(t));
-                            const isTicketed = ticketTimes.includes(String(t));
-                            const isExpectedToAttend = isApplied || isTicketed;
-
-                            // 🌟 isApplied 대신 isExpectedToAttend를 사용하여 흔적 표시
-                            const shouldShowSlot = (t === 0 && hasLogs) || (t > 0 && (isExpectedToAttend || hasLogs));
-
-
-                            if (shouldShowSlot) {
-                                const slotLabel = t === 0 ? "0T" : `${t}T`;
-                                const slotBg = (hasLogs || t === 0) ? (t === 0 ? "#6c757d" : "var(--primary)") : "#adb5bd";
-                                allTagsInline.push(`<span style="background:${slotBg}; color:white; font-size:11px; padding:4px 8px; border-radius:5px; font-weight:bold; display:inline-block; vertical-align:middle; box-shadow:0 1px 2px rgba(0,0,0,0.1);">${slotLabel}</span>`);
-
-                                // 실제 찍힌 흔적(입실, 외출, 복귀 등)들을 화살표 사이에 나열
-                                if (hasLogs) {
-                                    groupedHistory[t].forEach(h => {
-                                        let tagClass = "tag-in";
-                                        if (h.includes("교사") || h.includes("빈자리") || h.includes("수동")) tagClass = "tag-admin";
-                                        else if (h.includes("외출")) tagClass = "tag-out";
-                                        else if (h.includes("귀가") || h.includes("누락") || h.includes("마감") || h.includes("취소")) tagClass = "tag-home";
-
-                                        allTagsInline.push(`<span class="mini-tag ${tagClass}" style="display:inline-block; vertical-align:middle; font-size:11px; padding:4px 8px;">${h}</span>`);
-                                    });
-                                }
-                            }
-                        });
-
-                        if (allTagsInline.length > 0) {
-                            historyHtml = `<div style="line-height:2.6; text-align:left; padding:12px; background:#fff; border-radius:8px; border:1px solid #ddd; margin-top:8px;">` +
-                                allTagsInline.join('<span style="color:#aaa; font-size:12px; margin:0 5px; display:inline-block; vertical-align:middle;">➔</span>') +
-                                `</div>`;
-                        }
-
-                        // 👇👇 여기에 빨간 박스 그리기 추가! 👇👇
-                        if (overrideTag) {
-                            const overrideText = overrideTag.replace('🛠️[강제승인]', '');
-                            historyHtml += `
-                        <div style="margin-top: 15px; text-align: center;">
-                            <span style="display: inline-block; background: #fff0f0; border: 2px solid #dc3545; color: #dc3545; font-weight: 900; font-size: 15px; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(220, 53, 69, 0.15);">
-                                🚨 교사 최종 판정 : ${overrideText}
-                            </span>
-                        </div>
-                    `;
-                        }
-                        // 👆👆 --------------------------------- 👆👆
-
-                        // 관리자 강제 승인 체크박스 자동 동기화 (수정됨)
-                        document.getElementById('manual-t-0').checked = false;
-                        document.querySelectorAll('.manual-t-chk').forEach(cb => cb.checked = false);
-
-                        if (overrideTag) {
-                            if (overrideTag.includes('0타임')) document.getElementById('manual-t-0').checked = true;
-                            else {
-                                document.querySelectorAll('.manual-t-chk').forEach(cb => {
-                                    if (overrideTag.includes(cb.value)) cb.checked = true;
-                                });
-                            }
-                        }
-                    } else {
-
-
-                        // 기록이 아예 없는 경우
-                        historyHtml = `<div style="text-align:center; padding:15px; background:#fff; border-radius:8px; border:1px dashed #ccc; margin-top:8px; color:#999; font-weight:bold;">출결 기록 없음 (미입실)</div>`;
-                        document.querySelectorAll('.manual-t-chk').forEach(cb => cb.checked = false);
-                    }
-
-                    // 최종적으로 모달창 내부에 타임라인 그려주기
-                    recentLogDiv.innerHTML = `<div style="font-weight:900; color:#495057; font-size:14px; text-align:left;">🕒 출결 상세 흔적 (타임라인)</div>` + historyHtml;
-                    // 👆👆 여기까지가 교체되는 부분입니다. 👆👆
-
-
-
-                    // 🌟 [추가됨] 현재 상태에 따라 불필요한 버튼 비활성화 🌟
-                    const btnIn = document.getElementById('btn-manual-in');
-                    const btnReturn = document.getElementById('btn-manual-return');
-                    const btnOut = document.getElementById('btn-manual-out');
-                    const btnAbsent = document.getElementById('btn-manual-absent');
-                    const btnFinish = document.getElementById('btn-manual-finish');
-
-                    // 매번 열릴 때마다 기본 텍스트 및 활성화 상태로 리셋
-                    btnIn.disabled = false; btnIn.innerText = "🟢 입실 처리";
-                    btnReturn.disabled = false; btnReturn.innerText = "🔵 복귀 처리";
-                    btnOut.disabled = false; btnOut.innerText = "🟡 외출 처리";
-                    btnAbsent.disabled = false; btnAbsent.innerText = "🔴 빈자리 처리";
-                    btnFinish.disabled = false; btnFinish.innerText = "⚪ 최종 귀가 처리";
-
-                    const currentStatus = log ? log.status : "미입실";
-
-                    if (currentStatus === "귀가" || currentStatus === "귀가(누락)") {
-                        btnFinish.disabled = true;
-                        btnFinish.innerText = "⚪ 이미 귀가 완료됨";
-                    } else if (currentStatus === "입실") {
-                        btnIn.disabled = true;
-                        btnIn.innerText = "🟢 이미 입실됨";
-                        btnReturn.disabled = true; // 입실 상태에선 복귀 불필요
-                    } else if (currentStatus === "복귀") {
-                        btnReturn.disabled = true;
-                        btnReturn.innerText = "🔵 이미 복귀됨";
-                        btnIn.disabled = true; // 복귀 상태면 입실 불필요
-                    } else if (currentStatus === "외출") {
-                        btnOut.disabled = true;
-                        btnOut.innerText = "🟡 이미 외출 중";
-                    } else if (currentStatus === "미입실") {
-                        btnAbsent.disabled = true;
-                        btnAbsent.innerText = "🔴 이미 빈자리";
-                        btnOut.disabled = true; // 미입실인데 외출 불가
-                        btnReturn.disabled = true; // 미입실인데 복귀 불가
-                        btnFinish.disabled = true; // 👈 딱 이것만 추가하시면 됩니다!
-                    }
-                    // 👇👇 여기에 아래 4줄을 추가해 주세요! 👇👇
-                    // 🌟 모달이 열릴 때마다 관리자 강제 승인 영역은 접어두고, 수동 버튼 영역은 보이게 초기화
-                    document.getElementById('admin-content-area').style.display = 'none';
-                    document.getElementById('toggle-icon').innerText = '펼치기 ▼';
-                    document.getElementById('toggle-icon').style.color = '#999';
-                    document.getElementById('manual-time-input').parentElement.style.display = 'grid';
+                if (isApplied) {
+                    appliedBadges += `<span style="background:#6c757d; color:white; padding:3px 8px; border-radius:4px; font-size:12px; margin:0 3px; display:inline-block; text-align:center; min-width:18px; font-weight:bold; box-shadow:0 1px 2px rgba(0,0,0,0.1);">${t}T</span>`;
+                } else {
+                    appliedBadges += `<span style="border:1px dashed #dc3545; color:#dc3545; background:#fff0f0; padding:2px 7px; border-radius:4px; font-size:12px; margin:0 3px; display:inline-block; text-align:center; min-width:18px;">${t}T</span>`;
                 }
 
-
-
-
-                // 🌟 2. 수정됨: 귀찮은 팝업 없애고, 입력칸의 시간을 읽어와서 저장하는 함수
-                async function manualAttendanceUpdate(actionLabel, btnElement) {
-                    const stuId = document.getElementById('ds-current-stu-id').value;
-                    const stuName = document.getElementById('ds-current-stu-name').value;
-                    const targetDate = document.getElementById('daily-date').value;
-                    const logId = `${targetDate}_${stuId}`;
-
-                    const originalText = btnElement.innerText;
-                    const originalBg = btnElement.style.background;
-                    const allBtns = btnElement.parentElement.querySelectorAll('.btn');
-
-                    // 화면의 시간 입력칸 값 읽어오기
-                    const timeInput = document.getElementById('manual-time-input');
-                    if (!timeInput || !timeInput.value) {
-                        alert("적용할 시간을 선택해 주세요."); return;
-                    }
-                    const timeStr = timeInput.value;
-
-                    // 버튼 비활성화 (중복 클릭 방지)
-                    allBtns.forEach(b => b.disabled = true);
-                    btnElement.innerText = "⏳ 처리 중...";
-                    btnElement.style.background = "#495057";
-
-                    let sysStatus = "미입실";
-                    if (actionLabel.includes('입실')) sysStatus = "입실";
-                    if (actionLabel.includes('복귀')) sysStatus = "복귀";
-                    if (actionLabel.includes('외출')) sysStatus = "외출";
-                    if (actionLabel.includes('미입실') || actionLabel.includes('빈자리')) sysStatus = "미입실";
-                    if (actionLabel.includes('귀가') || actionLabel.includes('이수')) sysStatus = "귀가";
-
-                    const historyText = `${actionLabel} (${timeStr})`;
-
-                    // ISO 시간 생성
-                    const [h, m] = timeStr.split(':').map(Number);
-                    const recordDate = new Date(targetDate);
-                    recordDate.setHours(h, m, 0, 0);
-
-                    try {
-                        const { data: currentData } = await supabaseClient
-                            .from('attendance_logs')
-                            .select('history')
-                            .eq('id', logId)
-                            .maybeSingle();
-
-                        let newHistory = (currentData && currentData.history) ? currentData.history : [];
-                        newHistory.push(historyText);
-
-                        const { error } = await supabaseClient.from('attendance_logs').upsert({
-                            id: logId,
-                            date: targetDate,
-                            stu_id: stuId,
-                            stu_name: stuName,
-                            status: sysStatus,
-                            last_update_time: recordDate.toISOString(),
-                            history: newHistory
-                        });
-
-                        if (error) throw error;
-
-                        document.getElementById('daily-status-modal').style.display = 'none';
-                        // 👇 이 1줄을 추가해 주세요! 👇
-                        document.body.style.overflow = 'auto';
-
-                        loadDailyDataAndRender();
-
-                    } catch (error) {
-                        alert("처리 중 오류가 발생했습니다: " + error.message);
-                    } finally {
-                        btnElement.innerText = originalText;
-                        btnElement.style.background = originalBg;
-                        allBtns.forEach(b => b.disabled = false);
-                    }
+                if (isRecognized) {
+                    resultBadges += `<span style="background:#0d6efd; color:white; padding:3px 8px; border-radius:4px; font-size:12px; margin:0 3px; display:inline-block; text-align:center; min-width:18px; font-weight:bold; box-shadow:0 1px 2px rgba(0,0,0,0.1);">${t}T</span>`;
+                } else if (isExpectedToAttend) {
+                    resultBadges += `<span style="border:1px solid #dc3545; color:#dc3545; background:#fff0f0; padding:2px 7px; border-radius:4px; font-size:12px; margin:0 3px; display:inline-block; text-align:center; min-width:18px; font-weight:bold;">${t}T</span>`;
+                } else {
+                    resultBadges += `<span style="border:1px dashed #adb5bd; color:#adb5bd; background:transparent; padding:2px 7px; border-radius:4px; font-size:12px; margin:0 3px; display:inline-block; text-align:center; min-width:18px;">${t}T</span>`;
                 }
+            });
 
+            document.getElementById('ds-applied-times').innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 6px; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #e9ecef; width: max-content; margin: 10px auto;">
+                    <div style="display: flex; align-items: center;"><span style="font-size: 13px; font-weight: bold; color: #555; width: 75px; text-align: left;">✅ 신청</span>${appliedBadges}</div>
+                    <div style="display: flex; align-items: center;"><span style="font-size: 13px; font-weight: bold; color: #555; width: 75px; text-align: left;">🎯 결과</span>${resultBadges}</div>
+                </div>
+            `;
 
-                /**
-                 * DB에서 최신 데이터를 가져와서 테이블을 다시 그리는 함수
-                 * async를 붙여 서버 응답을 기다릴 수 있게 합니다.
-                 */
-                async function renderStatusTable() {
-                    // 👇 이 세 줄을 추가하세요.
-                    if (!navigator.onLine) {
-                        alert("인터넷이 끊어져 데이터를 불러올 수 없습니다.");
+            if (log && log.history && log.history.length > 0) {
+                let groupedHistory = { 0: [], 1: [], 2: [], 3: [] };
+                let overrideTag = "";
+
+                log.history.forEach(h => {
+                    if (h.startsWith('🛠️[강제승인]')) {
+                        overrideTag = h;
                         return;
                     }
-                    const tbody = document.getElementById('status-body');
-                    if (!tbody) return;
+                    const tmMatch = h.match(/(\d{2}:\d{2})/);
+                    let slot = 0;
+                    if (tmMatch) {
+                        const timeStr = tmMatch[1];
+                        if (timeStr < currentSchedule.t1) slot = 0;
+                        else if (timeStr < currentSchedule.t2) slot = 1;
+                        else if (timeStr < currentSchedule.t3) slot = 2;
+                        else slot = 3;
+                    } else {
+                        if (h.includes("1타임") || h.includes("1T")) slot = 1;
+                        else if (h.includes("2타임") || h.includes("2T")) slot = 2;
+                        else if (h.includes("3타임") || h.includes("3T")) slot = 3;
+                    }
+                    groupedHistory[slot].push(h);
+                });
 
-                    // 1. 사용자에게 데이터를 불러오는 중임을 알림
-                    tbody.innerHTML = "<tr><td colspan='12' style='text-align:center;'>데이터 동기화 중...</td></tr>";
+                let allTagsInline = [];
+                [0, 1, 2, 3].forEach(t => {
+                    const hasLogs = groupedHistory[t].length > 0;
+                    const isApplied = orgTimes.includes(String(t));
+                    const isTicketed = ticketTimes.includes(String(t));
+                    const isExpectedToAttend = isApplied || isTicketed;
 
-                    try {
-                        // 2. Supabase에서 전체 데이터를 새로 가져옴
-                        // (팁: 성능을 위해 현재 선택된 달(filter-month) 데이터만 select 하는 것이 더 좋습니다)
-                        const { data, error } = await supabaseClient
-                            .from('applications')
-                            .select('*');
+                    const shouldShowSlot = (t === 0 && hasLogs) || (t > 0 && (isExpectedToAttend || hasLogs));
 
-                        if (error) throw error;
+                    if (shouldShowSlot) {
+                        const slotLabel = t === 0 ? "0T" : `${t}T`;
+                        const slotBg = (hasLogs || t === 0) ? (t === 0 ? "#6c757d" : "var(--primary)") : "#adb5bd";
+                        allTagsInline.push(`<span style="background:${slotBg}; color:white; font-size:11px; padding:4px 8px; border-radius:5px; font-weight:bold; display:inline-block; vertical-align:middle; box-shadow:0 1px 2px rgba(0,0,0,0.1);">${slotLabel}</span>`);
 
-                        // 3. 서버 데이터를 기존 앱에서 사용하는 applicationData 형식으로 변환
-                        // 이 과정이 있어야 기존의 필터링 로직이 정상 작동합니다.
-                        const freshData = {};
-                        data.forEach(item => {
-                            freshData[item.id] = {
-                                docId: item.id,
-                                stuId: item.stu_id,
-                                stuName: item.stu_name,
-                                targetMonth: item.target_month,
-                                type: item.type,
-                                seatNum: item.seat_num,
-                                mon: item.mon, tue: item.tue, wed: item.wed,
-                                thu: item.thu, fri: item.fri, sat: item.sat, sun: item.sun
-                            };
-                        });
+                        if (hasLogs) {
+                            groupedHistory[t].forEach(h => {
+                                let tagClass = "tag-in";
+                                if (h.includes("교사") || h.includes("빈자리") || h.includes("수동")) tagClass = "tag-admin";
+                                else if (h.includes("외출")) tagClass = "tag-out";
+                                else if (h.includes("귀가") || h.includes("누락") || h.includes("마감") || h.includes("취소")) tagClass = "tag-home";
 
-
-
-                        // 전역 변수 갱신
-                        applicationData = freshData;
-
-                        // 🌟 [추가] DB 데이터 기반으로 반(Class) 목록을 자동 추출하여 셀렉트 박스 생성
-                        let classSet = new Set();
-                        Object.values(applicationData).forEach(d => {
-                            const stuIdStr = String(d.stuId);
-                            if (stuIdStr.length >= 4 && !isNaN(stuIdStr)) {
-                                // 예: 3701 -> 앞 2자리(37), 31001 -> 앞 3자리(310)를 가져온 후 학년을 제외한 뒷부분을 반으로 추출
-                                const classCode = stuIdStr.slice(0, -2);
-                                const classNum = classCode.substring(1);
-                                if (classNum) classSet.add(classNum);
-                            } else {
-                                // 학번이 아닌 '토끼반' 같은 텍스트일 경우 그대로 추가
-                                classSet.add(stuIdStr);
-                            }
-                        });
-
-                        const sortedClasses = Array.from(classSet).sort((a, b) => {
-                            // 숫자면 숫자 순서대로 정렬하고, '토끼' 같은 문자면 가나다순으로 자동 정렬
-                            if (!isNaN(a) && !isNaN(b)) return parseInt(a) - parseInt(b);
-                            return String(a).localeCompare(String(b));
-                        });
-
-                        const filterSelect = document.getElementById('filter-class');
-                        const currentFilterVal = filterSelect.value;
-
-                        let optionsHtml = '<option value="all">전체 반</option>';
-                        sortedClasses.forEach(c => {
-                            // 숫자면 뒤에 '반'을 붙여주고, 글자면 그대로 출력
-                            const label = isNaN(c) ? c : `${c}반`;
-                            optionsHtml += `<option value="${c}">${label}</option>`;
-                        });
-                        filterSelect.innerHTML = optionsHtml;
-
-                        // 기존에 선택해둔 값(예: 3반 보던 중 새로고침)을 유지
-                        if (sortedClasses.includes(currentFilterVal)) {
-                            filterSelect.value = currentFilterVal;
-                        } else {
-                            filterSelect.value = "all";
+                                allTagsInline.push(`<span class="mini-tag ${tagClass}" style="display:inline-block; vertical-align:middle; font-size:11px; padding:4px 8px;">${h}</span>`);
+                            });
                         }
-                        // 👆 [자동 추출 로직 끝] 👆
+                    }
+                });
+
+                if (allTagsInline.length > 0) {
+                    historyHtml = `<div style="line-height:2.6; text-align:left; padding:12px; background:#fff; border-radius:8px; border:1px solid #ddd; margin-top:8px;">` +
+                        allTagsInline.join('<span style="color:#aaa; font-size:12px; margin:0 5px; display:inline-block; vertical-align:middle;">➔</span>') +
+                        `</div>`;
+                }
+
+                if (overrideTag) {
+                    const overrideText = overrideTag.replace('🛠️[강제승인]', '');
+                    historyHtml += `
+                <div style="margin-top: 15px; text-align: center;">
+                    <span style="display: inline-block; background: #fff0f0; border: 2px solid #dc3545; color: #dc3545; font-weight: 900; font-size: 15px; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(220, 53, 69, 0.15);">
+                        🚨 교사 최종 판정 : ${overrideText}
+                    </span>
+                </div>
+            `;
+                }
+
+                document.getElementById('manual-t-0').checked = false;
+                document.querySelectorAll('.manual-t-chk').forEach(cb => cb.checked = false);
+
+                if (overrideTag) {
+                    if (overrideTag.includes('0타임')) document.getElementById('manual-t-0').checked = true;
+                    else {
+                        document.querySelectorAll('.manual-t-chk').forEach(cb => {
+                            if (overrideTag.includes(cb.value)) cb.checked = true;
+                        });
+                    }
+                }
+            } else {
+                historyHtml = `<div style="text-align:center; padding:15px; background:#fff; border-radius:8px; border:1px dashed #ccc; margin-top:8px; color:#999; font-weight:bold;">출결 기록 없음 (미입실)</div>`;
+                document.querySelectorAll('.manual-t-chk').forEach(cb => cb.checked = false);
+            }
+
+            recentLogDiv.innerHTML = `<div style="font-weight:900; color:#495057; font-size:14px; text-align:left;">🕒 출결 상세 흔적 (타임라인)</div>` + historyHtml;
+
+            const btnIn = document.getElementById('btn-manual-in');
+            const btnReturn = document.getElementById('btn-manual-return');
+            const btnOut = document.getElementById('btn-manual-out');
+            const btnAbsent = document.getElementById('btn-manual-absent');
+            const btnFinish = document.getElementById('btn-manual-finish');
+
+            btnIn.disabled = false; btnIn.innerText = "🟢 입실 처리";
+            btnReturn.disabled = false; btnReturn.innerText = "🔵 복귀 처리";
+            btnOut.disabled = false; btnOut.innerText = "🟡 외출 처리";
+            btnAbsent.disabled = false; btnAbsent.innerText = "🔴 빈자리 처리";
+            btnFinish.disabled = false; btnFinish.innerText = "⚪ 최종 귀가 처리";
+
+            const currentStatus = log ? log.status : "미입실";
+
+            if (currentStatus === "귀가" || currentStatus === "귀가(누락)") {
+                btnFinish.disabled = true;
+                btnFinish.innerText = "⚪ 이미 귀가 완료됨";
+            } else if (currentStatus === "입실") {
+                btnIn.disabled = true;
+                btnIn.innerText = "🟢 이미 입실됨";
+                btnReturn.disabled = true;
+            } else if (currentStatus === "복귀") {
+                btnReturn.disabled = true;
+                btnReturn.innerText = "🔵 이미 복귀됨";
+                btnIn.disabled = true;
+            } else if (currentStatus === "외출") {
+                btnOut.disabled = true;
+                btnOut.innerText = "🟡 이미 외출 중";
+            } else if (currentStatus === "미입실") {
+                btnAbsent.disabled = true;
+                btnAbsent.innerText = "🔴 이미 빈자리";
+                btnOut.disabled = true;
+                btnReturn.disabled = true;
+                btnFinish.disabled = true;
+            }
+
+            document.getElementById('admin-content-area').style.display = 'none';
+            document.getElementById('toggle-icon').innerText = '펼치기 ▼';
+            document.getElementById('toggle-icon').style.color = '#999';
+            document.getElementById('manual-time-input').parentElement.style.display = 'grid';
+        }
 
 
-                        // 4. 화면 초기화 및 필터링 시작
-                        tbody.innerHTML = "";
-                        const month = document.getElementById('filter-month').value;
-                        const classFilter = document.getElementById('filter-class').value; // 업데이트된 값 가져오기
-                        const searchKeyword = document.getElementById('search-status-list').value.trim();
 
-                        // 5. 데이터를 순회하며 테이블 행 생성
-                        Object.keys(applicationData)
-                            .map(id => applicationData[id])
-                            .sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)))
-                            .forEach(d => {
-                                // 월 필터링
-                                if (month !== "all" && d.targetMonth !== month) return;
+        // 🌟 2. 수정됨: 귀찮은 팝업 없애고, 입력칸의 시간을 읽어와서 저장하는 함수
+        async function manualAttendanceUpdate(actionLabel, btnElement) {
+            const stuId = document.getElementById('ds-current-stu-id').value;
+            const stuName = document.getElementById('ds-current-stu-name').value;
+            const targetDate = document.getElementById('daily-date').value;
+            const logId = `${targetDate}_${stuId}`;
 
-                                // 반 필터링 (자동화 로직에 맞게 추출 방식 개선)
-                                if (classFilter !== "all") {
-                                    const stuIdStr = String(d.stuId);
-                                    let classNum = "";
-                                    if (stuIdStr.length >= 4 && !isNaN(stuIdStr)) {
-                                        classNum = stuIdStr.slice(0, -2).substring(1);
-                                    } else {
-                                        classNum = stuIdStr;
-                                    }
+            const originalText = btnElement.innerText;
+            const originalBg = btnElement.style.background;
+            const allBtns = btnElement.parentElement.querySelectorAll('.btn');
 
-                                    if (classNum !== classFilter) return;
-                                }
+            // 화면의 시간 입력칸 값 읽어오기
+            const timeInput = document.getElementById('manual-time-input');
+            if (!timeInput || !timeInput.value) {
+                alert("적용할 시간을 선택해 주세요."); return;
+            }
+            const timeStr = timeInput.value;
+
+            // 버튼 비활성화 (중복 클릭 방지)
+            allBtns.forEach(b => b.disabled = true);
+            btnElement.innerText = "⏳ 처리 중...";
+            btnElement.style.background = "#495057";
+
+            let sysStatus = "미입실";
+            if (actionLabel.includes('입실')) sysStatus = "입실";
+            if (actionLabel.includes('복귀')) sysStatus = "복귀";
+            if (actionLabel.includes('외출')) sysStatus = "외출";
+            if (actionLabel.includes('미입실') || actionLabel.includes('빈자리')) sysStatus = "미입실";
+            if (actionLabel.includes('귀가') || actionLabel.includes('이수')) sysStatus = "귀가";
+
+            const historyText = `${actionLabel} (${timeStr})`;
+
+            // ISO 시간 생성
+            const [h, m] = timeStr.split(':').map(Number);
+            const recordDate = new Date(targetDate);
+            recordDate.setHours(h, m, 0, 0);
+
+            try {
+                const { data: currentData } = await supabaseClient
+                    .from('attendance_logs')
+                    .select('history')
+                    .eq('id', logId)
+                    .maybeSingle();
+
+                let newHistory = (currentData && currentData.history) ? currentData.history : [];
+                newHistory.push(historyText);
+
+                const { error } = await supabaseClient.from('attendance_logs').upsert({
+                    id: logId,
+                    date: targetDate,
+                    stu_id: stuId,
+                    stu_name: stuName,
+                    status: sysStatus,
+                    last_update_time: recordDate.toISOString(),
+                    history: newHistory
+                });
+
+                if (error) throw error;
+
+                document.getElementById('daily-status-modal').style.display = 'none';
+                // 👇 이 1줄을 추가해 주세요! 👇
+                document.body.style.overflow = 'auto';
+
+                loadDailyDataAndRender();
+
+            } catch (error) {
+                alert("처리 중 오류가 발생했습니다: " + error.message);
+            } finally {
+                btnElement.innerText = originalText;
+                btnElement.style.background = originalBg;
+                allBtns.forEach(b => b.disabled = false);
+            }
+        }
+
+
+        /**
+         * DB에서 최신 데이터를 가져와서 테이블을 다시 그리는 함수
+         * async를 붙여 서버 응답을 기다릴 수 있게 합니다.
+         */
+        async function renderStatusTable() {
+            // 👇 이 세 줄을 추가하세요.
+            if (!navigator.onLine) {
+                alert("인터넷이 끊어져 데이터를 불러올 수 없습니다.");
+                return;
+            }
+            const tbody = document.getElementById('status-body');
+            if (!tbody) return;
+
+            // 1. 사용자에게 데이터를 불러오는 중임을 알림
+            tbody.innerHTML = "<tr><td colspan='12' style='text-align:center;'>데이터 동기화 중...</td></tr>";
+
+            try {
+                // 2. Supabase에서 전체 데이터를 새로 가져옴
+                // (팁: 성능을 위해 현재 선택된 달(filter-month) 데이터만 select 하는 것이 더 좋습니다)
+                const { data, error } = await supabaseClient
+                    .from('applications')
+                    .select('*');
+
+                if (error) throw error;
+
+                // 3. 서버 데이터를 기존 앱에서 사용하는 applicationData 형식으로 변환
+                // 이 과정이 있어야 기존의 필터링 로직이 정상 작동합니다.
+                const freshData = {};
+                data.forEach(item => {
+                    freshData[item.id] = {
+                        docId: item.id,
+                        stuId: item.stu_id,
+                        stuName: item.stu_name,
+                        targetMonth: item.target_month,
+                        type: item.type,
+                        seatNum: item.seat_num,
+                        mon: item.mon, tue: item.tue, wed: item.wed,
+                        thu: item.thu, fri: item.fri, sat: item.sat, sun: item.sun
+                    };
+                });
+
+
+
+                // 전역 변수 갱신
+                applicationData = freshData;
+
+                // 🌟 [추가] DB 데이터 기반으로 반(Class) 목록을 자동 추출하여 셀렉트 박스 생성
+                let classSet = new Set();
+                Object.values(applicationData).forEach(d => {
+                    const stuIdStr = String(d.stuId);
+                    if (stuIdStr.length >= 4 && !isNaN(stuIdStr)) {
+                        // 예: 3701 -> 앞 2자리(37), 31001 -> 앞 3자리(310)를 가져온 후 학년을 제외한 뒷부분을 반으로 추출
+                        const classCode = stuIdStr.slice(0, -2);
+                        const classNum = classCode.substring(1);
+                        if (classNum) classSet.add(classNum);
+                    } else {
+                        // 학번이 아닌 '토끼반' 같은 텍스트일 경우 그대로 추가
+                        classSet.add(stuIdStr);
+                    }
+                });
+
+                const sortedClasses = Array.from(classSet).sort((a, b) => {
+                    // 숫자면 숫자 순서대로 정렬하고, '토끼' 같은 문자면 가나다순으로 자동 정렬
+                    if (!isNaN(a) && !isNaN(b)) return parseInt(a) - parseInt(b);
+                    return String(a).localeCompare(String(b));
+                });
+
+                const filterSelect = document.getElementById('filter-class');
+                const currentFilterVal = filterSelect.value;
+
+                let optionsHtml = '<option value="all">전체 반</option>';
+                sortedClasses.forEach(c => {
+                    // 숫자면 뒤에 '반'을 붙여주고, 글자면 그대로 출력
+                    const label = isNaN(c) ? c : `${c}반`;
+                    optionsHtml += `<option value="${c}">${label}</option>`;
+                });
+                filterSelect.innerHTML = optionsHtml;
+
+                // 기존에 선택해둔 값(예: 3반 보던 중 새로고침)을 유지
+                if (sortedClasses.includes(currentFilterVal)) {
+                    filterSelect.value = currentFilterVal;
+                } else {
+                    filterSelect.value = "all";
+                }
+                // 👆 [자동 추출 로직 끝] 👆
+
+
+                // 4. 화면 초기화 및 필터링 시작
+                tbody.innerHTML = "";
+                const month = document.getElementById('filter-month').value;
+                const classFilter = document.getElementById('filter-class').value; // 업데이트된 값 가져오기
+                const searchKeyword = document.getElementById('search-status-list').value.trim();
+
+                // 5. 데이터를 순회하며 테이블 행 생성
+                Object.keys(applicationData)
+                    .map(id => applicationData[id])
+                    .sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)))
+                    .forEach(d => {
+                        // 월 필터링
+                        if (month !== "all" && d.targetMonth !== month) return;
+
+                        // 반 필터링 (자동화 로직에 맞게 추출 방식 개선)
+                        if (classFilter !== "all") {
+                            const stuIdStr = String(d.stuId);
+                            let classNum = "";
+                            if (stuIdStr.length >= 4 && !isNaN(stuIdStr)) {
+                                classNum = stuIdStr.slice(0, -2).substring(1);
+                            } else {
+                                classNum = stuIdStr;
+                            }
+
+                            if (classNum !== classFilter) return;
+                        }
 
 
 
 
 
-                                // 이름 또는 학번 검색 필터링
-                                if (searchKeyword !== "") {
-                                    const matchName = String(d.stuName).includes(searchKeyword);
-                                    const matchId = String(d.stuId).includes(searchKeyword);
-                                    if (!matchName && !matchId) return;
-                                }
+                        // 이름 또는 학번 검색 필터링
+                        if (searchKeyword !== "") {
+                            const matchName = String(d.stuName).includes(searchKeyword);
+                            const matchId = String(d.stuId).includes(searchKeyword);
+                            if (!matchName && !matchId) return;
+                        }
 
 
 
-                                ////////////////////////////////////
-                                // 6. 실제 행(Row) 생성
-                                const tr = document.createElement('tr');
+                        ////////////////////////////////////
+                        // 6. 실제 행(Row) 생성
+                        const tr = document.createElement('tr');
 
-                                // 연락처 정보를 가져옵니다 (데이터가 없으면 빈칸)
-                                const phone = (typeof rosterPhones !== 'undefined' && rosterPhones[String(d.stuId)]) ? rosterPhones[String(d.stuId)] : '';
+                        // 연락처 정보를 가져옵니다 (데이터가 없으면 빈칸)
+                        const phone = (typeof rosterPhones !== 'undefined' && rosterPhones[String(d.stuId)]) ? rosterPhones[String(d.stuId)] : '';
 
-                                // 🌟 추가: 달력 조회를 위한 연도와 월(숫자) 추출
-                                const currentYear = new Date().getFullYear();
-                                const targetMonthNum = parseInt(d.targetMonth); // "5월" -> 5
+                        // 🌟 추가: 달력 조회를 위한 연도와 월(숫자) 추출
+                        const currentYear = new Date().getFullYear();
+                        const targetMonthNum = parseInt(d.targetMonth); // "5월" -> 5
 
-                                tr.innerHTML = `
+                        tr.innerHTML = `
     <td>${d.targetMonth}</td>
     <!-- 학번 클릭 시 수정 폼 호출 -->
     <td onclick="fillEditForm('${d.docId}')" style="cursor:pointer; color:var(--primary); text-decoration:underline;">${d.stuId}</td>
@@ -2491,696 +2498,696 @@
     <td>${d.sat || ''}</td>
     <td>${d.sun || ''}</td>
 `;
-                                tbody.appendChild(tr);
-                                /////////////////////////////////////////////
+                        tbody.appendChild(tr);
+                        /////////////////////////////////////////////
 
 
-                            });
+                    });
 
-                    } catch (err) {
-                        console.error("데이터 로드 오류:", err);
-                        tbody.innerHTML = `<tr><td colspan='12' style='color:red; text-align:center;'>오류 발생: ${err.message}</td></tr>`;
+            } catch (err) {
+                console.error("데이터 로드 오류:", err);
+                tbody.innerHTML = `<tr><td colspan='12' style='color:red; text-align:center;'>오류 발생: ${err.message}</td></tr>`;
+            }
+        }
+
+
+        function fillEditForm(id) {
+            const d = applicationData[id]; document.getElementById('edit-doc-id').value = id;
+            document.getElementById('m-month').value = d.targetMonth; document.getElementById('m-id').value = d.stuId; document.getElementById('m-name').value = d.stuName;
+            document.getElementById('m-type').value = d.type || "고정석"; document.getElementById('m-seatNum').value = d.seatNum || "";
+            ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(k => document.getElementById(`m-${k}`).value = d[k] || "");
+            switchTab('tab-manual', document.querySelectorAll('.tab-btn')[3]);
+        }
+
+        function resetManualForm() {
+            document.getElementById('edit-doc-id').value = "";
+            document.querySelectorAll('#tab-manual input').forEach(i => i.value = "");
+        }
+
+        // 🌟 선택한 달의 남은 빈자리를 고정석/자율석 구분하여 팝업으로 보여주는 함수
+        function showEmptySeats() {
+            const targetMonth = document.getElementById('m-month').value;
+            if (!targetMonth) {
+                alert("적용 월을 먼저 선택해주세요.");
+                return;
+            }
+
+            // 1. 도면에서 좌석 번호 추출 (타입별로 분리)
+            let allFixedSeats = []; // 고정석 전용 자리 (도면 type: 2 가정)
+            let allAutoSeats = [];  // 자율석 전용 자리 (도면 type: 1 가정)
+
+            if (seatMapData && seatMapData.length > 0) {
+                seatMapData.forEach(row => {
+                    row.forEach(cell => {
+                        const c = typeof cell === 'number' ? { type: cell, label: "" } : cell;
+                        if (c.label) {
+                            // 도면 설정에 따라 type 1를 고정석 구역으로, type 2을 자율석 구역으로 가정합니다.
+                            if (c.type === 1) {
+                                allFixedSeats.push(c.label);
+                            } else if (c.type === 2) {
+                                allAutoSeats.push(c.label);
+                            }
+                        }
+                    });
+                });
+            }
+
+            // 2. 선택한 월에 이미 배정 완료된 좌석 번호 추출
+            let usedSeats = new Set();
+            Object.values(applicationData).forEach(app => {
+                // 고정석, 자율석 상관없이 일단 이번 달에 배정된 자리는 모두 수집
+                if (app.targetMonth === targetMonth && app.seatNum) {
+                    usedSeats.add(app.seatNum);
+                }
+            });
+
+            // 3. 전체 좌석에서 사용 중인 좌석을 제외하여 빈자리 도출
+            let emptyFixedSeats = allFixedSeats.filter(seat => !usedSeats.has(seat));
+            let emptyAutoSeats = allAutoSeats.filter(seat => !usedSeats.has(seat));
+
+            // 보기 좋게 정렬 (A-1, A-2 순으로)
+            emptyFixedSeats.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+            emptyAutoSeats.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+            // 4. 결과 출력
+            let message = `✅ ${targetMonth} 배정 가능한 빈자리 현황\n`;
+            message += `=======================================\n\n`;
+
+            if (emptyFixedSeats.length > 0) {
+                message += `[ 🟡 고정석 구역 빈자리 ] (총 ${emptyFixedSeats.length}석)\n`;
+                message += `${emptyFixedSeats.join(', ')}\n\n`;
+            } else if (allFixedSeats.length > 0) {
+                message += `[ 🟡 고정석 구역 빈자리 ]\n남은 자리가 없습니다.\n\n`;
+            }
+
+            if (emptyAutoSeats.length > 0) {
+                message += `[ 🟢 자율석 구역 빈자리 ] (총 ${emptyAutoSeats.length}석)\n`;
+                message += `${emptyAutoSeats.join(', ')}\n`;
+            } else if (allAutoSeats.length > 0) {
+                message += `[ 🟢 자율석 구역 빈자리 ]\n남은 자리가 없습니다.\n`;
+            }
+
+            if (emptyFixedSeats.length === 0 && emptyAutoSeats.length === 0) {
+                alert(`🚨 ${targetMonth}에는 남은 빈자리가 하나도 없습니다!`);
+            } else {
+                alert(message);
+            }
+        }
+
+
+
+        // --- 수정된 데이터 저장 로직 ---
+        async function saveManualEntry() {
+            // 1. 입력 필드에서 데이터 가져오기
+            // 화면의 입력창(input, select)에 입력된 값들을 변수에 담습니다.
+            const id = document.getElementById('edit-doc-id').value; // 수정 시에만 값이 있음
+            const stu_id = parseInt(document.getElementById('m-id').value); // 학번은 숫자로 변환
+            const stu_name = document.getElementById('m-name').value.trim(); // 이름 양끝 공백 제거
+            const target_month = document.getElementById('m-month').value;
+            const type = document.getElementById('m-type').value;
+            const seat_num_val = document.getElementById('m-seatNum').value.trim();
+
+            // 요일별 교시 데이터를 객체로 묶음
+            const daysData = {
+                mon: document.getElementById('m-mon').value.trim(),
+                tue: document.getElementById('m-tue').value.trim(),
+                wed: document.getElementById('m-wed').value.trim(),
+                thu: document.getElementById('m-thu').value.trim(),
+                fri: document.getElementById('m-fri').value.trim(),
+                sat: document.getElementById('m-sat').value.trim(),
+                sun: document.getElementById('m-sun').value.trim()
+            };
+
+            // 2. 유효성 검사 (입력 오류 방지)
+            // 필수 정보가 빠졌는지 확인합니다.
+            if (!stu_id || !stu_name) {
+                alert("학번과 이름을 모두 입력해주세요.");
+                return; // 실행 중단
+            }
+
+            // 고정석인데 좌석 번호를 안 썼는지 확인합니다.
+            if (type === "고정석" && !seat_num_val) {
+                alert("고정석은 좌석 번호가 필수입니다.");
+                return; // 실행 중단
+            }
+
+            // 👇👇 [여기에 추가] 중복 좌석 저장 방지 로직 👇👇
+            if (type === "고정석") {
+                const isDuplicate = Object.values(applicationData).some(app => {
+                    // 자기 자신의 데이터는 제외하고, 같은 달, 고정석, 같은 좌석번호가 있는지 검사
+                    return String(app.docId) !== String(id) &&
+                        app.targetMonth === target_month &&
+                        app.type === "고정석" &&
+                        app.seatNum === seat_num_val;
+                });
+
+                if (isDuplicate) {
+                    alert(`⚠️ 오류: [${seat_num_val}] 좌석은 ${target_month}에 이미 다른 학생이 사용 중입니다.\n빈자리를 확인하고 다른 좌석을 배정해 주세요.`);
+                    return; // 실행 중단 (저장 안 됨)
+                }
+            }
+            // 👆👆 여기까지 👆👆
+
+            try {
+                // 3. 보안 체크: 기존 데이터와 이름 일치 여부 확인 (실수 방지)
+                // DB에서 해당 학번의 이름을 미리 가져와서 비교합니다.
+                const { data: existingStudent, error: fetchError } = await supabaseClient
+                    .from('applications')
+                    .select('stu_name')
+                    .eq('stu_id', stu_id)
+                    .eq('target_month', target_month)
+                    .maybeSingle();
+
+                if (fetchError) throw fetchError;
+
+                // 학번은 같은데 저장된 이름과 입력한 이름이 다르면 경고!
+                if (existingStudent && existingStudent.stu_name !== stu_name) {
+                    alert(`보안 알림: 학번(${stu_id})에 등록된 기존 이름(${existingStudent.stu_name})과 다릅니다. 학번을 다시 확인해주세요.`);
+                    return;
+                }
+
+                // 4. 저장할 데이터 보따리(payload) 만들기
+                const payload = {
+                    stu_id: stu_id,
+                    stu_name: stu_name,
+                    target_month: target_month,
+                    type: type,
+                    ...daysData, // mon, tue 등 요일 데이터 포함
+                    // 자율석이면 좌석번호를 비우고(null), 고정석이면 입력된 값을 넣음
+                    seat_num: type === '자율석' ? null : seat_num_val,
+                    updated_at: new Date().toISOString() // 마지막 수정 시간 기록
+                };
+
+                // 5. Supabase 저장 실행 (수정 또는 신규 추가)
+                if (id) {
+                    // [수정 모드] 고유 ID가 있으면 해당 줄을 업데이트
+                    const { error: updateError } = await supabaseClient
+                        .from('applications')
+                        .update(payload)
+                        .eq('id', id);
+
+                    if (updateError) throw updateError;
+                } else {
+                    // [신규 모드] 고유 ID가 없으면 새로운 줄을 추가
+                    const { error: insertError } = await supabaseClient
+                        .from('applications')
+                        .insert([payload]);
+
+                    if (insertError) throw insertError;
+                }
+
+                // 6. 마무리 작업
+                alert("데이터가 성공적으로 저장되었습니다!");
+
+                // 입력창 초기화
+                resetManualForm();
+
+                // 화면 표(Table)를 최신 데이터로 다시 그리기
+                if (typeof renderStatusTable === "function") {
+                    await renderStatusTable();
+                }
+
+                // 사용자의 편의를 위해 '신청 현황' 탭으로 이동
+                const statusTabBtn = document.querySelector('.tab-btn[onclick*="tab-status"]');
+                if (statusTabBtn) {
+                    switchTab('tab-status', statusTabBtn);
+                }
+
+            } catch (err) {
+                console.error("저장 오류:", err);
+                alert("저장 중 오류 발생: " + err.message);
+            }
+        }
+
+        async function closeMissingTags() {
+            const targetDate = document.getElementById('daily-date').value;
+            if (!confirm(`[경고] 정말 ${targetDate} 일자의 출결을 마감하시겠습니까?\n현재 시각 기준으로 '입실'이나 '외출' 상태인 학생은 모두 '태그 누락(귀가)'으로 강제 전환됩니다.`)) return;
+
+            try {
+                const { data: logs } = await supabaseClient.from("attendance_logs")
+                    .select("*")
+                    .eq("date", targetDate)
+                    .not('status', 'in', '("귀가", "귀가(누락)")');
+
+                if (!logs || logs.length === 0) {
+                    alert(`${targetDate} 일자에는 강제 마감할 태그 누락자가 없습니다!`);
+                    return;
+                }
+
+                let missingCount = 0;
+                const now = new Date().toISOString();
+
+                for (let log of logs) {
+                    missingCount++;
+                    let newHistory = log.history || [];
+                    newHistory.push(`🚨 관리자 강제 마감`);
+
+                    await supabaseClient.from("attendance_logs").update({
+                        status: "귀가(누락)",
+                        last_update_time: now,
+                        history: newHistory
+                    }).eq("id", log.id);
+                }
+
+                alert(`총 ${missingCount}명의 태그 누락자를 강제 마감 처리했습니다.`);
+                loadDailyDataAndRender();
+
+            } catch (e) {
+                console.error("마감 처리 중 오류:", e);
+                alert("오류가 발생했습니다: " + e.message);
+            }
+        }
+
+        // =========================================================
+        // 🌟 관리자 좌석 강제 변경 기능 
+        // =========================================================
+        async function changeSeat(stuId, stuName, currentSeat, type) {
+            const newSeat = prompt(`[${stuName} 학생 - ${type}]\n현재 좌석: ${currentSeat}\n\n변경할 새로운 좌석 번호를 입력하세요:`, currentSeat);
+
+            if (newSeat === null || newSeat.trim() === "" || newSeat.trim() === currentSeat) {
+                return; // 취소하거나 변경 사항이 없으면 아무 작업도 하지 않음
+            }
+
+            const confirmMsg = `${stuName} 학생의 좌석을 [${newSeat.trim()}]으로 변경하시겠습니까?`;
+            if (!confirm(confirmMsg)) return;
+
+            const targetDate = document.getElementById('daily-date').value;
+            const targetMonthStr = (new Date(targetDate).getMonth() + 1) + "월";
+
+            try {
+                if (type === "자율석") {
+                    // 자율석은 오늘 하루 발권 데이터(daily_reservations)를 수정
+                    const { error } = await supabaseClient
+                        .from('daily_reservations')
+                        .update({ seat_num: newSeat.trim() })
+                        .eq('date', targetDate)
+                        .eq('stu_id', stuId);
+
+                    if (error) throw error;
+                } else if (type === "고정석") {
+                    // 고정석은 해당 월의 전체 예약 데이터(applications)를 수정
+                    const { error } = await supabaseClient
+                        .from('applications')
+                        .update({ seat_num: newSeat.trim() })
+                        .eq('target_month', targetMonthStr)
+                        .eq('stu_id', stuId);
+
+                    if (error) throw error;
+                }
+
+                alert(`✅ 좌석이 [${newSeat.trim()}]으로 성공적으로 변경되었습니다.`);
+
+                // 데이터베이스가 변경되었으니 전체 데이터를 새로 불러와 화면을 갱신합니다.
+                fetchBaseData().then(() => loadDailyDataAndRender());
+
+            } catch (error) {
+                console.error("좌석 변경 오류:", error);
+                alert("좌석 변경 중 오류가 발생했습니다: " + error.message);
+            }
+        }
+
+
+        // 🌟 수정됨: 관리자 강제 승인 메뉴 토글 시, 수동 입실 버튼 영역 숨기기/보이기 연동
+        function toggleAdminSection() {
+            const adminArea = document.getElementById('admin-content-area');
+            const toggleIcon = document.getElementById('toggle-icon');
+            // 수동 입실/복귀/외출/결석 버튼들을 감싸고 있는 가장 가까운 div 요소 찾기
+            const manualControlArea = document.getElementById('manual-time-input').parentElement;
+
+            if (adminArea.style.display === 'none' || adminArea.style.display === '') {
+                // 1. 관리자 강제 승인 메뉴를 펼칠 때
+                adminArea.style.display = 'block';
+                toggleIcon.innerText = '접기 ▲';
+                toggleIcon.style.color = '#333';
+
+                // 수동 제어 버튼 영역 숨기기
+                manualControlArea.style.display = 'none';
+            } else {
+                // 2. 관리자 강제 승인 메뉴를 접을 때
+                adminArea.style.display = 'none';
+                toggleIcon.innerText = '펼치기 ▼';
+                toggleIcon.style.color = '#999';
+
+                // 수동 제어 버튼 영역 다시 보이기 (기존 스타일 속성인 grid로 복원)
+                manualControlArea.style.display = 'grid';
+            }
+        }
+
+
+
+        async function autoSweepPastAttendance() {
+            try {
+                const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
+                if (schedDoc && schedDoc.value && schedDoc.value.autoClose === false) return;
+
+                const todayStr = getTodayString();
+
+
+                const { data: pastLogs, error: fetchError } = await supabaseClient
+                    .from('attendance_logs')
+                    .select('*')
+                    .lt('date', todayStr)
+                    .neq('status', '귀가')         // 🌟 확실하게 '귀가' 제외
+                    .neq('status', '귀가(누락)');   // 🌟 확실하게 '귀가(누락)' 제외
+
+
+                if (fetchError) throw fetchError;
+
+                if (pastLogs && pastLogs.length > 0) {
+                    for (let log of pastLogs) {
+                        let newHistory = log.history || [];
+
+                        newHistory.push(`🚨 귀가 누락 (태그 미완료)`);
+                        await supabaseClient.from("attendance_logs").update({
+                            status: "귀가(누락)",
+                            last_update_time: new Date().toISOString(),
+                            history: newHistory
+                        }).eq("id", log.id);
                     }
+                    console.log("✅ 관리자 화면 - 과거 데이터 자동 마감 완료");
+                    loadDailyDataAndRender();
                 }
+            } catch (e) { console.error("자동 마감 중 오류:", e); }
+        }
+
+        //   autoSweepPastAttendance();
 
 
-                function fillEditForm(id) {
-                    const d = applicationData[id]; document.getElementById('edit-doc-id').value = id;
-                    document.getElementById('m-month').value = d.targetMonth; document.getElementById('m-id').value = d.stuId; document.getElementById('m-name').value = d.stuName;
-                    document.getElementById('m-type').value = d.type || "고정석"; document.getElementById('m-seatNum').value = d.seatNum || "";
-                    ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(k => document.getElementById(`m-${k}`).value = d[k] || "");
-                    switchTab('tab-manual', document.querySelectorAll('.tab-btn')[3]);
-                }
+        // =========================================================
+        // 🌟 특정 PC 실시간 모드 제어 (DB 1대 제한 토큰 시스템)
+        // =========================================================
 
-                function resetManualForm() {
-                    document.getElementById('edit-doc-id').value = "";
-                    document.querySelectorAll('#tab-manual input').forEach(i => i.value = "");
-                }
+        // 1. 이 PC(브라우저)만의 고유 ID 생성 (한 번 생성하면 계속 유지)
+        let myPcId = localStorage.getItem('myPcId');
+        if (!myPcId) {
+            myPcId = 'PC_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('myPcId', myPcId);
+        }
 
-                // 🌟 선택한 달의 남은 빈자리를 고정석/자율석 구분하여 팝업으로 보여주는 함수
-                function showEmptySeats() {
-                    const targetMonth = document.getElementById('m-month').value;
-                    if (!targetMonth) {
-                        alert("적용 월을 먼저 선택해주세요.");
+        // 1분마다 DB 소유권을 검사할 타이머 변수
+        let tokenCheckInterval = null;
+
+        // 체크박스를 누를 때 실행됨
+        async function toggleRealtime() {
+            const toggleBtn = document.getElementById('realtime-toggle');
+            const isChecked = toggleBtn.checked;
+
+            if (isChecked) {
+                try {
+                    // 1. DB에서 현재 실시간 모드를 누가 쓰고 있는지 확인
+                    const { data } = await supabaseClient.from('settings').select('value').eq('key', 'realtime_owner').maybeSingle();
+                    let currentOwner = data ? data.value : null;
+
+                    // 2. 누군가 쓰고 있고, 그게 내가 아니라면?
+                    if (currentOwner && currentOwner.pcId !== myPcId) {
+                        const takeover = confirm(`🚨 현재 [${currentOwner.pcName || '다른 PC'}]에서 실시간 모드를 사용 중입니다.\n\n강제로 권한을 뺏어오시겠습니까?\n(뺏긴 PC는 자동으로 일반 모드로 전환됩니다)`);
+
+                        if (!takeover) {
+                            toggleBtn.checked = false; // 취소하면 체크박스 원상복구
+                            return;
+                        }
+                    }
+
+                    // 3. 권한 획득 (누구 PC인지 이름 입력받기 - 선택사항)
+                    const pcName = prompt("이 컴퓨터를 식별할 수 있는 이름을 짧게 적어주세요.\n(예: 교무실 내자리, 1반 담임노트북 등)", "감독교사 PC");
+                    if (pcName === null) {
+                        toggleBtn.checked = false;
                         return;
                     }
 
-                    // 1. 도면에서 좌석 번호 추출 (타입별로 분리)
-                    let allFixedSeats = []; // 고정석 전용 자리 (도면 type: 2 가정)
-                    let allAutoSeats = [];  // 자율석 전용 자리 (도면 type: 1 가정)
-
-                    if (seatMapData && seatMapData.length > 0) {
-                        seatMapData.forEach(row => {
-                            row.forEach(cell => {
-                                const c = typeof cell === 'number' ? { type: cell, label: "" } : cell;
-                                if (c.label) {
-                                    // 도면 설정에 따라 type 1를 고정석 구역으로, type 2을 자율석 구역으로 가정합니다.
-                                    if (c.type === 1) {
-                                        allFixedSeats.push(c.label);
-                                    } else if (c.type === 2) {
-                                        allAutoSeats.push(c.label);
-                                    }
-                                }
-                            });
-                        });
-                    }
-
-                    // 2. 선택한 월에 이미 배정 완료된 좌석 번호 추출
-                    let usedSeats = new Set();
-                    Object.values(applicationData).forEach(app => {
-                        // 고정석, 자율석 상관없이 일단 이번 달에 배정된 자리는 모두 수집
-                        if (app.targetMonth === targetMonth && app.seatNum) {
-                            usedSeats.add(app.seatNum);
-                        }
+                    // DB에 내 정보 기록 (내가 이제 주인이다!)
+                    await supabaseClient.from('settings').upsert({
+                        key: 'realtime_owner',
+                        value: { pcId: myPcId, pcName: pcName, timestamp: Date.now() }
                     });
 
-                    // 3. 전체 좌석에서 사용 중인 좌석을 제외하여 빈자리 도출
-                    let emptyFixedSeats = allFixedSeats.filter(seat => !usedSeats.has(seat));
-                    let emptyAutoSeats = allAutoSeats.filter(seat => !usedSeats.has(seat));
+                    localStorage.setItem('supervisorRealtime', 'true');
+                    applyIntervalSetting(true);
+                    alert(`⚡ [${pcName}] 실시간 모드가 켜졌습니다!\n이제 이 컴퓨터만 5초마다 데이터를 가져옵니다.`);
+                    loadDailyDataAndRender(); // 즉시 1회 동기화
 
-                    // 보기 좋게 정렬 (A-1, A-2 순으로)
-                    emptyFixedSeats.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-                    emptyAutoSeats.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-
-                    // 4. 결과 출력
-                    let message = `✅ ${targetMonth} 배정 가능한 빈자리 현황\n`;
-                    message += `=======================================\n\n`;
-
-                    if (emptyFixedSeats.length > 0) {
-                        message += `[ 🟡 고정석 구역 빈자리 ] (총 ${emptyFixedSeats.length}석)\n`;
-                        message += `${emptyFixedSeats.join(', ')}\n\n`;
-                    } else if (allFixedSeats.length > 0) {
-                        message += `[ 🟡 고정석 구역 빈자리 ]\n남은 자리가 없습니다.\n\n`;
-                    }
-
-                    if (emptyAutoSeats.length > 0) {
-                        message += `[ 🟢 자율석 구역 빈자리 ] (총 ${emptyAutoSeats.length}석)\n`;
-                        message += `${emptyAutoSeats.join(', ')}\n`;
-                    } else if (allAutoSeats.length > 0) {
-                        message += `[ 🟢 자율석 구역 빈자리 ]\n남은 자리가 없습니다.\n`;
-                    }
-
-                    if (emptyFixedSeats.length === 0 && emptyAutoSeats.length === 0) {
-                        alert(`🚨 ${targetMonth}에는 남은 빈자리가 하나도 없습니다!`);
-                    } else {
-                        alert(message);
-                    }
+                } catch (e) {
+                    alert("서버 통신 중 오류가 발생했습니다.");
+                    toggleBtn.checked = false;
                 }
 
+            } else {
+                // 내가 끄는 경우
+                localStorage.setItem('supervisorRealtime', 'false');
+                applyIntervalSetting(false);
+                alert("🐢 실시간 모드가 해제되었습니다. (10분 주기로 변경)");
 
+                // (선택) 내가 끄면 DB 기록을 지워줄 수도 있지만, 어차피 남이 덮어쓰므로 놔둬도 무방합니다.
+            }
+        }
 
-                // --- 수정된 데이터 저장 로직 ---
-                async function saveManualEntry() {
-                    // 1. 입력 필드에서 데이터 가져오기
-                    // 화면의 입력창(input, select)에 입력된 값들을 변수에 담습니다.
-                    const id = document.getElementById('edit-doc-id').value; // 수정 시에만 값이 있음
-                    const stu_id = parseInt(document.getElementById('m-id').value); // 학번은 숫자로 변환
-                    const stu_name = document.getElementById('m-name').value.trim(); // 이름 양끝 공백 제거
-                    const target_month = document.getElementById('m-month').value;
-                    const type = document.getElementById('m-type').value;
-                    const seat_num_val = document.getElementById('m-seatNum').value.trim();
+        // 타이머 설정 함수 (감시 기능 포함)
+        function applyIntervalSetting(isRealtime) {
+            // 기존 타이머 싹 다 청소
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            if (tokenCheckInterval) clearInterval(tokenCheckInterval);
 
-                    // 요일별 교시 데이터를 객체로 묶음
-                    const daysData = {
-                        mon: document.getElementById('m-mon').value.trim(),
-                        tue: document.getElementById('m-tue').value.trim(),
-                        wed: document.getElementById('m-wed').value.trim(),
-                        thu: document.getElementById('m-thu').value.trim(),
-                        fri: document.getElementById('m-fri').value.trim(),
-                        sat: document.getElementById('m-sat').value.trim(),
-                        sun: document.getElementById('m-sun').value.trim()
-                    };
+            // 기본 새로고침 5초 vs 10분
+            const intervalTime = isRealtime ? 5000 : 600000;
 
-                    // 2. 유효성 검사 (입력 오류 방지)
-                    // 필수 정보가 빠졌는지 확인합니다.
-                    if (!stu_id || !stu_name) {
-                        alert("학번과 이름을 모두 입력해주세요.");
-                        return; // 실행 중단
-                    }
+            autoRefreshInterval = setInterval(() => {
+                loadDailyDataAndRender();
+                if (document.getElementById('tab-status').classList.contains('active')) {
+                    renderStatusTable();
+                }
+            }, intervalTime);
 
-                    // 고정석인데 좌석 번호를 안 썼는지 확인합니다.
-                    if (type === "고정석" && !seat_num_val) {
-                        alert("고정석은 좌석 번호가 필수입니다.");
-                        return; // 실행 중단
-                    }
-
-                    // 👇👇 [여기에 추가] 중복 좌석 저장 방지 로직 👇👇
-                    if (type === "고정석") {
-                        const isDuplicate = Object.values(applicationData).some(app => {
-                            // 자기 자신의 데이터는 제외하고, 같은 달, 고정석, 같은 좌석번호가 있는지 검사
-                            return String(app.docId) !== String(id) &&
-                                app.targetMonth === target_month &&
-                                app.type === "고정석" &&
-                                app.seatNum === seat_num_val;
-                        });
-
-                        if (isDuplicate) {
-                            alert(`⚠️ 오류: [${seat_num_val}] 좌석은 ${target_month}에 이미 다른 학생이 사용 중입니다.\n빈자리를 확인하고 다른 좌석을 배정해 주세요.`);
-                            return; // 실행 중단 (저장 안 됨)
-                        }
-                    }
-                    // 👆👆 여기까지 👆👆
-
+            // 🌟 선생님의 핵심 아이디어: 누군가 뺏어갔는지 검사! (1분 -> 10초로 단축)
+            if (isRealtime) {
+                tokenCheckInterval = setInterval(async () => {
                     try {
-                        // 3. 보안 체크: 기존 데이터와 이름 일치 여부 확인 (실수 방지)
-                        // DB에서 해당 학번의 이름을 미리 가져와서 비교합니다.
-                        const { data: existingStudent, error: fetchError } = await supabaseClient
-                            .from('applications')
-                            .select('stu_name')
-                            .eq('stu_id', stu_id)
-                            .eq('target_month', target_month)
-                            .maybeSingle();
+                        const { data } = await supabaseClient.from('settings').select('value').eq('key', 'realtime_owner').maybeSingle();
 
-                        if (fetchError) throw fetchError;
+                        // DB 확인해봤는데 주인이 내가 아니라면? (누가 권한을 뺏어갔다면)
+                        if (data && data.value && data.value.pcId !== myPcId) {
 
-                        // 학번은 같은데 저장된 이름과 입력한 이름이 다르면 경고!
-                        if (existingStudent && existingStudent.stu_name !== stu_name) {
-                            alert(`보안 알림: 학번(${stu_id})에 등록된 기존 이름(${existingStudent.stu_name})과 다릅니다. 학번을 다시 확인해주세요.`);
-                            return;
+                            // 1. 화면의 체크박스를 강제로 끕니다.
+                            document.getElementById('realtime-toggle').checked = false;
+
+                            // 2. 브라우저 메모리를 일반 모드로 변경합니다.
+                            localStorage.setItem('supervisorRealtime', 'false');
+
+                            // 3. 내 타이머를 10분짜리 일반 모드로 재설정합니다. (실시간 감시도 여기서 멈춤)
+                            applyIntervalSetting(false);
+
+                            // 4. 마지막으로 팝업을 띄워 선생님께 확실히 알립니다.
+                            alert(`🚨 앗! 다른 선생님([${data.value.pcName}])이 실시간 모드를 가져갔습니다.\n\n서버 보호를 위해 이 컴퓨터는 일반 모드(10분)로 자동 전환됩니다.`);
+
                         }
-
-                        // 4. 저장할 데이터 보따리(payload) 만들기
-                        const payload = {
-                            stu_id: stu_id,
-                            stu_name: stu_name,
-                            target_month: target_month,
-                            type: type,
-                            ...daysData, // mon, tue 등 요일 데이터 포함
-                            // 자율석이면 좌석번호를 비우고(null), 고정석이면 입력된 값을 넣음
-                            seat_num: type === '자율석' ? null : seat_num_val,
-                            updated_at: new Date().toISOString() // 마지막 수정 시간 기록
-                        };
-
-                        // 5. Supabase 저장 실행 (수정 또는 신규 추가)
-                        if (id) {
-                            // [수정 모드] 고유 ID가 있으면 해당 줄을 업데이트
-                            const { error: updateError } = await supabaseClient
-                                .from('applications')
-                                .update(payload)
-                                .eq('id', id);
-
-                            if (updateError) throw updateError;
-                        } else {
-                            // [신규 모드] 고유 ID가 없으면 새로운 줄을 추가
-                            const { error: insertError } = await supabaseClient
-                                .from('applications')
-                                .insert([payload]);
-
-                            if (insertError) throw insertError;
-                        }
-
-                        // 6. 마무리 작업
-                        alert("데이터가 성공적으로 저장되었습니다!");
-
-                        // 입력창 초기화
-                        resetManualForm();
-
-                        // 화면 표(Table)를 최신 데이터로 다시 그리기
-                        if (typeof renderStatusTable === "function") {
-                            await renderStatusTable();
-                        }
-
-                        // 사용자의 편의를 위해 '신청 현황' 탭으로 이동
-                        const statusTabBtn = document.querySelector('.tab-btn[onclick*="tab-status"]');
-                        if (statusTabBtn) {
-                            switchTab('tab-status', statusTabBtn);
-                        }
-
-                    } catch (err) {
-                        console.error("저장 오류:", err);
-                        alert("저장 중 오류 발생: " + err.message);
-                    }
-                }
-
-                async function closeMissingTags() {
-                    const targetDate = document.getElementById('daily-date').value;
-                    if (!confirm(`[경고] 정말 ${targetDate} 일자의 출결을 마감하시겠습니까?\n현재 시각 기준으로 '입실'이나 '외출' 상태인 학생은 모두 '태그 누락(귀가)'으로 강제 전환됩니다.`)) return;
-
-                    try {
-                        const { data: logs } = await supabaseClient.from("attendance_logs")
-                            .select("*")
-                            .eq("date", targetDate)
-                            .not('status', 'in', '("귀가", "귀가(누락)")');
-
-                        if (!logs || logs.length === 0) {
-                            alert(`${targetDate} 일자에는 강제 마감할 태그 누락자가 없습니다!`);
-                            return;
-                        }
-
-                        let missingCount = 0;
-                        const now = new Date().toISOString();
-
-                        for (let log of logs) {
-                            missingCount++;
-                            let newHistory = log.history || [];
-                            newHistory.push(`🚨 관리자 강제 마감`);
-
-                            await supabaseClient.from("attendance_logs").update({
-                                status: "귀가(누락)",
-                                last_update_time: now,
-                                history: newHistory
-                            }).eq("id", log.id);
-                        }
-
-                        alert(`총 ${missingCount}명의 태그 누락자를 강제 마감 처리했습니다.`);
-                        loadDailyDataAndRender();
-
-                    } catch (e) {
-                        console.error("마감 처리 중 오류:", e);
-                        alert("오류가 발생했습니다: " + e.message);
-                    }
-                }
-
-                // =========================================================
-                // 🌟 관리자 좌석 강제 변경 기능 
-                // =========================================================
-                async function changeSeat(stuId, stuName, currentSeat, type) {
-                    const newSeat = prompt(`[${stuName} 학생 - ${type}]\n현재 좌석: ${currentSeat}\n\n변경할 새로운 좌석 번호를 입력하세요:`, currentSeat);
-
-                    if (newSeat === null || newSeat.trim() === "" || newSeat.trim() === currentSeat) {
-                        return; // 취소하거나 변경 사항이 없으면 아무 작업도 하지 않음
-                    }
-
-                    const confirmMsg = `${stuName} 학생의 좌석을 [${newSeat.trim()}]으로 변경하시겠습니까?`;
-                    if (!confirm(confirmMsg)) return;
-
-                    const targetDate = document.getElementById('daily-date').value;
-                    const targetMonthStr = (new Date(targetDate).getMonth() + 1) + "월";
-
-                    try {
-                        if (type === "자율석") {
-                            // 자율석은 오늘 하루 발권 데이터(daily_reservations)를 수정
-                            const { error } = await supabaseClient
-                                .from('daily_reservations')
-                                .update({ seat_num: newSeat.trim() })
-                                .eq('date', targetDate)
-                                .eq('stu_id', stuId);
-
-                            if (error) throw error;
-                        } else if (type === "고정석") {
-                            // 고정석은 해당 월의 전체 예약 데이터(applications)를 수정
-                            const { error } = await supabaseClient
-                                .from('applications')
-                                .update({ seat_num: newSeat.trim() })
-                                .eq('target_month', targetMonthStr)
-                                .eq('stu_id', stuId);
-
-                            if (error) throw error;
-                        }
-
-                        alert(`✅ 좌석이 [${newSeat.trim()}]으로 성공적으로 변경되었습니다.`);
-
-                        // 데이터베이스가 변경되었으니 전체 데이터를 새로 불러와 화면을 갱신합니다.
-                        fetchBaseData().then(() => loadDailyDataAndRender());
-
-                    } catch (error) {
-                        console.error("좌석 변경 오류:", error);
-                        alert("좌석 변경 중 오류가 발생했습니다: " + error.message);
-                    }
-                }
-
-
-                // 🌟 수정됨: 관리자 강제 승인 메뉴 토글 시, 수동 입실 버튼 영역 숨기기/보이기 연동
-                function toggleAdminSection() {
-                    const adminArea = document.getElementById('admin-content-area');
-                    const toggleIcon = document.getElementById('toggle-icon');
-                    // 수동 입실/복귀/외출/결석 버튼들을 감싸고 있는 가장 가까운 div 요소 찾기
-                    const manualControlArea = document.getElementById('manual-time-input').parentElement;
-
-                    if (adminArea.style.display === 'none' || adminArea.style.display === '') {
-                        // 1. 관리자 강제 승인 메뉴를 펼칠 때
-                        adminArea.style.display = 'block';
-                        toggleIcon.innerText = '접기 ▲';
-                        toggleIcon.style.color = '#333';
-
-                        // 수동 제어 버튼 영역 숨기기
-                        manualControlArea.style.display = 'none';
-                    } else {
-                        // 2. 관리자 강제 승인 메뉴를 접을 때
-                        adminArea.style.display = 'none';
-                        toggleIcon.innerText = '펼치기 ▼';
-                        toggleIcon.style.color = '#999';
-
-                        // 수동 제어 버튼 영역 다시 보이기 (기존 스타일 속성인 grid로 복원)
-                        manualControlArea.style.display = 'grid';
-                    }
-                }
-
-
-
-                async function autoSweepPastAttendance() {
-                    try {
-                        const { data: schedDoc } = await supabaseClient.from('settings').select('value').eq('key', 'schedule').maybeSingle();
-                        if (schedDoc && schedDoc.value && schedDoc.value.autoClose === false) return;
-
-                        const todayStr = getTodayString();
-
-
-                        const { data: pastLogs, error: fetchError } = await supabaseClient
-                            .from('attendance_logs')
-                            .select('*')
-                            .lt('date', todayStr)
-                            .neq('status', '귀가')         // 🌟 확실하게 '귀가' 제외
-                            .neq('status', '귀가(누락)');   // 🌟 확실하게 '귀가(누락)' 제외
-
-
-                        if (fetchError) throw fetchError;
-
-                        if (pastLogs && pastLogs.length > 0) {
-                            for (let log of pastLogs) {
-                                let newHistory = log.history || [];
-
-                                newHistory.push(`🚨 귀가 누락 (태그 미완료)`);
-                                await supabaseClient.from("attendance_logs").update({
-                                    status: "귀가(누락)",
-                                    last_update_time: new Date().toISOString(),
-                                    history: newHistory
-                                }).eq("id", log.id);
-                            }
-                            console.log("✅ 관리자 화면 - 과거 데이터 자동 마감 완료");
-                            loadDailyDataAndRender();
-                        }
-                    } catch (e) { console.error("자동 마감 중 오류:", e); }
-                }
-
-                //   autoSweepPastAttendance();
-
-
-                // =========================================================
-                // 🌟 특정 PC 실시간 모드 제어 (DB 1대 제한 토큰 시스템)
-                // =========================================================
-
-                // 1. 이 PC(브라우저)만의 고유 ID 생성 (한 번 생성하면 계속 유지)
-                let myPcId = localStorage.getItem('myPcId');
-                if (!myPcId) {
-                    myPcId = 'PC_' + Math.random().toString(36).substr(2, 9);
-                    localStorage.setItem('myPcId', myPcId);
-                }
-
-                // 1분마다 DB 소유권을 검사할 타이머 변수
-                let tokenCheckInterval = null;
-
-                // 체크박스를 누를 때 실행됨
-                async function toggleRealtime() {
-                    const toggleBtn = document.getElementById('realtime-toggle');
-                    const isChecked = toggleBtn.checked;
-
-                    if (isChecked) {
-                        try {
-                            // 1. DB에서 현재 실시간 모드를 누가 쓰고 있는지 확인
-                            const { data } = await supabaseClient.from('settings').select('value').eq('key', 'realtime_owner').maybeSingle();
-                            let currentOwner = data ? data.value : null;
-
-                            // 2. 누군가 쓰고 있고, 그게 내가 아니라면?
-                            if (currentOwner && currentOwner.pcId !== myPcId) {
-                                const takeover = confirm(`🚨 현재 [${currentOwner.pcName || '다른 PC'}]에서 실시간 모드를 사용 중입니다.\n\n강제로 권한을 뺏어오시겠습니까?\n(뺏긴 PC는 자동으로 일반 모드로 전환됩니다)`);
-
-                                if (!takeover) {
-                                    toggleBtn.checked = false; // 취소하면 체크박스 원상복구
-                                    return;
-                                }
-                            }
-
-                            // 3. 권한 획득 (누구 PC인지 이름 입력받기 - 선택사항)
-                            const pcName = prompt("이 컴퓨터를 식별할 수 있는 이름을 짧게 적어주세요.\n(예: 교무실 내자리, 1반 담임노트북 등)", "감독교사 PC");
-                            if (pcName === null) {
-                                toggleBtn.checked = false;
-                                return;
-                            }
-
-                            // DB에 내 정보 기록 (내가 이제 주인이다!)
-                            await supabaseClient.from('settings').upsert({
-                                key: 'realtime_owner',
-                                value: { pcId: myPcId, pcName: pcName, timestamp: Date.now() }
-                            });
-
-                            localStorage.setItem('supervisorRealtime', 'true');
-                            applyIntervalSetting(true);
-                            alert(`⚡ [${pcName}] 실시간 모드가 켜졌습니다!\n이제 이 컴퓨터만 5초마다 데이터를 가져옵니다.`);
-                            loadDailyDataAndRender(); // 즉시 1회 동기화
-
-                        } catch (e) {
-                            alert("서버 통신 중 오류가 발생했습니다.");
-                            toggleBtn.checked = false;
-                        }
-
-                    } else {
-                        // 내가 끄는 경우
-                        localStorage.setItem('supervisorRealtime', 'false');
-                        applyIntervalSetting(false);
-                        alert("🐢 실시간 모드가 해제되었습니다. (10분 주기로 변경)");
-
-                        // (선택) 내가 끄면 DB 기록을 지워줄 수도 있지만, 어차피 남이 덮어쓰므로 놔둬도 무방합니다.
-                    }
-                }
-
-                // 타이머 설정 함수 (감시 기능 포함)
-                function applyIntervalSetting(isRealtime) {
-                    // 기존 타이머 싹 다 청소
-                    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-                    if (tokenCheckInterval) clearInterval(tokenCheckInterval);
-
-                    // 기본 새로고침 5초 vs 10분
-                    const intervalTime = isRealtime ? 5000 : 600000;
-
-                    autoRefreshInterval = setInterval(() => {
-                        loadDailyDataAndRender();
-                        if (document.getElementById('tab-status').classList.contains('active')) {
-                            renderStatusTable();
-                        }
-                    }, intervalTime);
-
-                    // 🌟 선생님의 핵심 아이디어: 누군가 뺏어갔는지 검사! (1분 -> 10초로 단축)
-                    if (isRealtime) {
-                        tokenCheckInterval = setInterval(async () => {
-                            try {
-                                const { data } = await supabaseClient.from('settings').select('value').eq('key', 'realtime_owner').maybeSingle();
-
-                                // DB 확인해봤는데 주인이 내가 아니라면? (누가 권한을 뺏어갔다면)
-                                if (data && data.value && data.value.pcId !== myPcId) {
-
-                                    // 1. 화면의 체크박스를 강제로 끕니다.
-                                    document.getElementById('realtime-toggle').checked = false;
-
-                                    // 2. 브라우저 메모리를 일반 모드로 변경합니다.
-                                    localStorage.setItem('supervisorRealtime', 'false');
-
-                                    // 3. 내 타이머를 10분짜리 일반 모드로 재설정합니다. (실시간 감시도 여기서 멈춤)
-                                    applyIntervalSetting(false);
-
-                                    // 4. 마지막으로 팝업을 띄워 선생님께 확실히 알립니다.
-                                    alert(`🚨 앗! 다른 선생님([${data.value.pcName}])이 실시간 모드를 가져갔습니다.\n\n서버 보호를 위해 이 컴퓨터는 일반 모드(10분)로 자동 전환됩니다.`);
-
-                                }
-                            } catch (e) { console.error("소유권 확인 오류", e); }
-                        }, 10000); // 👈 60000(1분)에서 10000(10초)으로 변경하여 거의 즉각 반응하게 만듦!
-                    }
-                }
-
-
-
-                ////////////////////////////////////////////////////////////////////
-                function openTimeList(timeSlot) {
-                    // 🌟 추가됨: 날짜 변경 시 다시 그릴 수 있도록 현재 보고 있는 타임을 기억해둡니다.
-                    window.currentTimeListSlot = timeSlot;
-                    // 1. 기존 탭 비활성화 및 새 화면 활성화
-                    // 👇👇 여기에 3줄을 추가해 주세요! (기존 타임 버튼 효과 초기화 후, 누른 버튼만 켜기) 👇👇
-                    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
-                    const targetBtn = document.getElementById(`btn-time-${timeSlot}`);
-                    if (targetBtn) targetBtn.classList.add('active');
-                    // 👆👆 --
-
-                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                    document.getElementById('tab-time-list').classList.add('active');
-
-                    const sharedControls = document.getElementById('daily-shared-controls');
-                    if (sharedControls) {
-                        // 👇 'none'으로 되어있던 것을 'flex'로 수정하여 숨기지 않고 계속 보여줍니다!
-                        sharedControls.style.display = 'flex';
-                    }
-                    // 👇👇 여기에 2줄을 추가하세요 (타임별 명단에서는 운영 교시 선택창 숨기기) 👇👇
-                    const timeWrapper = document.getElementById('daily-time-wrapper');
-                    if (timeWrapper) timeWrapper.style.display = 'none';
-                    // 👆👆 ---
-
-
-                    const tbody = document.getElementById('time-list-body');
-                    tbody.innerHTML = '';
-
-                    // 👇👇 여기에 5줄을 추가해 주세요! (타임 탭을 바꿀 때 열려있던 네모 박스 명단 강제 닫기) 👇👇
-                    const gridArea = document.getElementById('time-grid-area');
-                    if (gridArea) {
-                        gridArea.style.display = 'none';
-                        gridArea.innerHTML = '';
-                    }
-                    // 👆👆 --
-
-
-                    // 2. 현재 조회 중인 날짜 정보 추출
-                    const targetDateStr = document.getElementById('daily-date').value;
-                    const targetDateObj = new Date(targetDateStr);
-                    const targetDay = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][targetDateObj.getDay()];
-                    const targetMonthStr = (targetDateObj.getMonth() + 1) + "월";
-
-                    document.getElementById('time-list-title').innerText = `🕒 ${timeSlot}타임 신청자 명단 (${targetDateStr})`;
-
-                    // 👇👇 여기에 아래의 '운영일 체크 로직'을 통째로 추가하세요! 👇👇
-                    const dayIdx = targetDateObj.getDay();
-                    let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
-                    let reason = "";
-
-                    if (globalCalendarSchedule.data[targetDateStr] !== undefined) {
-                        isOperating = globalCalendarSchedule.data[targetDateStr].active;
-                        reason = globalCalendarSchedule.data[targetDateStr].reason || "정규휴무";
-                    }
-
-                    if (!isOperating) {
-                        tbody.innerHTML = `<tr><td colspan="5" style="padding:50px; text-align:center; color:var(--danger); font-weight:bold; font-size: 16px;">🚨 오늘은 야간 자율학습을 운영하지 않습니다.<br><span style="font-size: 13px; color: #666; font-weight: normal;">(사유: ${reason})</span></td></tr>`;
-                        document.getElementById('time-list-summary').innerHTML = `<span style="color:var(--danger);">운영 중지일</span>`;
-                        document.getElementById('time-grid-area').style.display = 'none'; // 혹시 열려있는 네모 박스 명단 숨기기
-                        window.currentTimeStudents = []; // 데이터 비우기
-                        return; // 🌟 더 이상 아래 코드를 실행하지 않고 여기서 함수를 종료합니다!
-                    }
-                    // 👆👆 -------------------------------------------------------- 👆👆
-
-
-
-                    let targetStudentsMap = new Map();
-
-                    // 3. 해당 요일에 버튼의 타임(1, 2, 3)을 신청한 학생만 필터링
-                    Object.values(applicationData).forEach(app => {
-                        if (app.targetMonth === targetMonthStr && app[targetDay] && String(app[targetDay]).includes(String(timeSlot))) {
-                            targetStudentsMap.set(String(app.stuId), {
-                                stuId: app.stuId,
-                                stuName: app.stuName,
-                                seatNum: app.type === "고정석" ? app.seatNum : "미발권",
-                                type: app.type
-                            });
-                        }
+                    } catch (e) { console.error("소유권 확인 오류", e); }
+                }, 10000); // 👈 60000(1분)에서 10000(10초)으로 변경하여 거의 즉각 반응하게 만듦!
+            }
+        }
+
+
+
+        ////////////////////////////////////////////////////////////////////
+        function openTimeList(timeSlot) {
+            // 🌟 추가됨: 날짜 변경 시 다시 그릴 수 있도록 현재 보고 있는 타임을 기억해둡니다.
+            window.currentTimeListSlot = timeSlot;
+            // 1. 기존 탭 비활성화 및 새 화면 활성화
+            // 👇👇 여기에 3줄을 추가해 주세요! (기존 타임 버튼 효과 초기화 후, 누른 버튼만 켜기) 👇👇
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+            const targetBtn = document.getElementById(`btn-time-${timeSlot}`);
+            if (targetBtn) targetBtn.classList.add('active');
+            // 👆👆 --
+
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-time-list').classList.add('active');
+
+            const sharedControls = document.getElementById('daily-shared-controls');
+            if (sharedControls) {
+                // 👇 'none'으로 되어있던 것을 'flex'로 수정하여 숨기지 않고 계속 보여줍니다!
+                sharedControls.style.display = 'flex';
+            }
+            // 👇👇 여기에 2줄을 추가하세요 (타임별 명단에서는 운영 교시 선택창 숨기기) 👇👇
+            const timeWrapper = document.getElementById('daily-time-wrapper');
+            if (timeWrapper) timeWrapper.style.display = 'none';
+            // 👆👆 ---
+
+
+            const tbody = document.getElementById('time-list-body');
+            tbody.innerHTML = '';
+
+            // 👇👇 여기에 5줄을 추가해 주세요! (타임 탭을 바꿀 때 열려있던 네모 박스 명단 강제 닫기) 👇👇
+            const gridArea = document.getElementById('time-grid-area');
+            if (gridArea) {
+                gridArea.style.display = 'none';
+                gridArea.innerHTML = '';
+            }
+            // 👆👆 --
+
+
+            // 2. 현재 조회 중인 날짜 정보 추출
+            const targetDateStr = document.getElementById('daily-date').value;
+            const targetDateObj = new Date(targetDateStr);
+            const targetDay = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][targetDateObj.getDay()];
+            const targetMonthStr = (targetDateObj.getMonth() + 1) + "월";
+
+            document.getElementById('time-list-title').innerText = `🕒 ${timeSlot}타임 신청자 명단 (${targetDateStr})`;
+
+            // 👇👇 여기에 아래의 '운영일 체크 로직'을 통째로 추가하세요! 👇👇
+            const dayIdx = targetDateObj.getDay();
+            let isOperating = globalCalendarSchedule.defaultDays.includes(dayIdx);
+            let reason = "";
+
+            if (globalCalendarSchedule.data[targetDateStr] !== undefined) {
+                isOperating = globalCalendarSchedule.data[targetDateStr].active;
+                reason = globalCalendarSchedule.data[targetDateStr].reason || "정규휴무";
+            }
+
+            if (!isOperating) {
+                tbody.innerHTML = `<tr><td colspan="5" style="padding:50px; text-align:center; color:var(--danger); font-weight:bold; font-size: 16px;">🚨 오늘은 야간 자율학습을 운영하지 않습니다.<br><span style="font-size: 13px; color: #666; font-weight: normal;">(사유: ${reason})</span></td></tr>`;
+                document.getElementById('time-list-summary').innerHTML = `<span style="color:var(--danger);">운영 중지일</span>`;
+                document.getElementById('time-grid-area').style.display = 'none'; // 혹시 열려있는 네모 박스 명단 숨기기
+                window.currentTimeStudents = []; // 데이터 비우기
+                return; // 🌟 더 이상 아래 코드를 실행하지 않고 여기서 함수를 종료합니다!
+            }
+            // 👆👆 -------------------------------------------------------- 👆👆
+
+
+
+            let targetStudentsMap = new Map();
+
+            // 3. 해당 요일에 버튼의 타임(1, 2, 3)을 신청한 학생만 필터링
+            Object.values(applicationData).forEach(app => {
+                if (app.targetMonth === targetMonthStr && app[targetDay] && String(app[targetDay]).includes(String(timeSlot))) {
+                    targetStudentsMap.set(String(app.stuId), {
+                        stuId: app.stuId,
+                        stuName: app.stuName,
+                        seatNum: app.type === "고정석" ? app.seatNum : "미발권",
+                        type: app.type
                     });
+                }
+            });
 
-                    dailyReservationsData.forEach(res => {
-                        if (res.times && String(res.times).includes(String(timeSlot))) {
-                            targetStudentsMap.set(String(res.stuId), {
-                                stuId: res.stuId,
-                                stuName: res.stuName,
-                                seatNum: res.seatNum,
-                                type: "자율석"
-                            });
-                        }
+            dailyReservationsData.forEach(res => {
+                if (res.times && String(res.times).includes(String(timeSlot))) {
+                    targetStudentsMap.set(String(res.stuId), {
+                        stuId: res.stuId,
+                        stuName: res.stuName,
+                        seatNum: res.seatNum,
+                        type: "자율석"
                     });
+                }
+            });
 
 
 
-                    // 🌟 [수정된 핵심 로직] 미신청 참여자 완벽 감지
-                    // 학생이 '귀가'했더라도, 과거 기록(history)이나 인정 시간이 있으면 잡아냅니다.
-                    Object.values(attendanceLogsData).forEach(log => {
-                        const sId = String(log.stuId);
+            // 🌟 [수정된 핵심 로직] 미신청 참여자 완벽 감지
+            // 학생이 '귀가'했더라도, 과거 기록(history)이나 인정 시간이 있으면 잡아냅니다.
+            Object.values(attendanceLogsData).forEach(log => {
+                const sId = String(log.stuId);
 
-                        if (targetStudentsMap.has(sId)) return; // 이미 정상 신청자 명단에 있으면 패스
+                if (targetStudentsMap.has(sId)) return; // 이미 정상 신청자 명단에 있으면 패스
 
-                        let participatedInSlot = false;
+                let participatedInSlot = false;
 
-                        // 조건 1. 현재 운영 교시와 조회 타임이 일치하고, 현재 교실에 있는 경우
-                        // (최소 시간을 아직 못 채웠더라도, 지금 불법으로 앉아있다면 화면에 띄워서 확인해야 함)
-                        const currentOpSlot = parseInt(document.getElementById('daily-time').value) || 1;
-                        if (currentOpSlot === timeSlot && (log.status === "입실" || log.status === "복귀")) {
-                            participatedInSlot = true;
-                        }
+                // 조건 1. 현재 운영 교시와 조회 타임이 일치하고, 현재 교실에 있는 경우
+                // (최소 시간을 아직 못 채웠더라도, 지금 불법으로 앉아있다면 화면에 띄워서 확인해야 함)
+                const currentOpSlot = parseInt(document.getElementById('daily-time').value) || 1;
+                if (currentOpSlot === timeSlot && (log.status === "입실" || log.status === "복귀")) {
+                    participatedInSlot = true;
+                }
 
-                        // 조건 2 삭제: 단순히 찍고 바로 나간 흔적(history)만으로는 참여자로 인정하지 않음.
+                // 조건 2 삭제: 단순히 찍고 바로 나간 흔적(history)만으로는 참여자로 인정하지 않음.
 
-                        // 조건 3. common.js의 인정 로직을 통해 공식적으로 환경설정의 '최소 인정 시간'을 채운 경우!
-                        const recognizedSet = getFinalRecognizedTimes(log, currentSchedule);
-                        if (recognizedSet.has(timeSlot)) {
-                            participatedInSlot = true;
-                        }
+                // 조건 3. common.js의 인정 로직을 통해 공식적으로 환경설정의 '최소 인정 시간'을 채운 경우!
+                const recognizedSet = getFinalRecognizedTimes(log, currentSchedule);
+                if (recognizedSet.has(timeSlot)) {
+                    participatedInSlot = true;
+                }
 
-                        // 위 조건 중 하나라도 만족하면 미신청 참여자로 등록!
-                        if (participatedInSlot) {
-                            let foundSeat = "미확인";
-                            let foundType = "미신청(참여)";
+                // 위 조건 중 하나라도 만족하면 미신청 참여자로 등록!
+                if (participatedInSlot) {
+                    let foundSeat = "미확인";
+                    let foundType = "미신청(참여)";
 
-                            const appEntry = Object.values(applicationData).find(app => String(app.stuId) === sId && app.targetMonth === targetMonthStr);
-                            if (appEntry) {
-                                if (appEntry.type === "고정석") foundSeat = appEntry.seatNum;
-                                foundType = appEntry.type;
-                            }
-                            const resEntry = dailyReservationsData.find(res => String(res.stuId) === sId && res.date === targetDateStr);
-                            if (resEntry) {
-                                foundSeat = resEntry.seatNum;
-                                foundType = "자율석";
-                            }
+                    const appEntry = Object.values(applicationData).find(app => String(app.stuId) === sId && app.targetMonth === targetMonthStr);
+                    if (appEntry) {
+                        if (appEntry.type === "고정석") foundSeat = appEntry.seatNum;
+                        foundType = appEntry.type;
+                    }
+                    const resEntry = dailyReservationsData.find(res => String(res.stuId) === sId && res.date === targetDateStr);
+                    if (resEntry) {
+                        foundSeat = resEntry.seatNum;
+                        foundType = "자율석";
+                    }
 
-                            targetStudentsMap.set(sId, {
-                                stuId: log.stuId,
-                                stuName: log.stuName,
-                                seatNum: foundSeat,
-                                type: foundType,
-                                isExtended: true // 미신청(참여) 꼬리표
-                            });
-                        }
+                    targetStudentsMap.set(sId, {
+                        stuId: log.stuId,
+                        stuName: log.stuName,
+                        seatNum: foundSeat,
+                        type: foundType,
+                        isExtended: true // 미신청(참여) 꼬리표
                     });
+                }
+            });
 
 
 
 
 
 
-                    let targetStudents = Array.from(targetStudentsMap.values());
+            let targetStudents = Array.from(targetStudentsMap.values());
 
-                    // 학번 순 정렬
-                    targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
-
-
-                    // 4. 상황 계산 및 표 그리기
-                    let stat = { total: 0, extended: 0, fixed: 0, autoIssued: 0, autoUnissued: 0, present: 0, absent: 0, out: 0, finish: 0, missing: 0, adminApproved: 0 };
-                    targetStudents.forEach((st, index) => {
-                        if (st.isExtended) {
-                            stat.extended++; // 미신청 참여자 카운트 
-                        } else {
-                            stat.total++;
-                            if (st.type === "고정석") stat.fixed++;
-                            else {
-                                if (st.seatNum === "미발권") stat.autoUnissued++;
-                                else stat.autoIssued++;
-                            }
-                        }
-
-                        const log = attendanceLogsData[String(st.stuId)];
-                        // 👇👇 [추가] 이 학생이 강제 승인 태그를 가지고 있는지 검사해서 숫자 올리기 👇👇
-                        if (log && log.history && log.history.some(h => h.startsWith('🛠️[강제승인]'))) {
-                            stat.adminApproved++;
-                        }
+            // 학번 순 정렬
+            targetStudents.sort((a, b) => String(a.stuId).localeCompare(String(b.stuId)));
 
 
+            // 4. 상황 계산 및 표 그리기
+            let stat = { total: 0, extended: 0, fixed: 0, autoIssued: 0, autoUnissued: 0, present: 0, absent: 0, out: 0, finish: 0, missing: 0, adminApproved: 0 };
+            targetStudents.forEach((st, index) => {
+                if (st.isExtended) {
+                    stat.extended++; // 미신청 참여자 카운트 
+                } else {
+                    stat.total++;
+                    if (st.type === "고정석") stat.fixed++;
+                    else {
+                        if (st.seatNum === "미발권") stat.autoUnissued++;
+                        else stat.autoIssued++;
+                    }
+                }
 
-                        // 🌟 리팩토링: 공통 함수 호출
-                        const statusInfo = getStudentStatusInfo(log, st.type);
-                        let status = statusInfo.timeGridText;
-                        let statusColor = statusInfo.color;
-                        let statusBg = statusInfo.bg;
-
-                        if (st.isExtended) {
-                            status = "미신청(참여)"; statusColor = "#d63384"; statusBg = "#ffe5ec"; stat.present++;
-                            st.currentStatus = "미신청(참여)";
-                        } else {
-                            if (statusInfo.listFilter === "입실") stat.present++;
-                            else if (statusInfo.listFilter === "외출") stat.out++;
-                            else if (statusInfo.listFilter === "누락") stat.missing++;
-                            else if (statusInfo.listFilter === "귀가") stat.finish++;
-                            else stat.absent++;
-
-                            st.currentStatus = statusInfo.timeGridText;
-                        }
+                const log = attendanceLogsData[String(st.stuId)];
+                // 👇👇 [추가] 이 학생이 강제 승인 태그를 가지고 있는지 검사해서 숫자 올리기 👇👇
+                if (log && log.history && log.history.some(h => h.startsWith('🛠️[강제승인]'))) {
+                    stat.adminApproved++;
+                }
 
 
 
+                // 🌟 리팩토링: 공통 함수 호출
+                const statusInfo = getStudentStatusInfo(log, st.type);
+                let status = statusInfo.timeGridText;
+                let statusColor = statusInfo.color;
+                let statusBg = statusInfo.bg;
+
+                if (st.isExtended) {
+                    status = "미신청(참여)"; statusColor = "#d63384"; statusBg = "#ffe5ec"; stat.present++;
+                    st.currentStatus = "미신청(참여)";
+                } else {
+                    if (statusInfo.listFilter === "입실") stat.present++;
+                    else if (statusInfo.listFilter === "외출") stat.out++;
+                    else if (statusInfo.listFilter === "누락") stat.missing++;
+                    else if (statusInfo.listFilter === "귀가") stat.finish++;
+                    else stat.absent++;
+
+                    st.currentStatus = statusInfo.timeGridText;
+                }
 
 
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
+
+
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
                         <td style="text-align: center; vertical-align: middle; font-weight: bold; color: #666;">${index + 1}</td>
                         <td style="text-align: center; vertical-align: middle;">${st.stuId}</td>
                         <td style="text-align: center; vertical-align: middle; font-weight: bold; cursor:pointer; color:var(--primary); text-decoration:underline;"
@@ -3192,52 +3199,52 @@
                             <span style="display:inline-block; background:${statusBg}; color:${statusColor}; font-weight:bold; padding:6px 12px; border-radius:8px; border: 1px solid ${statusColor}; min-width: 60px;">${status}</span>
                         </td>
                     `;
-                        tbody.appendChild(tr);
-                    });
+                tbody.appendChild(tr);
+            });
 
-                    if (targetStudents.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color:#dc3545; font-weight:bold;">해당 타임에 신청한 학생이 없습니다.</td></tr>`;
-                    }
+            if (targetStudents.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color:#dc3545; font-weight:bold;">해당 타임에 신청한 학생이 없습니다.</td></tr>`;
+            }
 
-                    // 박스 그리기에 쓰기 위해 현재 필터링된 학생 전체 목록 저장
-                    window.currentTimeStudents = targetStudents;
-
-
+            // 박스 그리기에 쓰기 위해 현재 필터링된 학생 전체 목록 저장
+            window.currentTimeStudents = targetStudents;
 
 
-                    /////////////////////////////////////////////////////////////////////////////////
-                    // 요약 정보 갱신
-                    const summaryDiv = document.getElementById('time-list-summary');
-                    summaryDiv.style.padding = "0"; summaryDiv.style.border = "none"; summaryDiv.style.background = "transparent";
-                    // 👇👇 [추가] 1T, 2T 상관없이 무조건 하루 전체 누락/승인자 명단을 직접 계산합니다 👇👇
-                    let dailyMissingList = [];
-                    let dailyApprovedList = [];
-
-                    Object.values(attendanceLogsData).forEach(log => {
-                        let isMissing = log.status === "귀가(누락)";
-                        let isApproved = log.history && log.history.some(h => h.startsWith('🛠️[강제승인]'));
-
-                        if (isMissing || isApproved) {
-                            let foundSeat = "미확인"; let foundType = "-";
-                            const appEntry = Object.values(applicationData).find(app => String(app.stuId) === String(log.stuId) && app.targetMonth === targetMonthStr);
-                            if (appEntry) { foundSeat = appEntry.seatNum; foundType = appEntry.type; }
-                            const resEntry = dailyReservationsData.find(res => String(res.stuId) === String(log.stuId) && res.date === targetDateStr);
-                            if (resEntry) { foundSeat = resEntry.seatNum; foundType = "자율석"; }
-
-                            const stData = { stuId: log.stuId, stuName: log.stuName, seatNum: foundSeat, type: foundType, currentStatus: log.status };
-
-                            if (isMissing) dailyMissingList.push(stData);
-                            if (isApproved) dailyApprovedList.push(stData);
-                        }
-                    });
-
-                    // 계산된 전체 명단을 화면에 띄울 수 있도록 잠시 보관해 둡니다.
-                    window.dailyMissingList = dailyMissingList;
-                    window.dailyApprovedList = dailyApprovedList;
-                    // 👆👆 [추가 끝] 👆👆
 
 
-                    summaryDiv.innerHTML = `
+            /////////////////////////////////////////////////////////////////////////////////
+            // 요약 정보 갱신
+            const summaryDiv = document.getElementById('time-list-summary');
+            summaryDiv.style.padding = "0"; summaryDiv.style.border = "none"; summaryDiv.style.background = "transparent";
+            // 👇👇 [추가] 1T, 2T 상관없이 무조건 하루 전체 누락/승인자 명단을 직접 계산합니다 👇👇
+            let dailyMissingList = [];
+            let dailyApprovedList = [];
+
+            Object.values(attendanceLogsData).forEach(log => {
+                let isMissing = log.status === "귀가(누락)";
+                let isApproved = log.history && log.history.some(h => h.startsWith('🛠️[강제승인]'));
+
+                if (isMissing || isApproved) {
+                    let foundSeat = "미확인"; let foundType = "-";
+                    const appEntry = Object.values(applicationData).find(app => String(app.stuId) === String(log.stuId) && app.targetMonth === targetMonthStr);
+                    if (appEntry) { foundSeat = appEntry.seatNum; foundType = appEntry.type; }
+                    const resEntry = dailyReservationsData.find(res => String(res.stuId) === String(log.stuId) && res.date === targetDateStr);
+                    if (resEntry) { foundSeat = resEntry.seatNum; foundType = "자율석"; }
+
+                    const stData = { stuId: log.stuId, stuName: log.stuName, seatNum: foundSeat, type: foundType, currentStatus: log.status };
+
+                    if (isMissing) dailyMissingList.push(stData);
+                    if (isApproved) dailyApprovedList.push(stData);
+                }
+            });
+
+            // 계산된 전체 명단을 화면에 띄울 수 있도록 잠시 보관해 둡니다.
+            window.dailyMissingList = dailyMissingList;
+            window.dailyApprovedList = dailyApprovedList;
+            // 👆👆 [추가 끝] 👆👆
+
+
+            summaryDiv.innerHTML = `
                     <style>
                         .sum-btn { cursor: pointer; transition: 0.2s; position: relative; }
                         .sum-btn:hover { background-color: #e2e3e5 !important; filter: brightness(0.95); transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 10; border-radius: 4px; }
@@ -3288,53 +3295,53 @@
 
                     </div>
                 `;
-                }
+        }
 
 
-                // 👇 [수정] 숫자를 누르면 아래로 네모 박스가 내려오는 기능 (무지개색 제거) 👇
-                function showTimeGrid(category) {
-                    const container = document.getElementById('time-grid-area');
-                    if (!container) return; // 🌟 조건 완화 (!window.currentTimeStudents 제거 완료)
+        // 👇 [수정] 숫자를 누르면 아래로 네모 박스가 내려오는 기능 (무지개색 제거) 👇
+        function showTimeGrid(category) {
+            const container = document.getElementById('time-grid-area');
+            if (!container) return; // 🌟 조건 완화 (!window.currentTimeStudents 제거 완료)
 
-                    let filtered = [];
-                    let title = "";
+            let filtered = [];
+            let title = "";
 
-                    // 🌟 1. 새로 추가된 하루 전체 데이터 로직 🌟
-                    if (category === 'missing') {
-                        filtered = window.dailyMissingList || [];
-                        title = "🚨 하루 전체 귀가 누락 (태그 미완료)";
-                    } else if (category === 'adminApproved') {
-                        filtered = window.dailyApprovedList || [];
-                        title = "🛠️ 하루 전체 관리자 강제 승인 적용자";
-                    }
-                    // 🌟 2. 그 외 기존 타임별 명단 처리 로직 🌟
-                    else {
-                        if (!window.currentTimeStudents) return;
-                        window.currentTimeStudents.forEach(st => {
-                            let match = false;
-                            if (category === 'all') { match = true; title = "총 신청자"; }
-                            else if (category === 'managed' && (st.type === "고정석" || (st.type === "자율석" && st.seatNum !== "미발권"))) { match = true; title = "🎯 실 관리 대상 (고정석 + 발권완료)"; }
-                            else if (category === 'extended' && st.isExtended) { match = true; title = "🔥 미신청자 (참여 중)"; }
-                            else if (category === 'fixed' && st.type === "고정석") { match = true; title = "고정석 신청"; }
-                            else if (category === 'autoIssued' && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
-                            else if (category === 'autoUnissued' && st.type === "자율석" && st.seatNum === "미발권") { match = true; title = "자율석 (미발권)"; }
-                            else if (category === 'present' && (st.currentStatus === "참여" || st.currentStatus === "미신청(참여)")) { match = true; title = "🟢 현재 참여 중"; }
-                            else if (category === 'out' && st.currentStatus === "외출") { match = true; title = "🟡 현재 외출 중"; }
-                            else if (category === 'finish' && st.currentStatus === "귀가") { match = true; title = "⚪ 최종 귀가 완료"; }
-                            else if (category === 'absent' && st.currentStatus === "미참여") { match = true; title = "🔴 미참여 (결석/미입실)"; }
+            // 🌟 1. 새로 추가된 하루 전체 데이터 로직 🌟
+            if (category === 'missing') {
+                filtered = window.dailyMissingList || [];
+                title = "🚨 하루 전체 귀가 누락 (태그 미완료)";
+            } else if (category === 'adminApproved') {
+                filtered = window.dailyApprovedList || [];
+                title = "🛠️ 하루 전체 관리자 강제 승인 적용자";
+            }
+            // 🌟 2. 그 외 기존 타임별 명단 처리 로직 🌟
+            else {
+                if (!window.currentTimeStudents) return;
+                window.currentTimeStudents.forEach(st => {
+                    let match = false;
+                    if (category === 'all') { match = true; title = "총 신청자"; }
+                    else if (category === 'managed' && (st.type === "고정석" || (st.type === "자율석" && st.seatNum !== "미발권"))) { match = true; title = "🎯 실 관리 대상 (고정석 + 발권완료)"; }
+                    else if (category === 'extended' && st.isExtended) { match = true; title = "🔥 미신청자 (참여 중)"; }
+                    else if (category === 'fixed' && st.type === "고정석") { match = true; title = "고정석 신청"; }
+                    else if (category === 'autoIssued' && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
+                    else if (category === 'autoUnissued' && st.type === "자율석" && st.seatNum === "미발권") { match = true; title = "자율석 (미발권)"; }
+                    else if (category === 'present' && (st.currentStatus === "참여" || st.currentStatus === "미신청(참여)")) { match = true; title = "🟢 현재 참여 중"; }
+                    else if (category === 'out' && st.currentStatus === "외출") { match = true; title = "🟡 현재 외출 중"; }
+                    else if (category === 'finish' && st.currentStatus === "귀가") { match = true; title = "⚪ 최종 귀가 완료"; }
+                    else if (category === 'absent' && st.currentStatus === "미참여") { match = true; title = "🔴 미참여 (결석/미입실)"; }
 
-                            if (match) filtered.push(st);
-                        });
-                    }
+                    if (match) filtered.push(st);
+                });
+            }
 
-                    // 🌟 3. 여기서부터는 네모 박스를 화면에 그려주는 부분 (선생님 파일에 있던 정상 코드) 🌟
-                    if (filtered.length === 0) {
-                        container.innerHTML = `<div style="padding:20px; text-align:center; color:#dc3545; font-weight:bold; background:#fff; border-radius:10px; margin-bottom:15px; border:1px solid #ddd;">해당 조건에 맞는 학생이 없습니다.</div>`;
-                        container.style.display = 'block';
-                        return;
-                    }
+            // 🌟 3. 여기서부터는 네모 박스를 화면에 그려주는 부분 (선생님 파일에 있던 정상 코드) 🌟
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="padding:20px; text-align:center; color:#dc3545; font-weight:bold; background:#fff; border-radius:10px; margin-bottom:15px; border:1px solid #ddd;">해당 조건에 맞는 학생이 없습니다.</div>`;
+                container.style.display = 'block';
+                return;
+            }
 
-                    let html = `
+            let html = `
                     <div style="padding: 15px; background: #f8f9fa; border-radius: 12px; margin-bottom: 20px; border: 2px solid #b6d4fe; box-shadow: inset 0 0 10px rgba(0,0,0,0.02);">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; border-bottom: 2px solid #dee2e6; padding-bottom: 8px;">
                             <span style="font-weight: 900; color: #0d6efd; font-size: 16px;">🔍 [${title}] 명단 상세 보기 (${filtered.length}명)</span>
@@ -3343,19 +3350,19 @@
                         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px;">
                 `;
 
-                    filtered.forEach(st => {
-                        const log = attendanceLogsData[String(st.stuId)];
-                        let cssClass = "status-absent";
+            filtered.forEach(st => {
+                const log = attendanceLogsData[String(st.stuId)];
+                let cssClass = "status-absent";
 
 
 
 
-                        if (log) {
-                            // 🌟 리팩토링: 길고 복잡했던 조건문을 딱 한 줄로!
-                            cssClass = getStudentStatusInfo(log, st.type).cssClass;
-                        }
+                if (log) {
+                    // 🌟 리팩토링: 길고 복잡했던 조건문을 딱 한 줄로!
+                    cssClass = getStudentStatusInfo(log, st.type).cssClass;
+                }
 
-                        html += `
+                html += `
                         <div onclick="openDailyStatus('${st.stuId}', '${st.stuName}', '${st.seatNum}', '')" 
                              class="${cssClass}"
                              style="border-radius: 8px; padding: 12px 5px 10px 5px; text-align: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.2s; position: relative; overflow: hidden;"
@@ -3368,12 +3375,12 @@
                             <div style="font-size: 11px; font-weight: bold; color: inherit; opacity: 0.9;">${st.seatNum === '미발권' ? '미발권' : st.seatNum}</div>
                         </div>
                     `;
-                    });
+            });
 
-                    html += `</div></div>`;
-                    container.innerHTML = html;
-                    container.style.display = 'block';
-                }
+            html += `</div></div>`;
+            container.innerHTML = html;
+            container.style.display = 'block';
+        }
     </script>
 </body>
 
