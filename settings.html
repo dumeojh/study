@@ -370,6 +370,69 @@
             outline: none;
             box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
         }
+
+        /* 🖨️ 도면 인쇄 전용 스타일 */
+        @media print {
+
+            /* A4 가로 방향 설정 및 여백 최적화 */
+            @page {
+                size: landscape;
+                margin: 15mm;
+            }
+
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+            }
+
+            /* 화면에만 보이고 인쇄할 때는 숨길 요소들 */
+            .header,
+            .settings-menu,
+            .tool-bar,
+            .btn-save,
+            #auth-overlay,
+            #tab-seats>div:not(.seat-grid-container),
+            h3 {
+                display: none !important;
+            }
+
+            /* 도면 영역만 강제로 화면에 표시 */
+            #main-content,
+            #tab-seats,
+            .seat-grid-container {
+                display: block !important;
+                background: white !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+            }
+
+            /* 좌석의 배경색(고정석 노란색, 자율석 초록색 등)이 잉크 절약 모드를 무시하고 강제로 인쇄되도록 설정 */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* 인쇄용 제목 추가 */
+            #tab-seats::before {
+                content: "🏫 안성여고 자율학습실 좌석 도면";
+                display: block;
+                text-align: center;
+                font-size: 24px;
+                font-weight: bold;
+                margin-bottom: 20px;
+                color: black;
+            }
+
+            /* 도면이 종이 가운데 오도록 정렬 */
+            .seat-grid-container {
+                display: flex;
+                justify-content: center;
+                overflow: visible !important;
+            }
+        }
     </style>
 </head>
 
@@ -637,6 +700,8 @@
                         있습니다.</p>
                 </div>
                 <div style="display: flex; gap: 10px;">
+                    <button class="btn" style="background: #6c757d; color: white;" onclick="window.print()">🖨️ 도면
+                        인쇄</button>
                     <button class="btn" style="background: #fd7e14;" onclick="exportToFile()">⬇️ 도면 다운로드</button>
                     <button class="btn" style="background: #20c997;" onclick="importFromFile()">📂 파일 불러오기</button>
                 </div>
