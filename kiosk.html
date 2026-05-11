@@ -585,6 +585,7 @@
                 document.getElementById('cancel-timer').innerText = `(${timeLeft}초 뒤 자동 취소됩니다)`;
                 if (timeLeft <= 0) {
                     clearInterval(selectionTimer);
+                    selectionTimer = null; // 👈 이 줄을 반드시 추가해 주세요!
                     document.getElementById('result-overlay').style.display = 'none';
                     isProcessing = false;
                     focusScanner();
@@ -593,10 +594,12 @@
         }
 
         function confirmSelection(id, name, status) {
-            if (selectionTimer) clearInterval(selectionTimer);
+            if (selectionTimer) {
+                clearInterval(selectionTimer);
+                selectionTimer = null; // 👈 이 줄을 반드시 추가해 주세요!
+            }
             saveAttendance(id, name, status, new Date());
         }
-
 
 
         // ✅ 이렇게 변경해 주세요 (수정 완료 코드)
