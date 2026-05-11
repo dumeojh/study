@@ -1776,6 +1776,7 @@
                 currentSlot = 4; // 야자 최종 종료 시간이 지나면 가상의 4타임으로 취급하여 모두 마감 처리
             }
 
+
             let targetStudentsMap = new Map(); // 👈 👉 바로 여기 있는 부분입니다! 👈 👉
 
             Object.values(applicationData).forEach(app => {
@@ -1787,7 +1788,8 @@
                         appliedTimes: app[targetDay] + "타임",
                         type: app.type,
                         phone: rosterPhones[String(app.stuId)],
-                        rawTimes: app[targetDay]
+                        rawTimes: app[targetDay],
+                        ticketTimes: "" // 👈 오류 해결을 위해 이 줄을 추가합니다.
                     });
                 }
             });
@@ -1799,6 +1801,7 @@
                     existing.seatNum = res.seatNum;
                     existing.appliedTimes = (res.times || "-") + "타임";
                     existing.rawTimes = res.times || existing.rawTimes;
+                    existing.ticketTimes = res.times || ""; // 👈 오류 해결을 위해 이 줄을 추가합니다.
                     targetStudentsMap.set(stuIdStr, existing);
                 } else {
                     targetStudentsMap.set(stuIdStr, {
@@ -1808,12 +1811,11 @@
                         appliedTimes: (res.times || "-") + "타임",
                         type: "자율석",
                         phone: rosterPhones[String(res.stuId)],
-                        rawTimes: res.times || ""
+                        rawTimes: res.times || "",
+                        ticketTimes: res.times || "" // 👈 오류 해결을 위해 이 줄을 추가합니다.
                     });
                 }
             });
-
-
 
 
 
