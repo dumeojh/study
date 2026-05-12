@@ -560,14 +560,29 @@
 
                 const lastStatus = logData ? logData.status : "미입실";
 
+
+
+
+
                 if (logData && logData.last_update_time) {
                     const lastUpdateTime = new Date(logData.last_update_time);
                     const diffSec = Math.floor((now - lastUpdateTime) / 1000);
                     if (diffSec < 20) {
-                        showReceipt(studentName, "방금 처리됨", `${diffSec}초 전에 [${lastStatus}] 처리되었습니다.`, "잠시 후 다시 스캔해 주세요.", "#6c757d");
+                        // 👇 남은 대기 시간을 계산합니다.
+                        const remainSec = 20 - diffSec;
+
+                        showReceipt(
+                            studentName,
+                            "잠시 대기해 주세요",
+                            `현재 [${lastStatus}] 처리된 상태입니다.`,
+                            `<span style="color:#dc3545; font-size:18px;"><b>${remainSec}초 후</b></span>에 다시 스캔할 수 있습니다.`,
+                            "#fd7e14" // 색상도 눈에 띄는 주황색으로 변경
+                        );
                         return;
                     }
                 }
+
+
 
                 currentStudentLogData = logData;
 
