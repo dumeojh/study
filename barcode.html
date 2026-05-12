@@ -233,9 +233,6 @@
             transition: 0.2s;
         }
 
-        .barcode-card.hidden-by-filter {
-            display: none !important;
-        }
 
         .barcode-card:not(.print-active) {
             display: none !important;
@@ -589,39 +586,20 @@
             }
         }
 
-
-
         // 🌟 수정된 필터 및 검색 통합 함수
         function filterCards() {
             const selectedClass = document.getElementById('class-filter').value;
             const searchInput = document.getElementById('search-input');
             const searchText = searchInput ? searchInput.value.trim().toLowerCase() : "";
 
-            // 검색어가 있으면 '반 선택'을 안 했더라도 전체 목록에서 찾도록 자동 셋팅
             let effectiveClass = selectedClass;
             if (searchText.length > 0 && selectedClass === "none") {
                 effectiveClass = "all";
             }
 
-            // 바코드 카드 필터링
-            document.querySelectorAll('.barcode-card').forEach(card => {
-                const id = card.getAttribute('data-id').toLowerCase();
-                const name = card.getAttribute('data-name').toLowerCase();
-                const cardClass = card.getAttribute('data-class');
+            // ❌ 오른쪽 바코드를 건드리는 로직 삭제 ❌
 
-                let isClassMatch = (effectiveClass === "all" || cardClass === effectiveClass);
-                let isSearchMatch = (searchText === "" || id.includes(searchText) || name.includes(searchText));
-
-                if (effectiveClass === "none") {
-                    card.classList.add('hidden-by-filter');
-                } else if (isClassMatch && isSearchMatch) {
-                    card.classList.remove('hidden-by-filter');
-                } else {
-                    card.classList.add('hidden-by-filter');
-                }
-            });
-
-            // 좌측 리스트 필터링
+            // ✅ 좌측 리스트 필터링만 수행 ✅
             document.querySelectorAll('.list-row').forEach(row => {
                 const id = row.getAttribute('data-id').toLowerCase();
                 const name = row.getAttribute('data-name').toLowerCase();
@@ -646,10 +624,12 @@
 
 
 
+
         // 일괄 변경
         function toggleVisibleCards(isCheck) {
-            document.querySelectorAll('.barcode-card:not(.hidden-by-filter)').forEach(card => {
-                const id = card.getAttribute('data-id');
+            // 🌟 수정: 바코드 카드가 아닌, 현재 왼쪽 명단에서 보이고 있는 학생(.list-row)들만 선택/해제
+            document.querySelectorAll('.list-row:not(.hidden-by-filter)').forEach(row => {
+                const id = row.getAttribute('data-id');
                 syncCheck(id, isCheck);
             });
 
