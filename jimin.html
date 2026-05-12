@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>안성여고 통계 포스터 프로젝트 통합 시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;900&display=swap');
 
@@ -28,12 +27,34 @@
 
         .step-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
         }
 
         input,
         textarea,
         select {
-            font-size: 16px !important;
+            font-size: 14px !important;
+        }
+
+        /* 모달 애니메이션 */
+        .modal-enter {
+            animation: modalFadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
     </style>
 </head>
@@ -46,7 +67,7 @@
             <p class="text-slate-500 text-sm font-medium">안성여고 교육과정 연계 탐구 활동</p>
         </header>
 
-        <section id="login-section" class="max-w-md mx-auto glass-card p-8 rounded-[2rem] shadow-2xl">
+        <section id="login-section" class="max-w-md mx-auto glass-card p-8 rounded-[2rem] shadow-2xl transition-all">
             <h2 class="text-xl font-bold mb-6 text-center text-slate-700">학생 본인 확인</h2>
             <div class="space-y-4">
                 <input type="text" id="student-id"
@@ -58,9 +79,9 @@
                 <button onclick="handleLogin()"
                     class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black hover:bg-indigo-700 shadow-lg transition">입장하기</button>
             </div>
-            <div class="mt-8 text-center">
+            <div class="mt-8 text-center flex justify-center">
                 <button onclick="showAdminAuth()"
-                    class="text-xs text-slate-400 hover:text-slate-600 font-bold flex items-center justify-center gap-1 mx-auto">
+                    class="text-xs text-slate-400 hover:text-slate-600 transition font-bold flex items-center gap-1">
                     ⚙️ 환경설정
                 </button>
             </div>
@@ -68,87 +89,407 @@
 
         <section id="dashboard-section" class="hidden space-y-6">
             <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border">
-                <div class="font-bold text-slate-700"><span id="user-display"></span>님, 환영합니다!</div>
-                <button onclick="handleLogout()" class="text-xs text-red-500 font-bold">로그아웃</button>
+                <div class="font-bold text-slate-700 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span id="user-display"></span>님, 환영합니다!
+                </div>
+                <button onclick="handleLogout()" class="text-xs text-red-500 font-bold hover:underline">로그아웃</button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div onclick="openModal('step1')"
-                    class="step-card glass-card p-6 rounded-3xl border-l-8 border-blue-500 cursor-pointer shadow-md">
-                    <span class="text-[10px] font-black text-blue-600 uppercase">Step 01</span>
-                    <h3 class="text-lg font-bold mt-1">주제 및 탐구 문제 설정</h3>
+                    class="step-card glass-card p-6 rounded-3xl border-l-8 border-blue-500 cursor-pointer shadow-md bg-white">
+                    <span class="text-[10px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-1 rounded">Step
+                        01</span>
+                    <h3 class="text-lg font-bold mt-2">1차시: 주제 및 탐구 문제 설정</h3>
+                    <p class="text-xs text-slate-500 mt-2">진로 연계 주제 선정 및 비판적 수용</p>
                 </div>
+                <div onclick="openModal('step2')"
+                    class="step-card glass-card p-6 rounded-3xl border-l-8 border-green-500 cursor-pointer shadow-md bg-white">
+                    <span class="text-[10px] font-black text-green-600 uppercase bg-green-50 px-2 py-1 rounded">Step
+                        02-03</span>
+                    <h3 class="text-lg font-bold mt-2">2~3차시: 자료 수집 및 설문 설계</h3>
+                    <p class="text-xs text-slate-500 mt-2">통그라미 활용 및 조사 범위 결정</p>
+                </div>
+                <div onclick="openModal('step4')"
+                    class="step-card glass-card p-6 rounded-3xl border-l-8 border-purple-500 cursor-pointer shadow-md bg-white">
+                    <span class="text-[10px] font-black text-purple-600 uppercase bg-purple-50 px-2 py-1 rounded">Step
+                        04</span>
+                    <h3 class="text-lg font-bold mt-2">4차시: 자료 분석 및 시각화</h3>
+                    <p class="text-xs text-slate-500 mt-2">캔바 활용 그래프 정리 및 결과 해석</p>
+                </div>
+                <div onclick="openModal('step6')"
+                    class="step-card glass-card p-6 rounded-3xl border-l-8 border-indigo-600 cursor-pointer shadow-md bg-white">
+                    <span class="text-[10px] font-black text-indigo-600 uppercase bg-indigo-50 px-2 py-1 rounded">Step
+                        06</span>
+                    <h3 class="text-lg font-bold mt-2">6차시: 최종 제출 및 소감</h3>
+                    <p class="text-xs text-slate-500 mt-2">드라이브 업로드 및 최종 보고서 생성</p>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <button onclick="downloadFullReport()"
+                    class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black shadow-xl hover:bg-slate-800 transition transform active:scale-95">
+                    📁 전체 활동 내용 통합 저장 및 제출 (HTML)
+                </button>
             </div>
         </section>
 
         <section id="admin-section" class="hidden space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-black">⚙️ 환경설정</h2>
-                <button onclick="closeAdmin()" class="px-4 py-2 bg-slate-200 rounded-xl font-bold text-xs">돌아가기</button>
+            <div class="flex justify-between items-center bg-slate-900 text-white p-4 rounded-2xl shadow-lg">
+                <h2 class="text-xl font-black">⚙️ 환경설정 (선생님 전용)</h2>
+                <button onclick="closeAdmin()"
+                    class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-xs transition">돌아가기</button>
             </div>
 
-            <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-6">
-                <div class="grid grid-cols-2 gap-3">
-                    <label
-                        class="flex flex-col items-center justify-center p-4 bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-2xl cursor-pointer hover:bg-indigo-100 transition">
-                        <span class="text-sm font-bold text-indigo-600">📥 엑셀 불러오기</span>
-                        <input type="file" id="excel-upload" class="hidden" accept=".xlsx, .xls, .csv"
-                            onchange="importExcel(event)">
-                    </label>
-                    <button onclick="exportExcel()"
-                        class="flex flex-col items-center justify-center p-4 bg-emerald-50 border-2 border-emerald-200 rounded-2xl hover:bg-emerald-100 transition">
-                        <span class="text-sm font-bold text-emerald-600">📤 엑셀 저장하기</span>
-                    </button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <h3 class="font-bold mb-2 text-slate-800">학생 명단 입력</h3>
+                    <p class="text-[11px] text-slate-500 mb-4 bg-slate-50 p-2 rounded-lg leading-relaxed">
+                        💡 엑셀 파일에서 <b>[학번] [이름]</b> 두 열을 드래그 복사 후 붙여넣으세요.
+                    </p>
+                    <textarea id="admin-student-list"
+                        class="w-full h-40 p-4 bg-slate-50 border rounded-xl font-mono text-xs mb-4 focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="여기에 엑셀 자료를 붙여넣으세요."></textarea>
+                    <button onclick="saveStudentList()"
+                        class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-black transition">명단 일괄
+                        저장하기</button>
                 </div>
 
-                <div>
-                    <h3 class="font-bold mb-2">직접 입력 또는 수정</h3>
-                    <textarea id="admin-student-list"
-                        class="w-full h-40 p-4 bg-slate-50 border rounded-2xl font-mono text-sm mb-4"
-                        placeholder="학번 이름 (예: 10101 홍길동)"></textarea>
-                    <button onclick="saveStudentList()"
-                        class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold">명단 업데이트</button>
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <h3 class="font-bold mb-2 text-slate-800">1차시: 도입부 오류 그래프 업로드</h3>
+                    <p class="text-[11px] text-slate-500 mb-4 bg-slate-50 p-2 rounded-lg">
+                        학생들에게 보여줄 통계 오류 그래프 이미지를 등록합니다.
+                    </p>
+                    <input type="file" id="admin-image-upload" accept="image/*"
+                        class="text-sm w-full mb-3 border p-2 rounded-xl">
+                    <div id="admin-image-preview" class="hidden mb-3">
+                        <img id="preview-img" class="max-h-24 rounded border shadow-sm object-contain">
+                    </div>
+                    <button onclick="saveAdminImage()"
+                        class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">이미지
+                        적용하기</button>
                 </div>
             </div>
         </section>
     </div>
 
+    <div id="modal-step1"
+        class="fixed inset-0 bg-slate-900/80 hidden flex justify-center p-4 z-50 overflow-y-auto pt-10 pb-10">
+        <div class="bg-white w-full max-w-3xl rounded-[2rem] shadow-2xl h-max modal-enter">
+            <div
+                class="bg-blue-600 p-6 rounded-t-[2rem] text-white flex justify-between items-center sticky top-0 z-10">
+                <h2 class="text-xl font-bold">1차시: 주제 및 탐구 문제 설정</h2>
+                <button onclick="closeModal('step1')"
+                    class="text-white text-3xl font-light hover:rotate-90 transition">&times;</button>
+            </div>
+            <div class="p-6 md:p-8 space-y-8">
+                <div class="border-l-4 border-blue-500 bg-blue-50 p-4 rounded-r-xl">
+                    <h3 class="font-bold mb-3 text-blue-900">1. 도입: 다음 그래프에서 '의도된 오류' 찾기</h3>
+                    <div id="s1-img-container"
+                        class="bg-white p-2 border rounded-lg mb-3 flex justify-center min-h-[100px] items-center">
+                        <p id="s1-no-image" class="text-slate-400 text-sm">등록된 이미지가 없습니다.</p>
+                        <img id="s1-student-img" class="hidden max-h-48 object-contain">
+                    </div>
+                    <textarea id="s1-q1" class="w-full p-3 border rounded-xl text-sm outline-none focus:border-blue-500"
+                        rows="2" placeholder="이 그래프가 왜곡되었다면, 어떤 부분이 문제일까요?"></textarea>
+                </div>
+                <div class="border-l-4 border-blue-500 bg-slate-50 p-4 rounded-r-xl">
+                    <h3 class="font-bold mb-3">2. 기본 개념 복습</h3>
+                    <div class="space-y-2 text-sm">
+                        <p>통계 조사의 전체 대상 집단: <input type="text" id="s1-q2-1"
+                                class="border-b-2 border-slate-300 bg-transparent outline-none w-24 text-center font-bold text-blue-600">
+                        </p>
+                        <p>실제로 조사하기 위해 뽑은 대상: <input type="text" id="s1-q2-2"
+                                class="border-b-2 border-slate-300 bg-transparent outline-none w-24 text-center font-bold text-blue-600">
+                        </p>
+                    </div>
+                </div>
+                <div class="border-l-4 border-blue-500 bg-slate-50 p-4 rounded-r-xl">
+                    <h3 class="font-bold mb-3">3. 진로 분야 데이터 탐색</h3>
+                    <input type="text" id="s1-q3-1"
+                        class="w-full p-3 border rounded-xl mb-3 text-sm outline-none focus:border-blue-500"
+                        placeholder="관심 진로 분야 (예: 의료, 환경)">
+                    <textarea id="s1-q3-2"
+                        class="w-full p-3 border rounded-xl text-sm outline-none focus:border-blue-500" rows="3"
+                        placeholder="관련 통계 자료 링크나 요약"></textarea>
+                </div>
+                <div class="border-l-4 border-blue-500 bg-slate-50 p-4 rounded-r-xl">
+                    <h3 class="font-bold mb-3">4. 통계적 질문 만들기</h3>
+                    <div id="s1-questions-container" class="space-y-3 mb-3"></div>
+                    <button onclick="addS1Question()"
+                        class="w-full py-2 border-2 border-dashed border-blue-300 text-blue-600 rounded-xl text-sm font-bold hover:bg-blue-100 transition">+
+                        탐구 질문 추가</button>
+                </div>
+                <div class="border-l-4 border-blue-500 bg-slate-900 p-4 rounded-r-xl">
+                    <h3 class="font-bold mb-3 text-white">5. 활동 소감</h3>
+                    <textarea id="s1-q5"
+                        class="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm outline-none focus:border-blue-500"
+                        rows="2" placeholder="새롭게 알게 된 점이나 다짐"></textarea>
+                </div>
+            </div>
+            <div class="p-6 bg-slate-50 rounded-b-[2rem] flex justify-end gap-2 border-t">
+                <button onclick="closeModal('step1')"
+                    class="px-5 py-2.5 rounded-xl font-bold bg-white border text-slate-600">닫기</button>
+                <button onclick="saveStep('step1')"
+                    class="px-5 py-2.5 rounded-xl font-bold bg-blue-600 text-white shadow-md hover:bg-blue-700">임시저장</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-step2"
+        class="fixed inset-0 bg-slate-900/80 hidden flex justify-center p-4 z-50 overflow-y-auto pt-10 pb-10">
+        <div class="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl h-max modal-enter">
+            <div
+                class="bg-green-600 p-6 rounded-t-[2rem] text-white flex justify-between items-center sticky top-0 z-10">
+                <h2 class="text-xl font-bold">2~3차시: 자료 수집 및 설문 설계</h2>
+                <button onclick="closeModal('step2')"
+                    class="text-white text-3xl font-light hover:rotate-90 transition">&times;</button>
+            </div>
+            <div class="p-6 md:p-8 space-y-8">
+                <section>
+                    <h3 class="text-lg font-black text-slate-800 mb-4 border-b pb-2"><span
+                            class="text-green-600 mr-2">1.</span>자료 수집 계획</h3>
+                    <div class="space-y-6">
+                        <div>
+                            <p class="text-sm font-bold mb-2">가. 수집 방법 (택1)</p>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <label
+                                    class="p-3 border rounded-xl text-center cursor-pointer hover:bg-green-50 has-[:checked]:bg-green-100 has-[:checked]:border-green-500 transition">
+                                    <input type="radio" name="s2-method" value="설문 조사" class="hidden"> <span
+                                        class="text-sm font-bold">설문 조사</span>
+                                </label>
+                                <label
+                                    class="p-3 border rounded-xl text-center cursor-pointer hover:bg-green-50 has-[:checked]:bg-green-100 has-[:checked]:border-green-500 transition">
+                                    <input type="radio" name="s2-method" value="관찰" class="hidden"> <span
+                                        class="text-sm font-bold">관찰</span>
+                                </label>
+                                <label
+                                    class="p-3 border rounded-xl text-center cursor-pointer hover:bg-green-50 has-[:checked]:bg-green-100 has-[:checked]:border-green-500 transition">
+                                    <input type="radio" name="s2-method" value="실험" class="hidden"> <span
+                                        class="text-sm font-bold">실험</span>
+                                </label>
+                                <label
+                                    class="p-3 border rounded-xl text-center cursor-pointer hover:bg-green-50 has-[:checked]:bg-green-100 has-[:checked]:border-green-500 transition">
+                                    <input type="radio" name="s2-method" value="문헌 조사" class="hidden"> <span
+                                        class="text-sm font-bold">문헌 조사</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold mb-2">나. 조사 범위</p>
+                            <select id="s2-scope" onchange="toggleS2Scope()"
+                                class="w-full p-3 border rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-green-400">
+                                <option value="">선택하세요</option>
+                                <option value="전수조사">전수조사 (전체 대상)</option>
+                                <option value="표본조사">표본조사 (일부 추출)</option>
+                            </select>
+                            <textarea id="s2-scope-detail"
+                                class="hidden w-full mt-2 p-3 border rounded-xl text-sm bg-slate-50 outline-none"
+                                rows="2" placeholder="상세 계획을 적어주세요."></textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="flex justify-between items-center border-b pb-2 mb-4">
+                        <h3 class="text-lg font-black text-slate-800"><span class="text-green-600 mr-2">2.</span>온라인 설문지
+                            및 문항</h3>
+                        <a href="https://tong.mods.go.kr/" target="_blank"
+                            class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold hover:bg-blue-700">통그라미
+                            열기 ↗</a>
+                    </div>
+                    <input type="url" id="s2-link"
+                        class="w-full p-3 border rounded-xl mb-4 text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-green-400"
+                        placeholder="통그라미 등 완성된 설문지 URL 첨부">
+
+                    <div id="s2-questions-container" class="space-y-4"></div>
+                    <button onclick="addS2Question()"
+                        class="w-full mt-4 py-3 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 transition">+
+                        문항 추가</button>
+                </section>
+            </div>
+            <div class="p-6 bg-slate-50 rounded-b-[2rem] flex justify-end gap-2 border-t">
+                <button onclick="closeModal('step2')"
+                    class="px-5 py-2.5 rounded-xl font-bold bg-white border text-slate-600">닫기</button>
+                <button onclick="saveStep('step2')"
+                    class="px-5 py-2.5 rounded-xl font-bold bg-green-600 text-white shadow-md hover:bg-green-700">임시저장</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-step4"
+        class="fixed inset-0 bg-slate-900/80 hidden flex justify-center p-4 z-50 overflow-y-auto pt-10 pb-10">
+        <div class="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl h-max modal-enter">
+            <div
+                class="bg-purple-600 p-6 rounded-t-[2rem] text-white flex justify-between items-center sticky top-0 z-10">
+                <h2 class="text-xl font-bold">4차시: 자료 분석 및 시각화</h2>
+                <button onclick="closeModal('step4')"
+                    class="text-white text-3xl font-light hover:rotate-90 transition">&times;</button>
+            </div>
+            <div class="p-6 md:p-8 space-y-8">
+                <section>
+                    <div class="flex justify-between items-center border-b pb-2 mb-4">
+                        <h3 class="text-lg font-black text-slate-800"><span class="text-purple-600 mr-2">1.</span>문항별 자료
+                            분석</h3>
+                        <button onclick="addS4Analysis()"
+                            class="text-xs bg-slate-800 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-900">+
+                            분석 칸 추가</button>
+                    </div>
+                    <div id="s4-analysis-container" class="space-y-4"></div>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-black text-slate-800 border-b pb-2 mb-4"><span
+                            class="text-purple-600 mr-2">2.</span>종합 결과 해석</h3>
+                    <textarea id="s4-interpretation" oninput="checkLength(this, 's4-char-cnt', 150)"
+                        class="w-full h-32 p-4 border rounded-xl bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-purple-400"
+                        placeholder="설문 결과를 바탕으로 탐구 주제에 대한 결론을 150자 이상 작성하세요."></textarea>
+                    <div class="text-right mt-1"><span id="s4-char-cnt"
+                            class="text-xs font-bold text-slate-400">0</span><span class="text-xs text-slate-400"> /
+                            150자</span></div>
+                </section>
+
+                <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 bg-purple-50 rounded-xl border border-purple-100">
+                        <p class="font-bold text-sm mb-2 text-purple-900">🎨 캔바 그래프 링크 (필수)</p>
+                        <input type="url" id="s4-canva" class="w-full p-2 border rounded-lg text-sm outline-none"
+                            placeholder="https://canva.com/...">
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <p class="font-bold text-sm mb-2 text-slate-700">⚙️ 기타 도구 링크 (선택)</p>
+                        <input type="url" id="s4-tool" class="w-full p-2 border rounded-lg text-sm outline-none"
+                            placeholder="공학도구 링크 등">
+                    </div>
+                </section>
+            </div>
+            <div class="p-6 bg-slate-50 rounded-b-[2rem] flex justify-end gap-2 border-t">
+                <button onclick="closeModal('step4')"
+                    class="px-5 py-2.5 rounded-xl font-bold bg-white border text-slate-600">닫기</button>
+                <button onclick="saveStep('step4')"
+                    class="px-5 py-2.5 rounded-xl font-bold bg-purple-600 text-white shadow-md hover:bg-purple-700">임시저장</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-step6"
+        class="fixed inset-0 bg-slate-900/80 hidden flex justify-center p-4 z-50 overflow-y-auto pt-10 pb-10">
+        <div class="bg-white w-full max-w-3xl rounded-[2rem] shadow-2xl h-max modal-enter">
+            <div
+                class="bg-indigo-600 p-6 rounded-t-[2rem] text-white flex justify-between items-center sticky top-0 z-10">
+                <h2 class="text-xl font-bold">6차시: 최종 제출 및 소감</h2>
+                <button onclick="closeModal('step6')"
+                    class="text-white text-3xl font-light hover:rotate-90 transition">&times;</button>
+            </div>
+            <div class="p-6 md:p-10 space-y-8">
+                <div class="text-center p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
+                    <p class="font-bold text-indigo-900 mb-3">📁 1단계: 구글 드라이브 파일 업로드</p>
+                    <a href="https://drive.google.com/drive/folders/16Pa-B2A6a9OSDSxwV_1qoKDbZDnZ9L98?usp=drive_link"
+                        target="_blank"
+                        class="inline-block px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700">제출
+                        폴더 바로가기</a>
+                    <div class="mt-4 flex items-center justify-center gap-2">
+                        <input type="checkbox" id="s6-check" class="w-5 h-5 accent-indigo-600">
+                        <label class="text-sm font-bold">파일(학번_이름_포스터)을 업로드 했습니다.</label>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-2">🔗 2단계: 최종 포스터 링크</h3>
+                    <input type="url" id="s6-link"
+                        class="w-full p-4 border rounded-xl bg-slate-50 outline-none focus:border-indigo-400 text-sm"
+                        placeholder="최종 공유용 링크 입력">
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-2">✍️ 3단계: 수행 소감문</h3>
+                    <textarea id="s6-reflection" oninput="checkLength(this, 's6-char-cnt', 100)"
+                        class="w-full h-40 p-4 border rounded-xl bg-slate-50 outline-none focus:border-indigo-400 text-sm"
+                        placeholder="프로젝트 전 과정을 통해 배우고 느낀 점 (100자 이상)"></textarea>
+                    <div class="text-right mt-1"><span id="s6-char-cnt"
+                            class="text-xs font-bold text-slate-400">0</span><span class="text-xs text-slate-400"> /
+                            100자</span></div>
+                </div>
+            </div>
+            <div class="p-6 bg-slate-50 rounded-b-[2rem] flex justify-end gap-2 border-t">
+                <button onclick="closeModal('step6')"
+                    class="px-5 py-2.5 rounded-xl font-bold bg-white border text-slate-600">닫기</button>
+                <button onclick="saveStep('step6')"
+                    class="px-5 py-2.5 rounded-xl font-bold bg-indigo-600 text-white shadow-md hover:bg-indigo-700">임시저장</button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
+        // ==========================================
+        // 상태 및 데이터 관리
+        // ==========================================
+        const ADMIN_PW = "jimin2026";
         let state = {
             currentUser: null,
             students: JSON.parse(localStorage.getItem('as_stat_students')) || [],
-            adminPw: "jimin2026"
+            adminImg: localStorage.getItem('as_stat_adminImg') || null,
+            projectData: JSON.parse(localStorage.getItem('as_stat_data')) || {}
         };
 
-        // --- 로그인 및 로그아웃 ---
+        // 초기화
+        window.onload = () => {
+            if (state.adminImg) {
+                document.getElementById('s1-student-img').src = state.adminImg;
+                document.getElementById('s1-student-img').classList.remove('hidden');
+                document.getElementById('s1-no-image').classList.add('hidden');
+
+                document.getElementById('preview-img').src = state.adminImg;
+                document.getElementById('admin-image-preview').classList.remove('hidden');
+            }
+        };
+
+        // ==========================================
+        // 인증 및 네비게이션
+        // ==========================================
         function handleLogin() {
             const id = document.getElementById('student-id').value.trim();
             const name = document.getElementById('student-name').value.trim();
 
-            // 학번과 이름이 모두 일치해야 입장 가능 (오류 방지)
-            const student = state.students.find(s => s.id === id && s.name === name);
+            if (!id || !name) { alert("학번과 이름을 입력하세요."); return; }
 
+            const student = state.students.find(s => s.id === id && s.name === name);
             if (student) {
                 state.currentUser = student;
+
+                // 해당 학생 데이터 초기화 방어
+                if (!state.projectData[id]) {
+                    state.projectData[id] = { step1: {}, step2: {}, step4: {}, step6: {} };
+                }
+
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('dashboard-section').classList.remove('hidden');
                 document.getElementById('user-display').textContent = `${student.id} ${student.name}`;
             } else {
-                alert("등록된 학생 정보가 없습니다. 학번과 이름을 다시 확인해 주세요.");
+                alert("등록된 정보가 일치하지 않습니다.\n엑셀 명단 등록 여부를 확인하세요.");
             }
         }
 
         function handleLogout() {
-            location.reload();
+            state.currentUser = null;
+            document.getElementById('dashboard-section').classList.add('hidden');
+            document.getElementById('login-section').classList.remove('hidden');
+            document.getElementById('student-id').value = '';
+            document.getElementById('student-name').value = '';
         }
 
-        // --- 환경설정 관리 ---
+        // ==========================================
+        // 관리자 기능
+        // ==========================================
         function showAdminAuth() {
-            const pw = prompt("관리자 비밀번호를 입력하세요.");
-            if (pw === state.adminPw) {
+            const pw = prompt("선생님 환경설정 비밀번호를 입력하세요.");
+            if (pw === ADMIN_PW) {
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('admin-section').classList.remove('hidden');
-                updateTextArea();
+                document.getElementById('admin-student-list').value = state.students.map(s => `${s.id}\t${s.name}`).join('\n');
+            } else if (pw !== null) {
+                alert("비밀번호가 틀렸습니다.");
             }
         }
 
@@ -157,75 +498,340 @@
             document.getElementById('login-section').classList.remove('hidden');
         }
 
-        function updateTextArea() {
-            document.getElementById('admin-student-list').value = state.students.map(s => `${s.id}\t${s.name}`).join('\n');
-        }
-
         function saveStudentList() {
             const raw = document.getElementById('admin-student-list').value.trim();
+            if (!raw) return;
+
+            // 탭(\t), 쉼표(,), 공백 등 처리하여 분리 (jimin1 로직)
             state.students = raw.split('\n').map(line => {
-                const parts = line.split(/[\t, ]+/).filter(p => p.trim());
-                return parts.length >= 2 ? { id: parts[0], name: parts[1] } : null;
-            }).filter(s => s);
-            localStorage.setItem('as_stat_students', JSON.stringify(state.students));
-            alert("명단이 성공적으로 저장되었습니다.");
-        }
-
-        // --- 엑셀 불러오기 기능 ---
-        function importExcel(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-
-                // 엑셀 데이터를 JSON 형식으로 변환 (첫 번째 열: 학번, 두 번째 열: 이름 가정)
-                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                const newStudents = json.map(row => {
-                    if (row.length >= 2) {
-                        return { id: String(row[0]).trim(), name: String(row[1]).trim() };
-                    }
-                    return null;
-                }).filter(s => s && s.id !== 'undefined');
-
-                if (newStudents.length > 0) {
-                    state.students = newStudents;
-                    localStorage.setItem('as_stat_students', JSON.stringify(state.students));
-                    updateTextArea();
-                    alert(`${newStudents.length}명의 명단을 불러왔습니다. '명단 업데이트'를 눌러 확정해 주세요.`);
-                } else {
-                    alert("엑셀 파일에서 유효한 명단을 찾을 수 없습니다.");
+                const parts = line.split(/[\t, ]+/).filter(part => part.trim() !== '');
+                if (parts.length >= 2) {
+                    const id = parts[0];
+                    const name = parts.slice(1).join('');
+                    return { id, name };
                 }
-            };
-            reader.readAsArrayBuffer(file);
+                return null;
+            }).filter(s => s !== null);
+
+            localStorage.setItem('as_stat_students', JSON.stringify(state.students));
+            alert(`총 ${state.students.length}명의 명단이 저장되었습니다.`);
         }
 
-        // --- 엑셀 저장하기(내보내기) 기능 ---
-        function exportExcel() {
-            if (state.students.length === 0) {
-                alert("내보낼 명단이 없습니다.");
-                return;
+        function saveAdminImage() {
+            const file = document.getElementById('admin-image-upload').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    state.adminImg = e.target.result;
+                    localStorage.setItem('as_stat_adminImg', state.adminImg);
+
+                    document.getElementById('s1-student-img').src = state.adminImg;
+                    document.getElementById('s1-student-img').classList.remove('hidden');
+                    document.getElementById('s1-no-image').classList.add('hidden');
+
+                    document.getElementById('preview-img').src = state.adminImg;
+                    document.getElementById('admin-image-preview').classList.remove('hidden');
+                    alert("이미지가 적용되었습니다.");
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // ==========================================
+        // 모달 관리 및 데이터 바인딩
+        // ==========================================
+        function openModal(stepId) {
+            document.getElementById(`modal-${stepId}`).classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            loadStepData(stepId);
+        }
+
+        function closeModal(stepId) {
+            document.getElementById(`modal-${stepId}`).classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        // 공통 글자수 체크
+        function checkLength(textarea, cntId, minLen) {
+            const len = textarea.value.length;
+            const cntEl = document.getElementById(cntId);
+            cntEl.textContent = len;
+            cntEl.className = len >= minLen ? "text-xs font-bold text-green-600" : "text-xs font-bold text-red-500";
+        }
+
+        // --- Step 1 동적 UI ---
+        function addS1Question(val1 = "", val2 = "") {
+            const container = document.getElementById('s1-questions-container');
+            const div = document.createElement('div');
+            div.className = "flex gap-2 mb-2 items-center";
+            div.innerHTML = `
+                <input type="text" class="q-title flex-1 p-2 border rounded-lg text-sm" placeholder="질문" value="${val1}">
+                <input type="text" class="q-expect flex-1 p-2 border rounded-lg text-sm" placeholder="예상 결론" value="${val2}">
+                <button onclick="this.parentElement.remove()" class="text-red-400 text-xs font-bold px-2">X</button>
+            `;
+            container.appendChild(div);
+        }
+
+        // --- Step 2 동적 UI ---
+        function toggleS2Scope() {
+            const val = document.getElementById('s2-scope').value;
+            const detail = document.getElementById('s2-scope-detail');
+            detail.classList.toggle('hidden', val === "");
+            detail.placeholder = val === "전수조사" ? "전수조사 대상을 자세히 적어주세요." : "표본 추출 방식을 자세히 적어주세요.";
+        }
+
+        function addS2Question(title = "", type = "객관식", options = []) {
+            const container = document.getElementById('s2-questions-container');
+            const idx = container.children.length + 1;
+            const div = document.createElement('div');
+            div.className = "p-4 border rounded-xl bg-white mb-2 s2-q-item";
+            div.innerHTML = `
+                <div class="flex justify-between mb-2">
+                    <span class="font-bold text-sm text-green-700">Q. 문항</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-400 text-xs">삭제</button>
+                </div>
+                <input type="text" class="s2-q-title w-full p-2 border rounded-lg text-sm mb-2" placeholder="질문 내용" value="${title}">
+                <input type="text" class="s2-q-options w-full p-2 border rounded-lg text-sm bg-slate-50" placeholder="보기 (콤마로 구분, 예: 사과, 배, 포도)" value="${options.join(', ')}">
+            `;
+            container.appendChild(div);
+        }
+
+        // --- Step 4 동적 UI ---
+        function addS4Analysis(chart = "막대그래프", stats = "") {
+            const container = document.getElementById('s4-analysis-container');
+            const div = document.createElement('div');
+            div.className = "p-4 border border-slate-200 rounded-xl bg-white mb-3 s4-a-item";
+            div.innerHTML = `
+                <div class="flex justify-between mb-2">
+                    <select class="s4-a-chart p-1 border rounded text-xs font-bold bg-purple-50 text-purple-700 outline-none">
+                        <option value="막대그래프" ${chart === '막대그래프' ? 'selected' : ''}>막대그래프</option>
+                        <option value="원그래프" ${chart === '원그래프' ? 'selected' : ''}>원그래프</option>
+                        <option value="꺾은선그래프" ${chart === '꺾은선그래프' ? 'selected' : ''}>꺾은선그래프</option>
+                        <option value="기타" ${chart === '기타' ? 'selected' : ''}>기타</option>
+                    </select>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-red-400 text-xs">삭제</button>
+                </div>
+                <textarea class="s4-a-stats w-full h-16 p-2 border rounded-lg text-sm bg-slate-50" placeholder="수치 및 특징 요약">${stats}</textarea>
+            `;
+            container.appendChild(div);
+        }
+
+        // ==========================================
+        // 데이터 저장 및 불러오기 로직
+        // ==========================================
+        function saveStep(stepId) {
+            const uid = state.currentUser.id;
+            let data = {};
+
+            if (stepId === 'step1') {
+                data.q1 = document.getElementById('s1-q1').value;
+                data.q2_1 = document.getElementById('s1-q2-1').value;
+                data.q2_2 = document.getElementById('s1-q2-2').value;
+                data.q3_1 = document.getElementById('s1-q3-1').value;
+                data.q3_2 = document.getElementById('s1-q3-2').value;
+                data.q5 = document.getElementById('s1-q5').value;
+
+                data.questions = [];
+                document.querySelectorAll('#s1-questions-container .flex').forEach(div => {
+                    const t = div.querySelector('.q-title').value;
+                    const e = div.querySelector('.q-expect').value;
+                    if (t || e) data.questions.push({ title: t, expect: e });
+                });
+            }
+            else if (stepId === 'step2') {
+                const methodObj = document.querySelector('input[name="s2-method"]:checked');
+                data.method = methodObj ? methodObj.value : "";
+                data.scope = document.getElementById('s2-scope').value;
+                data.scopeDetail = document.getElementById('s2-scope-detail').value;
+                data.link = document.getElementById('s2-link').value;
+
+                data.questions = [];
+                document.querySelectorAll('.s2-q-item').forEach(div => {
+                    const t = div.querySelector('.s2-q-title').value;
+                    const o = div.querySelector('.s2-q-options').value.split(',').map(s => s.trim()).filter(s => s);
+                    if (t) data.questions.push({ title: t, options: o });
+                });
+            }
+            else if (stepId === 'step4') {
+                data.interp = document.getElementById('s4-interpretation').value;
+                data.canva = document.getElementById('s4-canva').value;
+                data.tool = document.getElementById('s4-tool').value;
+
+                data.analyses = [];
+                document.querySelectorAll('.s4-a-item').forEach(div => {
+                    const c = div.querySelector('.s4-a-chart').value;
+                    const s = div.querySelector('.s4-a-stats').value;
+                    if (c || s) data.analyses.push({ chart: c, stats: s });
+                });
+            }
+            else if (stepId === 'step6') {
+                data.check = document.getElementById('s6-check').checked;
+                data.link = document.getElementById('s6-link').value;
+                data.reflection = document.getElementById('s6-reflection').value;
             }
 
-            const excelData = state.students.map(s => [s.id, s.name]);
-            // 헤더 추가
-            excelData.unshift(["학번", "이름"]);
-
-            const worksheet = XLSX.utils.aoa_to_sheet(excelData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "학생명단");
-
-            // 파일 다운로드
-            XLSX.writeFile(workbook, "안성여고_통계프로젝트_명단.xlsx");
+            // state 업데이트 및 localStorage 저장
+            state.projectData[uid][stepId] = data;
+            localStorage.setItem('as_stat_data', JSON.stringify(state.projectData));
+            alert("입력하신 내용이 임시저장 되었습니다.");
         }
 
-        function openModal(stepId) {
-            alert(stepId + " 활동지를 엽니다.");
+        function loadStepData(stepId) {
+            const uid = state.currentUser.id;
+            const data = state.projectData[uid]?.[stepId] || {};
+
+            if (stepId === 'step1') {
+                document.getElementById('s1-q1').value = data.q1 || "";
+                document.getElementById('s1-q2-1').value = data.q2_1 || "";
+                document.getElementById('s1-q2-2').value = data.q2_2 || "";
+                document.getElementById('s1-q3-1').value = data.q3_1 || "";
+                document.getElementById('s1-q3-2').value = data.q3_2 || "";
+                document.getElementById('s1-q5').value = data.q5 || "";
+
+                const qContainer = document.getElementById('s1-questions-container');
+                qContainer.innerHTML = "";
+                if (data.questions && data.questions.length > 0) {
+                    data.questions.forEach(q => addS1Question(q.title, q.expect));
+                } else {
+                    addS1Question();
+                }
+            }
+            else if (stepId === 'step2') {
+                if (data.method) {
+                    const r = document.querySelector(`input[name="s2-method"][value="${data.method}"]`);
+                    if (r) r.checked = true;
+                }
+                document.getElementById('s2-scope').value = data.scope || "";
+                toggleS2Scope();
+                document.getElementById('s2-scope-detail').value = data.scopeDetail || "";
+                document.getElementById('s2-link').value = data.link || "";
+
+                const qContainer = document.getElementById('s2-questions-container');
+                qContainer.innerHTML = "";
+                if (data.questions && data.questions.length > 0) {
+                    data.questions.forEach(q => addS2Question(q.title, "객관식", q.options));
+                } else {
+                    addS2Question();
+                }
+            }
+            else if (stepId === 'step4') {
+                document.getElementById('s4-interpretation').value = data.interp || "";
+                document.getElementById('s4-canva').value = data.canva || "";
+                document.getElementById('s4-tool').value = data.tool || "";
+                checkLength(document.getElementById('s4-interpretation'), 's4-char-cnt', 150);
+
+                const aContainer = document.getElementById('s4-analysis-container');
+                aContainer.innerHTML = "";
+                if (data.analyses && data.analyses.length > 0) {
+                    data.analyses.forEach(a => addS4Analysis(a.chart, a.stats));
+                } else {
+                    addS4Analysis();
+                }
+            }
+            else if (stepId === 'step6') {
+                document.getElementById('s6-check').checked = data.check || false;
+                document.getElementById('s6-link').value = data.link || "";
+                document.getElementById('s6-reflection').value = data.reflection || "";
+                checkLength(document.getElementById('s6-reflection'), 's6-char-cnt', 100);
+            }
+        }
+
+        // ==========================================
+        // 최종 통합 보고서 다운로드
+        // ==========================================
+        function downloadFullReport() {
+            if (!state.currentUser) return;
+            const uid = state.currentUser.id;
+            const uname = state.currentUser.name;
+            const d = state.projectData[uid] || {};
+
+            const s1 = d.step1 || {};
+            const s2 = d.step2 || {};
+            const s4 = d.step4 || {};
+            const s6 = d.step6 || {};
+
+            const dateStr = new Date().toLocaleString();
+            const fileName = `[통합보고서]${uid}_${uname}.html`;
+
+            const html = `
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>통계 포스터 통합 보고서 - ${uname}</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; color: #1e293b; max-width: 800px; margin: 40px auto; padding: 20px; }
+        h1 { color: #0f172a; text-align: center; border-bottom: 4px solid #3b82f6; padding-bottom: 10px; }
+        .meta-box { background: #f8fafc; padding: 20px; border-radius: 10px; margin-bottom: 40px; display: flex; justify-content: space-between; border: 1px solid #e2e8f0; font-weight: bold; }
+        h2 { color: #2563eb; margin-top: 40px; border-left: 5px solid #2563eb; padding-left: 10px; }
+        .content-box { background: #fff; border: 1px solid #cbd5e1; padding: 15px; border-radius: 8px; margin-bottom: 15px; white-space: pre-wrap; font-size: 14px; }
+        .link-text { color: #2563eb; text-decoration: underline; word-break: break-all; }
+        table { w-full; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-size: 14px; }
+        th { background: #f1f5f9; }
+    </style>
+</head>
+<body>
+    <h1>📊 통계 포스터 프로젝트 최종 통합 보고서</h1>
+    <div class="meta-box">
+        <span>학번/이름: ${uid} ${uname}</span>
+        <span>제출일시: ${dateStr}</span>
+    </div>
+
+    <h2>[Step 1] 주제 설정 및 도입</h2>
+    <div class="content-box"><strong>오류 분석:</strong> ${s1.q1 || '-'}</div>
+    <div class="content-box">
+        <strong>관심 진로:</strong> ${s1.q3_1 || '-'}<br>
+        <strong>데이터 탐색:</strong> ${s1.q3_2 || '-'}
+    </div>
+    <div class="content-box">
+        <strong>탐구 질문 목록:</strong><br>
+        ${(s1.questions || []).map((q, i) => `${i + 1}. ${q.title} (예상: ${q.expect})`).join('<br>') || '-'}
+    </div>
+
+    <h2>[Step 2-3] 자료 수집 계획</h2>
+    <div class="content-box">
+        <strong>수집 방법:</strong> ${s2.method || '-'}<br>
+        <strong>조사 범위:</strong> ${s2.scope || '-'} (${s2.scopeDetail || '-'})
+    </div>
+    <div class="content-box">
+        <strong>설문지 링크:</strong> <a href="${s2.link}" class="link-text" target="_blank">${s2.link || '없음'}</a>
+    </div>
+    <div class="content-box">
+        <strong>설문 문항:</strong><br>
+        ${(s2.questions || []).map((q, i) => `Q${i + 1}. ${q.title}<br> - 보기: ${q.options.join(', ')}`).join('<br><br>') || '-'}
+    </div>
+
+    <h2>[Step 4] 자료 분석 및 시각화</h2>
+    <div class="content-box">
+        <strong>문항 분석:</strong><br>
+        ${(s4.analyses || []).map((a, i) => `[${a.chart}] ${a.stats}`).join('<br><br>') || '-'}
+    </div>
+    <div class="content-box"><strong>결과 종합 해석:</strong><br>${s4.interp || '-'}</div>
+    <div class="content-box">
+        <strong>캔바 시각화 링크:</strong> <a href="${s4.canva}" class="link-text" target="_blank">${s4.canva || '없음'}</a><br>
+        <strong>도구 링크:</strong> <a href="${s4.tool}" class="link-text" target="_blank">${s4.tool || '없음'}</a>
+    </div>
+
+    <h2>[Step 6] 최종 제출 및 소감</h2>
+    <div class="content-box"><strong>드라이브 제출 확인:</strong> ${s6.check ? '예' : '아니오'}</div>
+    <div class="content-box">
+        <strong>최종 포스터 링크:</strong> <a href="${s6.link}" class="link-text" target="_blank">${s6.link || '없음'}</a>
+    </div>
+    <div class="content-box"><strong>수행 소감문:</strong><br>${s6.reflection || '-'}</div>
+
+</body>
+</html>`;
+
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            alert("전체 활동 내용이 통합된 보고서가 다운로드되었습니다. 선생님께 제출해 주세요.");
         }
     </script>
 </body>
