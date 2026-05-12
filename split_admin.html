@@ -3460,11 +3460,11 @@
                     else if (category === 'autoIssued' && !st.isExtended && st.type === "자율석" && st.seatNum !== "미발권") { match = true; title = "자율석 (발권완료)"; }
                     else if (category === 'autoUnissued' && !st.isExtended && st.type === "자율석" && st.seatNum === "미발권") { match = true; title = "자율석 (미발권)"; }
 
-                    // 🟢 상태값(참여, 외출, 귀가, 미참여)은 정식 신청자와 미신청자를 모두 합쳐서 보여줍니다.
                     else if (category === 'present' && (st.currentStatus === "참여" || st.currentStatus === "미신청(참여)")) { match = true; title = "🟢 현재 참여 중"; }
                     else if (category === 'out' && st.currentStatus === "외출") { match = true; title = "🟡 현재 외출 중"; }
                     else if (category === 'finish' && st.currentStatus === "귀가") { match = true; title = "⚪ 최종 귀가 완료"; }
-                    else if (category === 'absent' && st.currentStatus === "미참여") { match = true; title = "🔴 미참여 (결석/미입실)"; }
+                    // 👇 st.seatNum !== "미발권" 조건을 추가하여 실제 결석자만 명단에 띄웁니다.
+                    else if (category === 'absent' && st.currentStatus === "미참여" && st.seatNum !== "미발권") { match = true; title = "🔴 미참여 (실제 결석)"; }
 
                     if (match) filtered.push(st);
                 });
