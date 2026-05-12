@@ -177,6 +177,8 @@ function getRecognizedTimes(log, currentScheduleData) {
 
 
 
+
+
     /*
         // 시간(HH:MM)을 '분(minute)' 단위로 변환하는 헬퍼 함수
         const timeToMin = (tmStr) => {
@@ -267,6 +269,87 @@ function getRecognizedTimes(log, currentScheduleData) {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+function getActualStudyMinutes(log, currentScheduleData) {
+    const schedule = currentScheduleData || {};
+    let totalMin = 0;
+    if (!log) return 0;
+    const history = log.history || [];
+
+    // 타임별 최대 인정 가능 시간(분)을 가져오는 헬퍼 함수
+    const getSlotMax = (t) => {
+        const sStr = schedule[`t${t}`] || (t === 1 ? "16:00" : (t === 2 ? "18:50" : "20:10"));
+        const eStr = schedule[`t${t}_end`] || (t === 1 ? "18:10" : (t === 2 ? "20:10" : "21:30"));
+        return Math.max(0, timeToMin(eStr) - timeToMin(sStr));
+    };
+
+    // 1) 관리자 강제 승인(최우선) - 승인된 타임의 최대 시간을 부여
+    const overrideLog = history.find(h => h.startsWith('🛠️[강제승인]'));
+    if (overrideLog) {
+        if (overrideLog.includes('0타임')) return 0;
+        if (overrideLog.includes('1')) totalMin += getSlotMax(1);
+        if (overrideLog.includes('2')) totalMin += getSlotMax(2);
+        if (overrideLog.includes('3')) totalMin += getSlotMax(3);
+        return totalMin;
+    }
+
+    if (log.status === "미입실" || log.status === "귀가(누락)") return 0;
+
+    // 2) 교사 수동 인정 체크 (중복 방지)
+    let manualSet = new Set();
+    history.forEach(h => {
+        [1, 2, 3].forEach(t => {
+            if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`) || h.includes(`${t}T입실(교사)`)) {
+                manualSet.add(t);
+            }
+        });
+    });
+
+    // 3) 학생의 실제 IN/OUT 동선 파악
+    let events = [];
+    history.forEach(h => {
+        if (h.includes("(교사)")) return;
+        const match = h.match(/(\d{2}:\d{2})/);
+        if (match) {
+            const min = timeToMin(match[1]);
+            if (h.includes("입실") || h.includes("복귀")) events.push({ time: min, state: "IN" });
+            else if (h.includes("외출") || h.includes("귀가") || h.includes("누락") || h.includes("마감") || h.includes("결석") || h.includes("빈자리")) events.push({ time: min, state: "OUT" });
+        }
+    });
+    events.sort((a, b) => a.time - b.time);
+
+    let intervals = [];
+    let currentIn = null;
+    events.forEach(ev => {
+        if (ev.state === "IN" && currentIn === null) currentIn = ev.time;
+        else if (ev.state === "OUT" && currentIn !== null) { intervals.push({ start: currentIn, end: ev.time }); currentIn = null; }
+    });
+
+    if (currentIn !== null) {
+        const now = new Date();
+        const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+        if (log.date === todayStr) intervals.push({ start: currentIn, end: now.getHours() * 60 + now.getMinutes() });
+        else intervals.push({ start: currentIn, end: 1440 });
+    }
+
+    // 4) 환경설정 운영시간과 겹치는 실제 '순수 공부 시간' 합산
+    [1, 2, 3].forEach(t => {
+        if (manualSet.has(t)) { totalMin += getSlotMax(t); return; } // 교사가 수동 인정해준 타임은 풀타임으로 계산
+
+        const slotStart = timeToMin(schedule[`t${t}`] || (t === 1 ? "16:00" : (t === 2 ? "18:50" : "20:10")));
+        const slotEnd = timeToMin(schedule[`t${t}_end`] || (t === 1 ? "18:10" : (t === 2 ? "20:10" : "21:30")));
+
+        let overlapSum = 0;
+        intervals.forEach(iv => {
+            const oStart = Math.max(slotStart, iv.start);
+            const oEnd = Math.min(slotEnd, iv.end);
+            if (oEnd > oStart) overlapSum += (oEnd - oStart);
+        });
+        totalMin += overlapSum;
+    });
+
+    return totalMin;
+}
 
 // =======================================================
 // 🌟 [공통] 학생 상세 출결 달력 모달 (여러 페이지에서 재사용)

@@ -382,10 +382,10 @@
 
             <div class="tab-menu">
                 <button class="tab-btn active" onclick="switchTab('tab-daily-matrix', this)">🗓️ 개인별 타임 현황</button>
-                <button class="tab-btn active" onclick="switchTab('tab-daily-matrix', this)">🗓️ 개인별 시간 현황</button>
+                <button class="tab-btn" onclick="switchTab('tab-time-matrix', this)">⏱️ 개인별 시간 현황</button>
                 <button class="tab-btn" onclick="switchTab('tab-personal', this)">👤 개인별 통계 현황</button>
-                <button class="tab-btn" onclick="switchTab('tab-class', this)">🏫 반별 통계 현황</button>
-                <button class="tab-btn" onclick="switchTab('tab-calendar', this)">📅 달력 현황</button>
+                <button class="tab-btn" onclick="switchTab('tab-class', this)">🏫 반별 통계 현황</button> <button
+                    class="tab-btn" onclick="switchTab('tab-calendar', this)">📅 달력 현황</button>
 
                 <button class="tab-btn" onclick="switchTab('tab-yearly', this)"
                     style="background: #fff3cd; color: #856404; border: 1px solid #ffeeba;">🏆 연간 누적 통계</button>
@@ -439,6 +439,45 @@
                     </table>
                 </div>
             </div>
+
+            <div id="tab-time-matrix" class="tab-content">
+                <div class="filter-area" style="background:#f3fdf8; border-color:#a3cfbb;">
+                    <div>
+                        <label for="time-class-filter" style="color:#0f5132;">🏫 반별 검색:</label>
+                        <select id="time-class-filter" onchange="applyTimeMatrixFilter()">
+                            <option value="all">전체 보기</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="time-sort-filter" style="color:#0f5132;">↕️ 정렬 기준:</label>
+                        <select id="time-sort-filter" onchange="applyTimeMatrixFilter()">
+                            <option value="id_asc">학번 순 (기본)</option>
+                            <option value="total_desc">누적 시간 긴 순 🏆 (1등 찾기)</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-left:auto; display:flex; align-items:center; gap:15px;">
+                        <div
+                            style="font-size:13px; color:#666; background:white; padding:4px 8px; border-radius:5px; border:1px dashed #ccc;">
+                            ※ 숫자는 실제 출석한 <b>총 공부시간(분)</b>입니다.
+                        </div>
+                        <div>
+                            <label for="time-search-filter" style="color:#0f5132;">🔍 검색:</label>
+                            <input type="text" id="time-search-filter" placeholder="이름/학번"
+                                onkeyup="applyTimeMatrixFilter()" style="width: 140px; padding: 6px 12px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="overflow-x: auto; border: 1px solid #dee2e6; border-radius: 8px;">
+                    <table class="stat-class-table" style="min-width: 1200px; font-size: 12px; margin-top: 0;">
+                        <thead id="time-matrix-thead"></thead>
+                        <tbody id="time-matrix-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+
 
             <div id="tab-class" class="tab-content">
                 <table class="stat-class-table">
@@ -564,6 +603,8 @@
 
                 // 🌟 인증에 성공했을 때만 아래의 기존 코드들을 실행
                 if (isAuth) {
+                    // 👇 화면을 다시 보여주기 위해 반드시 이 코드를 추가해야 합니다! 👇
+                    document.getElementById('main-content').style.display = 'block';
 
                     const now = new Date();
                     const monthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -706,7 +747,9 @@
                             stu_name: app.stu_name || '-',
                             className: className,
                             dailyCounts: new Array(lastDate).fill(0),
-                            totalCount: 0
+                            dailyMinutes: new Array(lastDate).fill(0), // 🌟 [추가] 분 단위 배열
+                            totalCount: 0,
+                            totalMinutes: 0 // 🌟 [추가] 총 분 합계
                         };
                     }
                 });
@@ -735,6 +778,7 @@
                             const studentLog = dayLogs.find(log => String(log.stu_id) === stuIdStr);
 
                             const recognizedCount = getRecognizedTimes(studentLog, currentSchedule).size;
+                            const actualMinutes = getActualStudyMinutes(studentLog, currentSchedule); // 🌟 [추가] 새로 만든 공통 함수 호출
                             if (recognizedCount > 0) {
                                 stat.dailyCounts[d - 1] += recognizedCount;
                                 stat.totalCount += recognizedCount;
@@ -1239,11 +1283,76 @@
                 } else {
                     classFilter.value = "all";
                 }
-
+                // 🌟 [추가] '시간 현황' 탭의 반 선택 상자도 똑같이 채워줍니다.
+                const timeClassFilter = document.getElementById('time-class-filter');
+                if (timeClassFilter) {
+                    timeClassFilter.innerHTML = optionsHtml;
+                    timeClassFilter.value = currentSelectedClass;
+                }
                 applyPersonalFilterAndSort();
             }
 
+            // =======================================================
+            // 🌟 [추가] 개인별 시간(분) 현황 필터 및 렌더링
+            // =======================================================
+            function applyTimeMatrixFilter() {
+                const tbody = document.getElementById('time-matrix-tbody');
+                const classValue = document.getElementById('time-class-filter').value;
+                const sortValue = document.getElementById('time-sort-filter') ? document.getElementById('time-sort-filter').value : 'id_asc';
+                const searchInput = document.getElementById('time-search-filter');
+                const searchValue = searchInput ? searchInput.value.trim() : "";
 
+                let filteredData = [...globalDailyMatrixData];
+
+                if (classValue !== "all") {
+                    filteredData = filteredData.filter(stat => stat.className === classValue);
+                }
+
+                if (searchValue !== "") {
+                    filteredData = filteredData.filter(stat =>
+                        stat.stu_name.includes(searchValue) || stat.stu_id.includes(searchValue)
+                    );
+                }
+
+                // 🏆 핵심 정렬 로직 (총 분(minutes)을 기준으로 1등 찾기)
+                filteredData.sort((a, b) => {
+                    if (sortValue === 'total_desc') {
+                        if (b.totalMinutes !== a.totalMinutes) return b.totalMinutes - a.totalMinutes;
+                        return parseInt(a.stu_id) - parseInt(b.stu_id);
+                    }
+                    return parseInt(a.stu_id) - parseInt(b.stu_id);
+                });
+
+                let html = "";
+                if (filteredData.length === 0) {
+                    html = `<tr><td colspan="${matrixLastDate + 5}" style="color:#6c757d; padding:30px; text-align:center;">조건에 맞는 학생 데이터가 없습니다.</td></tr>`;
+                } else {
+                    filteredData.forEach((stat, index) => {
+                        html += `<tr>
+                    <td style="position:sticky; left:0; background:#f8f9fa; z-index:1; text-align:center; font-weight:bold; color:#6c757d; white-space:nowrap;">${index + 1}</td>
+                    <td style="position:sticky; left:40px; background:white; z-index:1; white-space:nowrap;">${stat.className}</td>
+                    <td style="position:sticky; left:125px; background:white; z-index:1; font-weight:bold; white-space:nowrap;">${stat.stu_id}</td>
+                    <td style="position:sticky; left:175px; background:white; z-index:1; font-weight:bold; border-right:2px solid #eee; cursor:pointer; color:#198754; text-decoration:underline; white-space:nowrap;" onclick="const [y, m] = document.getElementById('month-picker').value.split('-'); openSharedStudentCalendar('${stat.stu_id}', '${stat.stu_name}', parseInt(y), parseInt(m))">${stat.stu_name} 🔍</td>`;
+
+                        for (let i = 0; i < matrixLastDate; i++) {
+                            const minCount = stat.dailyMinutes[i];
+                            const display = minCount > 0 ? `<b style="color:#198754;">${minCount}</b>` : `<span style="color:#ddd;">-</span>`;
+                            html += `<td style="padding:6px 2px; text-align:center;">${display}</td>`;
+                        }
+
+                        // 총 시간을 보기 좋게 변환 (예: 930분 -> 15h 30m)
+                        const totalH = Math.floor(stat.totalMinutes / 60);
+                        const totalM = stat.totalMinutes % 60;
+                        const totalText = stat.totalMinutes > 0
+                            ? `${stat.totalMinutes}분<br><span style="font-size:10px; color:#666;">(${totalH}h ${totalM}m)</span>`
+                            : "0";
+
+                        html += `<td style="font-weight:900; color:#198754; background-color:#f4fdf8; border-left:2px solid #a3cfbb; text-align:center;">${totalText}</td>
+                </tr>`;
+                    });
+                }
+                tbody.innerHTML = html;
+            }
             function applyPersonalFilterAndSort() {
                 const tbody = document.getElementById('personal-stat-body');
                 const classValue = document.getElementById('class-filter').value;
