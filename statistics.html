@@ -831,10 +831,16 @@
                     theadHtml += `<th style="width: 25px; padding: 5px; color: ${color}; font-size: 11px;">${d}</th>`;
                 }
                 theadHtml += `<th style="width: 50px; color: var(--primary); background:#eef6ff; border-left:2px solid #b6d4fe;">총계</th></tr>`;
+
+                // 1. 기존 '타임 현황' 탭 헤더에 삽입
                 document.getElementById('matrix-thead').innerHTML = theadHtml;
+
+                // 2. 👇 [추가] 새로 만든 '시간 현황' 탭 헤더에도 똑같이 달력 삽입! 👇
+                document.getElementById('time-matrix-thead').innerHTML = theadHtml;
 
                 applyDailyMatrixFilter();
             }
+
 
             function applyDailyMatrixFilter() {
                 const tbody = document.getElementById('matrix-tbody');
