@@ -38,8 +38,6 @@
         select {
             font-size: 16px !important;
         }
-
-        /* 모바일 줌 방지 */
     </style>
 </head>
 
@@ -63,16 +61,25 @@
                 <button onclick="handleLogin()"
                     class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black hover:bg-indigo-700 shadow-lg transition">입장하기</button>
             </div>
-            <div class="mt-6 text-center">
-                <button onclick="showAdminAuth()" class="text-xs text-slate-400 hover:underline font-bold">관리자
-                    모드</button>
+
+            <div class="mt-8 text-center flex justify-center">
+                <button onclick="showAdminAuth()"
+                    class="text-xs text-slate-400 hover:text-slate-600 transition font-bold flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.99l1.003.828c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                    환경설정
+                </button>
             </div>
         </section>
 
         <section id="dashboard-section" class="hidden space-y-6">
             <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border">
                 <div class="font-bold text-slate-700"><span id="user-display"></span>님, 환영합니다!</div>
-                <button onclick="handleLogout()" class="text-xs text-red-500 font-bold">로그아웃</button>
+                <button onclick="handleLogout()" class="text-xs text-red-500 font-bold hover:underline">로그아웃</button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -104,24 +111,31 @@
 
             <div class="mt-8">
                 <button onclick="downloadFullReport()"
-                    class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black shadow-xl">
+                    class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black shadow-xl hover:bg-slate-800 transition">
                     📁 전체 활동 내용 통합 저장 (HTML)
                 </button>
             </div>
         </section>
 
         <section id="admin-section" class="hidden space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-black">관리자 콘솔</h2>
-                <button onclick="closeAdmin()" class="px-4 py-2 bg-slate-200 rounded-xl font-bold text-xs">나가기</button>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-black text-slate-800">⚙️ 환경설정</h2>
+                <button onclick="closeAdmin()"
+                    class="px-5 py-2.5 bg-white border-2 border-slate-200 shadow-sm rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition">돌아가기</button>
             </div>
+
             <div class="bg-white p-6 rounded-3xl border shadow-sm">
-                <h3 class="font-bold mb-4">학생 명단 관리 (학번,이름)</h3>
+                <h3 class="font-bold mb-2 text-slate-800">학생 명단 입력</h3>
+                <p class="text-xs text-slate-500 mb-4 bg-slate-50 p-3 rounded-lg">
+                    💡 엑셀 파일에서 <b>[학번] [이름]</b> 두 열을 드래그하여 복사한 후 아래에 붙여넣기 하세요.<br>
+                    (예시: 10101 홍길동)
+                </p>
                 <textarea id="admin-student-list"
-                    class="w-full h-48 p-4 bg-slate-50 border rounded-2xl font-mono text-sm mb-4"
-                    placeholder="10101,홍길동"></textarea>
-                <button onclick="saveStudentList()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold">명단
-                    저장</button>
+                    class="w-full h-48 p-4 bg-slate-50 border rounded-2xl font-mono text-sm mb-4 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="여기에 엑셀 자료를 붙여넣으세요."></textarea>
+                <button onclick="saveStudentList()"
+                    class="w-full bg-slate-800 text-white py-4 rounded-xl font-black hover:bg-slate-900 shadow-lg transition">명단
+                    저장하기</button>
             </div>
         </section>
     </div>
@@ -132,7 +146,6 @@
             currentUser: null,
             students: JSON.parse(localStorage.getItem('as_stat_students')) || [],
             adminPw: "jimin2026",
-            // 차시별 데이터를 저장할 객체
             data: JSON.parse(localStorage.getItem('as_stat_data')) || {}
         };
 
@@ -140,6 +153,13 @@
         function handleLogin() {
             const id = document.getElementById('student-id').value.trim();
             const name = document.getElementById('student-name').value.trim();
+
+            if (!id || !name) {
+                alert("학번과 이름을 모두 입력해주세요.");
+                return;
+            }
+
+            // 학번과 이름이 정확히 일치할 때만 로그인 허용 (다른 학생 실수 방지)
             const student = state.students.find(s => s.id === id && s.name === name);
 
             if (student) {
@@ -147,35 +167,57 @@
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('dashboard-section').classList.remove('hidden');
                 document.getElementById('user-display').textContent = `${student.id} ${student.name}`;
+                // 로그인 폼 초기화
+                document.getElementById('student-id').value = '';
+                document.getElementById('student-name').value = '';
             } else {
-                alert("등록된 정보가 없습니다. 관리자에게 문의하세요.");
+                alert("등록된 정보가 일치하지 않습니다. 학번과 이름을 다시 확인해주세요.");
             }
         }
 
         function handleLogout() {
             state.currentUser = null;
-            location.reload();
+            document.getElementById('dashboard-section').classList.add('hidden');
+            document.getElementById('login-section').classList.remove('hidden');
         }
 
         function showAdminAuth() {
-            const pw = prompt("관리자 비밀번호를 입력하세요.");
+            const pw = prompt("환경설정 비밀번호를 입력하세요.");
             if (pw === state.adminPw) {
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('admin-section').classList.remove('hidden');
-                document.getElementById('admin-student-list').value = state.students.map(s => `${s.id},${s.name}`).join('\n');
+                // 기존 저장된 명단을 탭으로 구분하여 엑셀 형식처럼 보여줌
+                document.getElementById('admin-student-list').value = state.students.map(s => `${s.id}\t${s.name}`).join('\n');
+            } else if (pw !== null) {
+                alert("비밀번호가 틀렸습니다.");
             }
         }
 
         function saveStudentList() {
             const raw = document.getElementById('admin-student-list').value.trim();
+            if (!raw) {
+                alert("명단을 입력해주세요.");
+                return;
+            }
+
+            // 엑셀 붙여넣기(탭 구분), 띄어쓰기, 쉼표 등 다양한 구분자 대응 파싱
             state.students = raw.split('\n').map(line => {
-                const [id, name] = line.split(',').map(s => s?.trim());
-                return id && name ? { id, name } : null;
-            }).filter(s => s);
+                // 정규식을 사용하여 탭(\t), 쉼표(,), 연속된 공백 등을 기준으로 분리
+                const parts = line.split(/[\t, ]+/).filter(part => part.trim() !== '');
+                if (parts.length >= 2) {
+                    const id = parts[0];
+                    // 이름에 공백이 있을 경우를 대비하여 나머지 부분을 합침
+                    const name = parts.slice(1).join('');
+                    return { id, name };
+                }
+                return null;
+            }).filter(s => s !== null);
+
             localStorage.setItem('as_stat_students', JSON.stringify(state.students));
-            alert("명단이 저장되었습니다.");
+            alert(`총 ${state.students.length}명의 학생 명단이 성공적으로 저장되었습니다.`);
         }
 
+        // 돌아가기 버튼 기능 (첫 학생 로그인 화면으로)
         function closeAdmin() {
             document.getElementById('admin-section').classList.add('hidden');
             document.getElementById('login-section').classList.remove('hidden');
@@ -183,10 +225,7 @@
 
         // --- 모달 및 차시 관리 ---
         function openModal(stepId) {
-            // 이 부분에 기존에 제공해주신 각 차시별 HTML 모달 코드를 
-            // 하나의 템플릿으로 합쳐서 보여주는 로직이 들어갑니다.
             alert(stepId + " 활동지를 엽니다. (통합 완료)");
-            // 실제 구현 시 각 차시별 모달 HTML을 섹션으로 나누어 display:block 처리
         }
 
         // --- 데이터 통합 저장 및 보고서 생성 ---
@@ -195,7 +234,6 @@
             const date = new Date().toLocaleDateString();
             const fileName = `[통합보고서]${state.currentUser.id}_${state.currentUser.name}.html`;
 
-            // 모든 차시의 데이터를 하나로 합친 HTML 템플릿 생성
             const html = `
                 <html>
                 <head><meta charset="UTF-8"><title>안성여고 통계 프로젝트 보고서</title></head>
