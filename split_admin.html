@@ -1348,15 +1348,19 @@
                 alert("인정할 타임을 선택하거나 '0T(전체 무효)'를 선택해주세요."); return;
             }
 
-            // 🌟 [추가] 사유 입력 창 띄우기
-            let memo = "";
-            if (chk0) {
-                memo = prompt(`[${stuName}] 0타임 처리에 대한 사유를 입력하세요.`, "이날 이학생이 결석(타인 오입력)");
-            } else {
-                memo = prompt(`[${stuName}] 강제 승인 사유를 입력하세요.`, "교사 확인 완료");
+
+
+
+
+            // 🌟 사유 텍스트 입력칸 값 가져오기
+            let memo = document.getElementById('admin-memo').value.trim();
+
+            if (memo === "") {
+                alert("사유를 입력해주세요.");
+                return;
             }
 
-            if (memo === null) return; // 취소 누르면 중단
+
 
             let newHistory = [];
             let currentStatus = "미입실";
@@ -2226,6 +2230,7 @@
             `;
                 }
 
+                document.getElementById('admin-memo').value = "";
                 document.getElementById('manual-t-0').checked = false;
                 document.querySelectorAll('.manual-t-chk').forEach(cb => cb.checked = false);
 
