@@ -1715,6 +1715,8 @@
         // 👆👆 공통 함수 추가 완료 👆👆
 
 
+
+        /////////////////////////////////////////////////////////
         function renderDailyList() {
             const tbody = document.getElementById('daily-list-body');
             if (!tbody) return;
@@ -1899,15 +1901,26 @@
                                 const slotBg = (hasLogs || t === 0) ? (t === 0 ? "#6c757d" : "var(--primary)") : "#adb5bd";
                                 allTagsInline.push(`<span style="background:${slotBg}; color:white; font-size:10px; padding:3px 6px; border-radius:4px; font-weight:bold; display:inline-block; vertical-align:middle; box-shadow:0 1px 2px rgba(0,0,0,0.1);">${slotLabel}</span>`);
 
+
+
                                 if (hasLogs) {
                                     groupedHistory[t].forEach(h => {
-                                        let tagClass = "tag-in";
-                                        if (h.includes("교사") || h.includes("빈자리")) tagClass = "tag-admin";
-                                        else if (h.includes("외출")) tagClass = "tag-out";
-                                        else if (h.includes("귀가") || h.includes("누락")) tagClass = "tag-home";
-                                        allTagsInline.push(`<span class="mini-tag ${tagClass}" style="display:inline-block; vertical-align:middle;">${h}</span>`);
+                                        // 🌟 추가: 강제승인 태그인 경우 붉은색 강렬한 디자인 적용
+                                        if (h.startsWith('🛠️[강제승인]')) {
+                                            allTagsInline.push(`<span class="mini-tag" style="display:inline-block; vertical-align:middle; border: 2px solid #dc3545; background: #fff5f5; color: #dc3545; font-weight: 900; padding: 4px 8px; font-size: 12px; box-shadow: 0 2px 4px rgba(220,53,69,0.2); margin: 0 2px;">${h}</span>`);
+                                        } else {
+                                            // 일반 태그들 처리 (수동, 마감, 취소 등의 키워드도 색상 매칭 보완)
+                                            let tagClass = "tag-in";
+                                            if (h.includes("교사") || h.includes("빈자리") || h.includes("수동")) tagClass = "tag-admin";
+                                            else if (h.includes("외출")) tagClass = "tag-out";
+                                            else if (h.includes("귀가") || h.includes("누락") || h.includes("마감") || h.includes("취소")) tagClass = "tag-home";
+
+                                            allTagsInline.push(`<span class="mini-tag ${tagClass}" style="display:inline-block; vertical-align:middle;">${h}</span>`);
+                                        }
                                     });
                                 }
+
+
                             }
                         });
 
