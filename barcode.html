@@ -381,7 +381,7 @@
         <div class="tools-container no-print" id="tools-panel" style="display: none;">
             <div class="filter-group">
                 <label>🏫 반별 보기:</label>
-                <select id="class-filter" onchange="filterCards()">
+                <select id="class-filter" onchange="document.getElementById('search-input').value=''; filterCards()">
                     <option value="none" selected>반을 선택하세요</option>
                     <option value="all">전체 보기</option>
                 </select>
