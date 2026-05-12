@@ -779,10 +779,19 @@
 
                             const recognizedCount = getRecognizedTimes(studentLog, currentSchedule).size;
                             const actualMinutes = getActualStudyMinutes(studentLog, currentSchedule); // 🌟 [추가] 새로 만든 공통 함수 호출
+
+                            // 1. 기존 코드: 타임(횟수) 누적
                             if (recognizedCount > 0) {
                                 stat.dailyCounts[d - 1] += recognizedCount;
                                 stat.totalCount += recognizedCount;
                             }
+
+                            // 2. 👇 [추가해야 할 코드] 실제 공부 시간(분) 누적 저장! 👇
+                            if (actualMinutes > 0) {
+                                stat.dailyMinutes[d - 1] += actualMinutes; // 해당 날짜에 분 추가
+                                stat.totalMinutes += actualMinutes;        // 총 누적 분에 추가
+                            }
+                            // 👆 여기까지 추가 👆
                         });
                     }
                 }
