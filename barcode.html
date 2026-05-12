@@ -556,7 +556,12 @@
 
 
                         card.innerHTML = `
-                            <button class="btn-remove-card no-print" onclick="syncCheck('${id}', false)" title="선택 취소">✖</button>
+                            <div class="checkbox-area no-print">
+                                <label>
+                                    <input type="checkbox" class="card-cb" data-id="${id}" onchange="syncCheck('${id}', this.checked)">
+                                    선택됨
+                                </label>
+                            </div>
                             <div class="student-info">${id} ${name}</div>
                             <div class="barcode-label-text">2026년 자기주도학습</div>
                         `;
