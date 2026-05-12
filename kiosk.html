@@ -586,12 +586,15 @@
                         showSmartSelection(id, studentName);
                     }
                 }
+
                 else if (lastStatus === "외출") saveAttendance(id, studentName, "복귀", now);
-                else if (lastStatus === "귀가" || lastStatus === "귀가(누락)") showReceipt(studentName, "이미 귀가함", "최종 귀가 처리된 학생입니다.", "관리자에게 문의하세요.", "#6c757d");
+                else if (lastStatus === "귀가" || lastStatus === "귀가(누락)") {
+                    // 🌟 귀가 상태여도 바코드를 찍으면 막지 않고 바로 '입실'로 덮어씌웁니다.
+                    saveAttendance(id, studentName, "입실", now);
+                }
 
             } catch (e) { showReceipt("오류", "통신 실패", "연결 상태 확인 요망", e.message, "#dc3545"); }
         }
-
 
 
 
