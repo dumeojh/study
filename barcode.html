@@ -238,8 +238,7 @@
         }
 
         .barcode-card:not(.print-active) {
-            opacity: 0.4;
-            background: #f8f9fa;
+            display: none !important;
         }
 
         .checkbox-area {
@@ -529,13 +528,9 @@
                         card.setAttribute('data-id', id);
                         card.setAttribute('data-name', name); // 🌟 추가 (이름)
 
+
+
                         card.innerHTML = `
-                            <div class="checkbox-area no-print">
-                                <label>
-                                    <input type="checkbox" class="card-cb" data-id="${id}" onchange="syncCheck('${id}', this.checked)">
-                                    출력 포함
-                                </label>
-                            </div>
                             <div class="student-info">${id} ${name}</div>
                             <div class="barcode-label-text">2026년 자기주도학습</div>
                         `;
