@@ -3286,18 +3286,35 @@
 
 
 
+
+
                 // 🌟 리팩토링: 공통 함수 호출
                 const statusInfo = getStudentStatusInfo(log, st.type);
                 let status = statusInfo.timeGridText;
                 let statusColor = statusInfo.color;
                 let statusBg = statusInfo.bg;
 
-
-
+                // 👇👇 [수정됨] 미신청 참여자도 귀가, 외출 상태를 반영하여 카운트하도록 변경 👇👇
                 if (st.isExtended) {
-                    status = "미신청(참여)"; statusColor = "#d63384"; statusBg = "#ffe5ec"; stat.present++;
-                    st.currentStatus = "미신청(참여)";
+                    if (statusInfo.listFilter === "귀가") {
+                        stat.finish++;
+                        st.currentStatus = statusInfo.timeGridText;
+                    } else if (statusInfo.listFilter === "누락") {
+                        stat.missing++;
+                        st.currentStatus = statusInfo.timeGridText;
+                    } else if (statusInfo.listFilter === "외출") {
+                        stat.out++;
+                        st.currentStatus = statusInfo.timeGridText;
+                    } else {
+                        // 교실에 있는 경우(입실)에만 강렬한 분홍색 '미신청(참여)' 꼬리표 유지
+                        status = "미신청(참여)";
+                        statusColor = "#d63384";
+                        statusBg = "#ffe5ec";
+                        stat.present++;
+                        st.currentStatus = "미신청(참여)";
+                    }
                 } else {
+                    // 기존 정상 신청자 카운트 분배 로직
                     if (statusInfo.listFilter === "입실") stat.present++;
                     else if (statusInfo.listFilter === "외출") stat.out++;
                     else if (statusInfo.listFilter === "누락") stat.missing++;
@@ -3308,10 +3325,9 @@
                             stat.absent++;
                         }
                     }
-
                     st.currentStatus = statusInfo.timeGridText;
                 }
-
+                // 👆👆 -------------------------------------------------------- 👆👆
 
 
 
