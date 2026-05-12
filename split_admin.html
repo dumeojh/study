@@ -1371,9 +1371,13 @@
             // 1. 기존 강제승인 태그 제거
             newHistory = newHistory.filter(h => !h.startsWith('🛠️[강제승인]'));
 
+
+
             // 2. 새로운 판정 기록 및 메모 추가 🌟
             const finalTag = chk0 ? `0타임 인정` : `${selectedSlots.join(',')}타임 인정`;
-            newHistory.push(`🛠️[강제승인]${finalTag} | ${memo}`);
+            newHistory.push(`🛠️[강제승인]${finalTag} | <span style="color: #0d6efd;">${memo}</span>`);
+
+
 
             currentStatus = "귀가"; // 마감 처리
 
