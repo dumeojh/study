@@ -377,7 +377,6 @@
         </div>
 
 
-
         <div class="tools-container no-print" id="tools-panel" style="display: none;">
             <div class="filter-group">
                 <label>🏫 반별 보기:</label>
@@ -392,14 +391,14 @@
                 <input type="text" id="search-input" placeholder="학번 또는 이름" oninput="filterCards()"
                     style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 15px; width: 150px;">
             </div>
+
+
             <div style="display: flex; gap: 8px;">
-
-
-
-
-                <button class="btn btn-success" onclick="toggleVisibleCards(true)">✅ 화면의 모든 학생 선택</button>
-                <button class="btn btn-danger" onclick="toggleVisibleCards(false)">❌ 화면의 모든 학생 해제</button>
+                <button class="btn btn-danger" onclick="clearAllBarcodes()">🗑️ 바코드 모두 취소하기</button>
+                <button class="btn btn-back" onclick="clearVisibleBarcodes()">✖️ 바코드 선택 취소하기</button>
             </div>
+
+
         </div>
 
         <div class="print-header-title">(2026년 3학년 자기주도학습)</div>
@@ -410,14 +409,17 @@
                 <p style="font-size: 12px; color: #666; margin-top: -10px;">명단에서 선택해도 반영됩니다.</p>
                 <div class="list-table-wrapper">
                     <table>
+
+
                         <thead>
                             <tr>
-                                <th><input type="checkbox" id="check-all-list"
-                                        onchange="toggleVisibleCards(this.checked)"></th>
+                                <th>선택</th>
                                 <th>학번</th>
                                 <th>이름</th>
                             </tr>
                         </thead>
+
+
                         <tbody id="student-list-body">
                         </tbody>
                     </table>
@@ -624,17 +626,20 @@
 
 
 
-
-        // 일괄 변경
-        function toggleVisibleCards(isCheck) {
-            // 🌟 수정: 바코드 카드가 아닌, 현재 왼쪽 명단에서 보이고 있는 학생(.list-row)들만 선택/해제
-            document.querySelectorAll('.list-row:not(.hidden-by-filter)').forEach(row => {
-                const id = row.getAttribute('data-id');
-                syncCheck(id, isCheck);
+        // 🗑️ 바코드 모두 취소하기: 숨겨진 학생 포함, 선택된 모든 바코드 완전 초기화
+        function clearAllBarcodes() {
+            document.querySelectorAll('.list-cb:checked').forEach(cb => {
+                const id = cb.getAttribute('data-id');
+                syncCheck(id, false);
             });
+        }
 
-            const masterCheck = document.getElementById('check-all-list');
-            if (masterCheck) masterCheck.checked = isCheck;
+        // ✖️ 바코드 선택 취소하기: 현재 화면(왼쪽 명단)에 보이는 학생 중 선택된 것만 취소
+        function clearVisibleBarcodes() {
+            document.querySelectorAll('.list-row:not(.hidden-by-filter) .list-cb:checked').forEach(cb => {
+                const id = cb.getAttribute('data-id');
+                syncCheck(id, false);
+            });
         }
     </script>
 </body>
