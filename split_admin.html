@@ -3292,6 +3292,8 @@
                 let statusColor = statusInfo.color;
                 let statusBg = statusInfo.bg;
 
+
+
                 if (st.isExtended) {
                     status = "미신청(참여)"; statusColor = "#d63384"; statusBg = "#ffe5ec"; stat.present++;
                     st.currentStatus = "미신청(참여)";
@@ -3300,11 +3302,15 @@
                     else if (statusInfo.listFilter === "외출") stat.out++;
                     else if (statusInfo.listFilter === "누락") stat.missing++;
                     else if (statusInfo.listFilter === "귀가") stat.finish++;
-                    else stat.absent++;
+                    else {
+                        // 👇 자율석 미발권 학생은 미참여(결석) 카운트에서 제외합니다.
+                        if (st.seatNum !== "미발권") {
+                            stat.absent++;
+                        }
+                    }
 
                     st.currentStatus = statusInfo.timeGridText;
                 }
-
 
 
 
