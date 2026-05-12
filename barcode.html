@@ -413,12 +413,12 @@
 
                         <thead>
                             <tr>
-                                <th>선택</th>
+                                <th><input type="checkbox" id="check-all-list"
+                                        onchange="toggleVisibleCards(this.checked)"></th>
                                 <th>학번</th>
                                 <th>이름</th>
                             </tr>
                         </thead>
-
 
                         <tbody id="student-list-body">
                         </tbody>
@@ -639,6 +639,13 @@
             document.querySelectorAll('.list-row:not(.hidden-by-filter) .list-cb:checked').forEach(cb => {
                 const id = cb.getAttribute('data-id');
                 syncCheck(id, false);
+            });
+        }
+        // 🌟 다시 추가: 현재 화면(왼쪽 명단)에 보이는 학생들만 모두 선택/해제
+        function toggleVisibleCards(isCheck) {
+            document.querySelectorAll('.list-row:not(.hidden-by-filter)').forEach(row => {
+                const id = row.getAttribute('data-id');
+                syncCheck(id, isCheck);
             });
         }
     </script>
