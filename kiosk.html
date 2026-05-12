@@ -172,40 +172,7 @@
             justify-content: center;
         }
 
-        .receipt {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-            border: 2px dashed #ccc;
-            width: 80%;
-        }
 
-        .r-name {
-            font-size: 28px;
-            font-weight: 900;
-            margin-bottom: 10px;
-        }
-
-        .r-status {
-            font-size: 35px;
-            font-weight: 900;
-            margin-bottom: 15px;
-        }
-
-        .r-time {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 15px;
-        }
-
-        .r-msg {
-            font-size: 16px;
-            font-weight: bold;
-            background: #eee;
-            padding: 10px;
-            border-radius: 8px;
-        }
 
         @keyframes urgentBlink {
 
@@ -561,9 +528,25 @@
                 const lastStatus = logData ? logData.status : "미입실";
 
 
-
-
-
+                /*               if (logData && logData.last_update_time) {
+                                   const lastUpdateTime = new Date(logData.last_update_time);
+                                   const diffSec = Math.floor((now - lastUpdateTime) / 1000);
+                                   if (diffSec < 20) {
+                                       // 👇 남은 대기 시간을 계산합니다.
+                                       const remainSec = 20 - diffSec;
+               
+                                       showReceipt(
+                                           studentName,
+                                           "잠시 대기해 주세요",
+                                           `현재 [${lastStatus}] 처리된 상태입니다.`,
+                                           `<span style="color:#dc3545; font-size:18px;"><b>${remainSec}초 후</b></span>에 다시 스캔할 수 있습니다.`,
+                                           "#fd7e14" // 색상도 눈에 띄는 주황색으로 변경
+                                       );
+                                       return;
+                                   }
+                               }
+               
+               */
                 if (logData && logData.last_update_time) {
                     const lastUpdateTime = new Date(logData.last_update_time);
                     const diffSec = Math.floor((now - lastUpdateTime) / 1000);
@@ -571,12 +554,22 @@
                         // 👇 남은 대기 시간을 계산합니다.
                         const remainSec = 20 - diffSec;
 
+                        // 🌟 수정된 부분: 글씨 크기 대폭 확대, 색상 강조 및 화면 깜빡임 효과(isUrgent: true) 적용
                         showReceipt(
                             studentName,
-                            "잠시 대기해 주세요",
+                            "🛑 잠시 대기해 주세요",
                             `현재 [${lastStatus}] 처리된 상태입니다.`,
-                            `<span style="color:#dc3545; font-size:18px;"><b>${remainSec}초 후</b></span>에 다시 스캔할 수 있습니다.`,
-                            "#fd7e14" // 색상도 눈에 띄는 주황색으로 변경
+                            `<div style="padding: 15px 0;">
+                                <span style="font-size: 22px; color: #495057; font-weight: bold;">잘못 누르셨나요?</span><br>
+                                <div style="margin: 20px 0;">
+                                    <span style="font-size: 45px; font-weight: 900; color: #dc3545; background-color: #ffe6e6; padding: 15px 30px; border-radius: 15px; display: inline-block; border: 2px solid #ffc107;">
+                                        ⏳ ${remainSec}초 후
+                                    </span>
+                                </div>
+                                <span style="font-size: 26px; font-weight: bold; color: #dc3545;">다시 스캔할 수 있습니다!</span>
+                            </div>`,
+                            "#dc3545", // 강렬한 빨간색 (에러/경고 느낌)
+                            true       // 긴급 테두리 깜빡임 애니메이션(blink-warning) 실행
                         );
                         return;
                     }
