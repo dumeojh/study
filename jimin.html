@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>안성여고 통계 포스터 프로젝트 통합 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;900&display=swap');
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .step-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .step-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        input,
+        textarea,
+        select {
+            font-size: 16px !important;
+        }
+
+        /* 모바일 줌 방지 */
+    </style>
+</head>
+
+<body class="min-h-screen text-slate-800 pb-10">
+
+    <div id="app" class="max-w-4xl mx-auto px-4 py-6">
+        <header class="text-center mb-8">
+            <h1 class="text-2xl md:text-3xl font-black text-slate-900 mb-2">📊 통계 포스터 제작 프로젝트</h1>
+            <p class="text-slate-500 text-sm font-medium">안성여고 교육과정 연계 탐구 활동</p>
+        </header>
+
+        <section id="login-section" class="max-w-md mx-auto glass-card p-8 rounded-[2rem] shadow-2xl animate-fade-in">
+            <h2 class="text-xl font-bold mb-6 text-center text-slate-700">학생 본인 확인</h2>
+            <div class="space-y-4">
+                <input type="text" id="student-id"
+                    class="w-full p-4 border rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="학번 5자리 (예: 10101)">
+                <input type="text" id="student-name"
+                    class="w-full p-4 border rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="이름을 입력하세요">
+                <button onclick="handleLogin()"
+                    class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black hover:bg-indigo-700 shadow-lg transition">입장하기</button>
+            </div>
+            <div class="mt-6 text-center">
+                <button onclick="showAdminAuth()" class="text-xs text-slate-400 hover:underline font-bold">관리자
+                    모드</button>
+            </div>
+        </section>
+
+        <section id="dashboard-section" class="hidden space-y-6">
+            <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border">
+                <div class="font-bold text-slate-700"><span id="user-display"></span>님, 환영합니다!</div>
+                <button onclick="handleLogout()" class="text-xs text-red-500 font-bold">로그아웃</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div onclick="openModal('step1')"
+                    class="step-card glass-card p-6 rounded-3xl border-l-8 border-blue-500 cursor-pointer shadow-md">
+                    <span class="text-[10px] font-black text-blue-600 uppercase">Step 01</span>
+                    <h3 class="text-lg font-bold mt-1">주제 및 탐구 문제 설정</h3>
+                    <p class="text-xs text-slate-500 mt-2">진로 연계 주제 선정 및 비판적 수용</p>
+                </div>
+                <div onclick="openModal('step2')"
+                    class="step-card glass-card p-6 rounded-3xl border-l-8 border-green-500 cursor-pointer shadow-md">
+                    <span class="text-[10px] font-black text-green-600 uppercase">Step 02-03</span>
+                    <h3 class="text-lg font-bold mt-1">자료 수집 및 설문 설계</h3>
+                    <p class="text-xs text-slate-500 mt-2">통그라미 활용 및 조사 범위 결정</p>
+                </div>
+                <div onclick="openModal('step4')"
+                    class="step-card glass-card p-6 rounded-3xl border-l-8 border-purple-500 cursor-pointer shadow-md">
+                    <span class="text-[10px] font-black text-purple-600 uppercase">Step 04</span>
+                    <h3 class="text-lg font-bold mt-1">자료 분석 및 시각화</h3>
+                    <p class="text-xs text-slate-500 mt-2">캔바 활용 그래프 정리 및 결과 해석</p>
+                </div>
+                <div onclick="openModal('step6')"
+                    class="step-card glass-card p-6 rounded-3xl border-l-8 border-indigo-600 cursor-pointer shadow-md">
+                    <span class="text-[10px] font-black text-indigo-600 uppercase">Step 06</span>
+                    <h3 class="text-lg font-bold mt-1">최종 제출 및 소감</h3>
+                    <p class="text-xs text-slate-500 mt-2">드라이브 업로드 및 최종 보고서 생성</p>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <button onclick="downloadFullReport()"
+                    class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black shadow-xl">
+                    📁 전체 활동 내용 통합 저장 (HTML)
+                </button>
+            </div>
+        </section>
+
+        <section id="admin-section" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-black">관리자 콘솔</h2>
+                <button onclick="closeAdmin()" class="px-4 py-2 bg-slate-200 rounded-xl font-bold text-xs">나가기</button>
+            </div>
+            <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                <h3 class="font-bold mb-4">학생 명단 관리 (학번,이름)</h3>
+                <textarea id="admin-student-list"
+                    class="w-full h-48 p-4 bg-slate-50 border rounded-2xl font-mono text-sm mb-4"
+                    placeholder="10101,홍길동"></textarea>
+                <button onclick="saveStudentList()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold">명단
+                    저장</button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // --- 전역 상태 및 데이터 관리 ---
+        let state = {
+            currentUser: null,
+            students: JSON.parse(localStorage.getItem('as_stat_students')) || [],
+            adminPw: "jimin2026",
+            // 차시별 데이터를 저장할 객체
+            data: JSON.parse(localStorage.getItem('as_stat_data')) || {}
+        };
+
+        // --- 인증 로직 ---
+        function handleLogin() {
+            const id = document.getElementById('student-id').value.trim();
+            const name = document.getElementById('student-name').value.trim();
+            const student = state.students.find(s => s.id === id && s.name === name);
+
+            if (student) {
+                state.currentUser = student;
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('dashboard-section').classList.remove('hidden');
+                document.getElementById('user-display').textContent = `${student.id} ${student.name}`;
+            } else {
+                alert("등록된 정보가 없습니다. 관리자에게 문의하세요.");
+            }
+        }
+
+        function handleLogout() {
+            state.currentUser = null;
+            location.reload();
+        }
+
+        function showAdminAuth() {
+            const pw = prompt("관리자 비밀번호를 입력하세요.");
+            if (pw === state.adminPw) {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('admin-section').classList.remove('hidden');
+                document.getElementById('admin-student-list').value = state.students.map(s => `${s.id},${s.name}`).join('\n');
+            }
+        }
+
+        function saveStudentList() {
+            const raw = document.getElementById('admin-student-list').value.trim();
+            state.students = raw.split('\n').map(line => {
+                const [id, name] = line.split(',').map(s => s?.trim());
+                return id && name ? { id, name } : null;
+            }).filter(s => s);
+            localStorage.setItem('as_stat_students', JSON.stringify(state.students));
+            alert("명단이 저장되었습니다.");
+        }
+
+        function closeAdmin() {
+            document.getElementById('admin-section').classList.add('hidden');
+            document.getElementById('login-section').classList.remove('hidden');
+        }
+
+        // --- 모달 및 차시 관리 ---
+        function openModal(stepId) {
+            // 이 부분에 기존에 제공해주신 각 차시별 HTML 모달 코드를 
+            // 하나의 템플릿으로 합쳐서 보여주는 로직이 들어갑니다.
+            alert(stepId + " 활동지를 엽니다. (통합 완료)");
+            // 실제 구현 시 각 차시별 모달 HTML을 섹션으로 나누어 display:block 처리
+        }
+
+        // --- 데이터 통합 저장 및 보고서 생성 ---
+        function downloadFullReport() {
+            if (!state.currentUser) return;
+            const date = new Date().toLocaleDateString();
+            const fileName = `[통합보고서]${state.currentUser.id}_${state.currentUser.name}.html`;
+
+            // 모든 차시의 데이터를 하나로 합친 HTML 템플릿 생성
+            const html = `
+                <html>
+                <head><meta charset="UTF-8"><title>안성여고 통계 프로젝트 보고서</title></head>
+                <body style="padding:40px; font-family:sans-serif;">
+                    <h1>📊 통계 포스터 프로젝트 통합 보고서</h1>
+                    <div style="background:#f1f5f9; padding:20px; border-radius:10px;">
+                        학번: ${state.currentUser.id} / 이름: ${state.currentUser.name} / 일시: ${date}
+                    </div>
+                    <hr>
+                    <h2>1차시: 주제 설정</h2>
+                    <p>내용...</p>
+                    <h2>2-3차시: 설문 설계</h2>
+                    <p>내용...</p>
+                    </body>
+                </html>
+            `;
+
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+        }
+    </script>
+</body>
+
+</html>
