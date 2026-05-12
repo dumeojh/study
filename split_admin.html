@@ -2220,34 +2220,39 @@
             `;
                 }
 
-                // [수정] 기존 강제승인 사유가 있다면 불러와서 텍스트박스에 넣어주기
-                document.getElementById('admin-memo').value = ""; // 우선 초기화
-                if (logData && logData.history) {
-                    const adminEntry = logData.history.find(h => h.includes('🛠️[강제승인]'));
-                    if (adminEntry && adminEntry.includes('|')) {
-                        // "🛠️[강제승인]... | <span...>내용</span>" 형태에서 내용만 추출
-                        const parts = adminEntry.split('|');
+
+                // -------------------------------------------------------------------------
+                // [복구 및 수정] 기존 강제승인 내역(타임 + 사유) 불러오기 로직
+                // -------------------------------------------------------------------------
+                // 1. 초기화
+                document.getElementById('admin-memo').value = "";
+                document.getElementById('manual-t-0').checked = false;
+                document.querySelectorAll('.manual-t-chk').forEach(cb => cb.checked = false);
+
+                // 2. 이전에 저장된 강제승인 내역이 있다면 (overrideTag 활용)
+                if (overrideTag) {
+                    // [타임 복구] 기존에 체크했던 타임(또는 전체무효) 다시 체크하기
+                    if (overrideTag.includes('0타임')) {
+                        document.getElementById('manual-t-0').checked = true;
+                    } else {
+                        document.querySelectorAll('.manual-t-chk').forEach(cb => {
+                            if (overrideTag.includes(cb.value)) cb.checked = true;
+                        });
+                    }
+
+                    // [사유 복구] 기존에 입력했던 사유 텍스트 다시 가져오기
+                    if (overrideTag.includes('|')) {
+                        const parts = overrideTag.split('|');
                         if (parts.length > 1) {
                             let existingMemo = parts[1].trim();
-                            // HTML 태그(span 등)가 포함되어 있다면 제거하고 순수 텍스트만 추출
+                            // <span> 태그 등 HTML 코드를 제거하고 순수 글자만 추출
                             existingMemo = existingMemo.replace(/<[^>]*>?/gm, '');
                             document.getElementById('admin-memo').value = existingMemo;
                         }
                     }
                 }
+                // -------------------------------------------------------------------------
 
-
-                document.getElementById('manual-t-0').checked = false;
-                document.querySelectorAll('.manual-t-chk').forEach(cb => cb.checked = false);
-
-                if (overrideTag) {
-                    if (overrideTag.includes('0타임')) document.getElementById('manual-t-0').checked = true;
-                    else {
-                        document.querySelectorAll('.manual-t-chk').forEach(cb => {
-                            if (overrideTag.includes(cb.value)) cb.checked = true;
-                        });
-                    }
-                }
             } else {
                 historyHtml = `<div style="text-align:center; padding:15px; background:#fff; border-radius:8px; border:1px dashed #ccc; margin-top:8px; color:#999; font-weight:bold;">출결 기록 없음 (미입실)</div>`;
                 document.querySelectorAll('.manual-t-chk').forEach(cb => cb.checked = false);
