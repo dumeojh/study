@@ -593,7 +593,9 @@
             let globalPersonalStatsData = [];
             let globalYearlyStatsData = [];
             let globalDailyMatrixData = [];
+
             let matrixLastDate = 31;
+            let globalOperatingDays = []; // 🌟 [추가] 야자 운영일만 저장할 배열
             let currentSchedule = { t1: "16:00", t2: "18:50", t3: "20:10", t1_req: 60, t2_req: 60, t3_req: 60 };
 
             // 👇 여기에 반드시 'async'를 붙여주셔야 합니다! 👇
@@ -732,6 +734,7 @@
 
             function renderDailyMatrix(year, month, lastDate) {
                 matrixLastDate = lastDate;
+                globalOperatingDays = []; // 🌟 [추가] 달이 바뀔 때마다 배열 초기화
                 const daysEng = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
                 let matrixStats = {};
 
@@ -765,6 +768,7 @@
                     }
 
                     if (isOperating) {
+                        globalOperatingDays.push(d); // 🌟 [추가] 실제로 운영하는 날짜만 배열에 쏙 저장!
                         const dayLogs = attendanceLogsData.filter(log => log.date === dateStr);
 
 
@@ -835,12 +839,26 @@
                 // 1. 기존 '타임 현황' 탭 헤더에 삽입
                 document.getElementById('matrix-thead').innerHTML = theadHtml;
 
-                // 2. 👇 [추가] 새로 만든 '시간 현황' 탭 헤더에도 똑같이 달력 삽입! 👇
-                document.getElementById('time-matrix-thead').innerHTML = theadHtml;
+
+                // 2. 👇 [변경] '시간 현황' 탭 헤더는 globalOperatingDays(운영일)만 골라서 달력 삽입! 👇
+                let timeTheadHtml = `<tr>
+        <th style="width: 40px; position:sticky; left:0; background:#f8f9fa; z-index:2; white-space:nowrap;">연번</th>
+        <th style="width: 85px; position:sticky; left:40px; background:#f8f9fa; z-index:2; white-space:nowrap;">학급</th>
+        <th style="width: 50px; position:sticky; left:125px; background:#f8f9fa; z-index:2; white-space:nowrap;">학번</th>
+        <th style="width: 85px; position:sticky; left:175px; background:#f8f9fa; z-index:2; border-right:2px solid #ccc; white-space:nowrap;">이름</th>`;
+
+                for (let d of globalOperatingDays) {
+                    const dayIdx = new Date(year, month - 1, d).getDay();
+                    let color = "#495057";
+                    if (dayIdx === 0) color = "#dc3545";
+                    if (dayIdx === 6) color = "#0d6efd";
+                    timeTheadHtml += `<th style="width: 25px; padding: 5px; color: ${color}; font-size: 11px;">${d}</th>`;
+                }
+                timeTheadHtml += `<th style="width: 50px; color: #198754; background:#f4fdf8; border-left:2px solid #a3cfbb;">총계</th></tr>`;
+                document.getElementById('time-matrix-thead').innerHTML = timeTheadHtml;
 
                 applyDailyMatrixFilter();
             }
-
 
             function applyDailyMatrixFilter() {
                 const tbody = document.getElementById('matrix-tbody');
@@ -1338,19 +1356,24 @@
                     return parseInt(a.stu_id) - parseInt(b.stu_id);
                 });
 
+
                 let html = "";
                 if (filteredData.length === 0) {
-                    html = `<tr><td colspan="${matrixLastDate + 5}" style="color:#6c757d; padding:30px; text-align:center;">조건에 맞는 학생 데이터가 없습니다.</td></tr>`;
+                    // 🌟 데이터가 없을 때 표시되는 빈 셀(colspan)의 길이도 실제 출력되는 칸 수에 맞춰 줄여줍니다.
+                    html = `<tr><td colspan="${globalOperatingDays.length + 5}" style="color:#6c757d; padding:30px; text-align:center;">조건에 맞는 학생 데이터가 없습니다.</td></tr>`;
                 } else {
                     filteredData.forEach((stat, index) => {
                         html += `<tr>
-                    <td style="position:sticky; left:0; background:#f8f9fa; z-index:1; text-align:center; font-weight:bold; color:#6c757d; white-space:nowrap;">${index + 1}</td>
-                    <td style="position:sticky; left:40px; background:white; z-index:1; white-space:nowrap;">${stat.className}</td>
-                    <td style="position:sticky; left:125px; background:white; z-index:1; font-weight:bold; white-space:nowrap;">${stat.stu_id}</td>
-                    <td style="position:sticky; left:175px; background:white; z-index:1; font-weight:bold; border-right:2px solid #eee; cursor:pointer; color:#198754; text-decoration:underline; white-space:nowrap;" onclick="const [y, m] = document.getElementById('month-picker').value.split('-'); openSharedStudentCalendar('${stat.stu_id}', '${stat.stu_name}', parseInt(y), parseInt(m))">${stat.stu_name} 🔍</td>`;
+                <td style="position:sticky; left:0; background:#f8f9fa; z-index:1; text-align:center; font-weight:bold; color:#6c757d; white-space:nowrap;">${index + 1}</td>
+                <td style="position:sticky; left:40px; background:white; z-index:1; white-space:nowrap;">${stat.className}</td>
+                <td style="position:sticky; left:125px; background:white; z-index:1; font-weight:bold; white-space:nowrap;">${stat.stu_id}</td>
+                <td style="position:sticky; left:175px; background:white; z-index:1; font-weight:bold; border-right:2px solid #eee; cursor:pointer; color:#198754; text-decoration:underline; white-space:nowrap;" onclick="const [y, m] = document.getElementById('month-picker').value.split('-'); openSharedStudentCalendar('${stat.stu_id}', '${stat.stu_name}', parseInt(y), parseInt(m))">${stat.stu_name} 🔍</td>`;
 
-                        for (let i = 0; i < matrixLastDate; i++) {
-                            const minCount = stat.dailyMinutes[i];
+
+
+                        // 👇 [변경] 전체 일수(i < matrixLastDate) 대신, 운영일(globalOperatingDays)만 쏙쏙 뽑아서 출력합니다!
+                        for (let d of globalOperatingDays) {
+                            const minCount = stat.dailyMinutes[d - 1]; // 배열 인덱스는 0부터 시작하므로 d - 1
                             const display = minCount > 0 ? `<b style="color:#198754;">${minCount}</b>` : `<span style="color:#ddd;">-</span>`;
                             html += `<td style="padding:6px 2px; text-align:center;">${display}</td>`;
                         }
