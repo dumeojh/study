@@ -1328,6 +1328,8 @@
             renderStatusTable();
         }
 
+
+
         async function manualSessionCredit() {
             const stuId = document.getElementById('ds-current-stu-id').value;
             const stuName = document.getElementById('ds-current-stu-name').value;
@@ -1341,25 +1343,30 @@
                 alert("인정할 타임을 선택하거나 '0T(전체 무효)'를 선택해주세요."); return;
             }
 
+            // 🌟 [추가] 사유 입력 창 띄우기
+            let memo = "";
+            if (chk0) {
+                memo = prompt(`[${stuName}] 0타임 처리에 대한 사유를 입력하세요.`, "이날 이학생이 결석(타인 오입력)");
+            } else {
+                memo = prompt(`[${stuName}] 강제 승인 사유를 입력하세요.`, "교사 확인 완료");
+            }
+
+            if (memo === null) return; // 취소 누르면 중단
+
             let newHistory = [];
             let currentStatus = "미입실";
 
             const { data: currentData } = await supabaseClient.from('attendance_logs').select('history').eq('id', logId).maybeSingle();
             newHistory = (currentData && currentData.history) ? currentData.history : [];
 
-            // 1. 기존에 덮어씌웠던 강제승인 태그 모두 제거 (초기화)
+            // 1. 기존 강제승인 태그 제거
             newHistory = newHistory.filter(h => !h.startsWith('🛠️[강제승인]'));
 
-            // 2. 새로운 판정 기록 1개만 딱 추가
-            if (chk0) {
-                if (!confirm(`[주의] ${stuName} 학생의 모든 타임을 무효(0타임) 처리하시겠습니까?\n학생의 태그 기록보다 우선하여 결석 처리됩니다.`)) return;
-                newHistory.push(`🛠️[강제승인]0타임 인정`);
-                currentStatus = "귀가";
-            } else {
-                if (!confirm(`[주의] ${stuName} 학생을 [${selectedSlots.join(', ')}타임]만 강제 인정하시겠습니까?\n이 판정은 학생의 실제 태그 기록을 무시하고 최우선 반영됩니다.`)) return;
-                newHistory.push(`🛠️[강제승인]${selectedSlots.join(',')}타임 인정`);
-                currentStatus = "귀가";
-            }
+            // 2. 새로운 판정 기록 및 메모 추가 🌟
+            const finalTag = chk0 ? `0타임 인정` : `${selectedSlots.join(',')}타임 인정`;
+            newHistory.push(`🛠️[강제승인]${finalTag} | 사유: ${memo}`);
+
+            currentStatus = "귀가"; // 마감 처리
 
             try {
                 const { error } = await supabaseClient.from('attendance_logs').upsert({
@@ -1367,15 +1374,12 @@
                     last_update_time: new Date().toISOString(), history: newHistory
                 });
                 if (error) throw error;
-                alert("✅ 교사 최종 판정이 적용되었습니다.");
+                alert("✅ 관리자 최종 판정 및 사유가 저장되었습니다.");
                 document.getElementById('daily-status-modal').style.display = 'none';
-                // 👇 이 1줄을 추가해 주세요! 👇
                 document.body.style.overflow = 'auto';
-
                 loadDailyDataAndRender();
             } catch (e) { alert("저장 오류: " + e.message); }
         }
-
 
 
 
