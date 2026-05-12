@@ -382,7 +382,6 @@
 
 
 
-
         <div class="tools-container no-print" id="tools-panel" style="display: none;">
             <div class="filter-group">
                 <label>🏫 반별 보기:</label>
@@ -391,7 +390,17 @@
                     <option value="all">전체 보기</option>
                 </select>
             </div>
+
+            <div class="filter-group">
+                <label>🔍 학생 검색:</label>
+                <input type="text" id="search-input" placeholder="학번 또는 이름" oninput="filterCards()"
+                    style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 15px; width: 150px;">
+            </div>
             <div style="display: flex; gap: 8px;">
+
+
+
+
                 <button class="btn btn-success" onclick="toggleVisibleCards(true)">✅ 화면의 모든 학생 선택</button>
                 <button class="btn btn-danger" onclick="toggleVisibleCards(false)">❌ 화면의 모든 학생 해제</button>
             </div>
@@ -498,12 +507,15 @@
                         const name = roster[id];
                         const classPrefix = String(id).length >= 2 ? String(id).substring(0, 2) : "기타";
                         classesSet.add(classPrefix);
-
                         // 1. 좌측 명단
                         const tr = document.createElement('tr');
                         tr.className = 'list-row';
                         tr.setAttribute('data-class', classPrefix);
+                        tr.setAttribute('data-id', id);       // 🌟 추가 (학번)
+                        tr.setAttribute('data-name', name);   // 🌟 추가 (이름)
                         tr.innerHTML = `
+
+
                             <td><input type="checkbox" class="list-cb" data-id="${id}" onchange="syncCheck('${id}', this.checked)"></td>
                             <td style="font-weight: bold;">${id}</td>
                             <td>${name}</td>
@@ -515,6 +527,7 @@
                         card.className = 'barcode-card';
                         card.setAttribute('data-class', classPrefix);
                         card.setAttribute('data-id', id);
+                        card.setAttribute('data-name', name); // 🌟 추가 (이름)
 
                         card.innerHTML = `
                             <div class="checkbox-area no-print">
@@ -581,33 +594,62 @@
             }
         }
 
-        // 필터링
+
+
+        // 🌟 수정된 필터 및 검색 통합 함수
         function filterCards() {
             const selectedClass = document.getElementById('class-filter').value;
+            const searchInput = document.getElementById('search-input');
+            const searchText = searchInput ? searchInput.value.trim().toLowerCase() : "";
 
+            // 검색어가 있으면 '반 선택'을 안 했더라도 전체 목록에서 찾도록 자동 셋팅
+            let effectiveClass = selectedClass;
+            if (searchText.length > 0 && selectedClass === "none") {
+                effectiveClass = "all";
+            }
+
+            // 바코드 카드 필터링
             document.querySelectorAll('.barcode-card').forEach(card => {
-                if (selectedClass === "none") {
+                const id = card.getAttribute('data-id').toLowerCase();
+                const name = card.getAttribute('data-name').toLowerCase();
+                const cardClass = card.getAttribute('data-class');
+
+                let isClassMatch = (effectiveClass === "all" || cardClass === effectiveClass);
+                let isSearchMatch = (searchText === "" || id.includes(searchText) || name.includes(searchText));
+
+                if (effectiveClass === "none") {
                     card.classList.add('hidden-by-filter');
-                } else if (selectedClass === "all" || card.getAttribute('data-class') === selectedClass) {
+                } else if (isClassMatch && isSearchMatch) {
                     card.classList.remove('hidden-by-filter');
                 } else {
                     card.classList.add('hidden-by-filter');
                 }
             });
 
+            // 좌측 리스트 필터링
             document.querySelectorAll('.list-row').forEach(row => {
-                if (selectedClass === "none") {
+                const id = row.getAttribute('data-id').toLowerCase();
+                const name = row.getAttribute('data-name').toLowerCase();
+                const rowClass = row.getAttribute('data-class');
+
+                let isClassMatch = (effectiveClass === "all" || rowClass === effectiveClass);
+                let isSearchMatch = (searchText === "" || id.includes(searchText) || name.includes(searchText));
+
+                if (effectiveClass === "none") {
                     row.classList.add('hidden-by-filter');
-                } else if (selectedClass === "all" || row.getAttribute('data-class') === selectedClass) {
+                } else if (isClassMatch && isSearchMatch) {
                     row.classList.remove('hidden-by-filter');
                 } else {
                     row.classList.add('hidden-by-filter');
                 }
             });
 
+            // 화면 상태가 바뀌면 마스터 체크박스 해제
             const masterCheck = document.getElementById('check-all-list');
             if (masterCheck) masterCheck.checked = false;
         }
+
+
 
         // 일괄 변경
         function toggleVisibleCards(isCheck) {
