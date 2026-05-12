@@ -1333,8 +1333,6 @@
             renderStatusTable();
         }
 
-
-
         async function manualSessionCredit() {
             const stuId = document.getElementById('ds-current-stu-id').value;
             const stuName = document.getElementById('ds-current-stu-name').value;
@@ -1348,19 +1346,8 @@
                 alert("인정할 타임을 선택하거나 '0T(전체 무효)'를 선택해주세요."); return;
             }
 
-
-
-
-
-            // 🌟 사유 텍스트 입력칸 값 가져오기
+            // 🌟 사유 텍스트 입력칸 값 가져오기 (내용이 없어도 진행)
             let memo = document.getElementById('admin-memo').value.trim();
-
-            if (memo === "") {
-                alert("사유를 입력해주세요.");
-                return;
-            }
-
-
 
             let newHistory = [];
             let currentStatus = "미입실";
@@ -1371,13 +1358,13 @@
             // 1. 기존 강제승인 태그 제거
             newHistory = newHistory.filter(h => !h.startsWith('🛠️[강제승인]'));
 
-
-
-            // 2. 새로운 판정 기록 및 메모 추가 🌟
+            // 2. 새로운 판정 기록 및 메모 추가 🌟 (사유가 있을 때만 '| 사유'를 붙이도록 처리)
             const finalTag = chk0 ? `0타임 인정` : `${selectedSlots.join(',')}타임 인정`;
-            newHistory.push(`🛠️[강제승인]${finalTag} | <span style="color: #0d6efd;">${memo}</span>`);
+            const historyText = memo !== ""
+                ? `🛠️[강제승인]${finalTag} | <span style="color: #0d6efd;">${memo}</span>`
+                : `🛠️[강제승인]${finalTag}`;
 
-
+            newHistory.push(historyText);
 
             currentStatus = "귀가"; // 마감 처리
 
@@ -1387,13 +1374,12 @@
                     last_update_time: new Date().toISOString(), history: newHistory
                 });
                 if (error) throw error;
-                alert("✅ 관리자 최종 판정 및 사유가 저장되었습니다.");
+                alert("✅ 관리자 최종 판정이 저장되었습니다.");
                 document.getElementById('daily-status-modal').style.display = 'none';
                 document.body.style.overflow = 'auto';
                 loadDailyDataAndRender();
             } catch (e) { alert("저장 오류: " + e.message); }
         }
-
 
 
 
