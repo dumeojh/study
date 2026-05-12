@@ -2220,7 +2220,23 @@
             `;
                 }
 
-                document.getElementById('admin-memo').value = "";
+                // [수정] 기존 강제승인 사유가 있다면 불러와서 텍스트박스에 넣어주기
+                document.getElementById('admin-memo').value = ""; // 우선 초기화
+                if (logData && logData.history) {
+                    const adminEntry = logData.history.find(h => h.includes('🛠️[강제승인]'));
+                    if (adminEntry && adminEntry.includes('|')) {
+                        // "🛠️[강제승인]... | <span...>내용</span>" 형태에서 내용만 추출
+                        const parts = adminEntry.split('|');
+                        if (parts.length > 1) {
+                            let existingMemo = parts[1].trim();
+                            // HTML 태그(span 등)가 포함되어 있다면 제거하고 순수 텍스트만 추출
+                            existingMemo = existingMemo.replace(/<[^>]*>?/gm, '');
+                            document.getElementById('admin-memo').value = existingMemo;
+                        }
+                    }
+                }
+
+
                 document.getElementById('manual-t-0').checked = false;
                 document.querySelectorAll('.manual-t-chk').forEach(cb => cb.checked = false);
 
