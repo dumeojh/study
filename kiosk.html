@@ -195,6 +195,48 @@
             border-width: 5px;
             border-style: solid;
         }
+
+
+        /* 👇 영수증(팝업) 화면 디자인 복구 및 글씨 크기 확대 👇 */
+        .receipt {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 85%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .r-name {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .r-status {
+            font-size: 60px;
+            /* 복귀 완료, 귀가 등 핵심 단어 엄청 크게! */
+            font-weight: 900;
+            margin-bottom: 20px;
+            letter-spacing: -2px;
+            /* 글씨 사이 간격을 살짝 좁혀서 더 단단해 보이게 */
+        }
+
+        .r-time {
+            font-size: 22px;
+            color: #6c757d;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        .r-msg {
+            font-size: 24px;
+            font-weight: bold;
+            color: #495057;
+            line-height: 1.4;
+        }
     </style>
 </head>
 
