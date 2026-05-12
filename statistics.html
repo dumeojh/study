@@ -415,8 +415,11 @@
                     <div>
                         <label for="matrix-sort-filter">↕️ 정렬 기준:</label>
                         <select id="matrix-sort-filter" onchange="applyDailyMatrixFilter()">
-                            <option value="id_asc">학번 순 (기본)</option>
-                            <option value="total_desc">총계 높은 순</option>
+                            <select id="matrix-sort-filter" onchange="applyDailyMatrixFilter()">
+                                <option value="total_desc" selected>총계 높은 순 (기본)</option>
+                                <option value="id_asc">학번 순</option>
+                            </select>
+
                         </select>
                     </div>
 
@@ -451,8 +454,8 @@
                     <div>
                         <label for="time-sort-filter" style="color:#0f5132;">↕️ 정렬 기준:</label>
                         <select id="time-sort-filter" onchange="applyTimeMatrixFilter()">
-                            <option value="id_asc">학번 순 (기본)</option>
-                            <option value="total_desc">누적 시간 긴 순 🏆 (1등 찾기)</option>
+                            <option value="total_desc" selected>누적 시간 긴 순 🏆 (기본)</option>
+                            <option value="id_asc">학번 순</option>
                         </select>
                     </div>
 
@@ -864,8 +867,8 @@
             function applyDailyMatrixFilter() {
                 const tbody = document.getElementById('matrix-tbody');
                 const classValue = document.getElementById('matrix-class-filter').value;
-                const sortValue = document.getElementById('matrix-sort-filter') ? document.getElementById('matrix-sort-filter').value : 'id_asc';
-
+                // 👇 기본 정렬값을 'total_desc'로 변경했습니다.
+                const sortValue = document.getElementById('matrix-sort-filter') ? document.getElementById('matrix-sort-filter').value : 'total_desc';
                 const searchInput = document.getElementById('matrix-search-filter');
                 const searchValue = searchInput ? searchInput.value.trim() : "";
 
@@ -1332,7 +1335,8 @@
             function applyTimeMatrixFilter() {
                 const tbody = document.getElementById('time-matrix-tbody');
                 const classValue = document.getElementById('time-class-filter').value;
-                const sortValue = document.getElementById('time-sort-filter') ? document.getElementById('time-sort-filter').value : 'id_asc';
+                // 👇 기본 정렬값을 'total_desc'로 변경하여 처음에도 공부 시간순으로 정렬되게 합니다.
+                const sortValue = document.getElementById('time-sort-filter') ? document.getElementById('time-sort-filter').value : 'total_desc';
                 const searchInput = document.getElementById('time-search-filter');
                 const searchValue = searchInput ? searchInput.value.trim() : "";
 
