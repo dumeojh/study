@@ -395,8 +395,17 @@
                 <b style="font-size: 16px;">조회할 연도 및 월:</b>
                 <input type="month" id="month-picker" onchange="fetchDataAndRender()">
                 <button class="btn btn-primary" onclick="fetchDataAndRender()">🔄 데이터 새로고침</button>
-                <span style="margin-left:auto; font-size:13px; color:#666;">※ 과거 데이터나 미래의 신청 내역을 조회할 수 있습니다.</span>
+
+                <div style="margin-left:auto; text-align:right; font-size:13px; color:#666; line-height:1.6;">
+                    ※ 과거 데이터나 미래의 신청 내역을 조회할 수 있습니다.<br>
+                    <span
+                        style="color:#052c65; font-weight:bold; background:#eef6ff; padding:3px 8px; border-radius:4px; border:1px solid #b6d4fe; display:inline-block; margin-top:4px;">
+                        💡 모든 출결 통계는 <span style="color:#0d6efd;">'30분 이상 실질적 인정 학생 수'</span>를 기준으로 집계됩니다.
+                    </span>
+                </div>
             </div>
+
+
 
             <div id="loading">데이터를 분석 중입니다... 잠시만 기다려주세요 ⏳</div>
 
