@@ -1005,63 +1005,22 @@
 
                             let c0 = 0, c1 = 0, c2 = 0, c3 = 0;
 
-                            // ★ 일일 현황과 완벽히 동일한 깐깐한 결과(인정) 계산 로직 ★
+
+                            // ★ 수정됨: 신청 여부와 무관하게 실제 공부 기준을 충족한 모든 학생(미신청 참여 포함) 집계 ★
                             dayLogs.forEach(log => {
-                                let recognizedSet = new Set();
-                                const app = applicationData.find(a => String(a.stu_id) === String(log.stu_id));
-                                const appliedTimes = (app && app[dayKey]) ? app[dayKey].split(',').map(v => v.trim()).filter(v => v) : [];
+                                // common.js의 강력한 실제 체류 시간 계산 함수 호출
+                                const recognizedSet = getRecognizedTimes(log, currentSchedule);
 
-                                if (log.history) {
-                                    // 1. 수동 인정 (교사) 체크
-                                    log.history.forEach(h => {
-                                        [0, 1, 2, 3].forEach(t => {
-                                            if (h.includes(`${t}T귀가(교사)`) || h.includes(`${t}T외출(교사)`) || h.includes(`${t}T입실(교사)`)) {
-                                                recognizedSet.add(t);
-                                            }
-                                        });
-                                    });
-
-                                    // 2. 키오스크 태그 기록 분석 (수동 인정이 없는 타임들에 대해)
-                                    if (log.status === "귀가" || log.status === "귀가(누락)") {
-                                        let lastTimeStr = "";
-                                        for (let i = log.history.length - 1; i >= 0; i--) {
-                                            if (log.history[i].includes("귀가") && !log.history[i].includes("누락")) {
-                                                const match = log.history[i].match(/(\d{2}:\d{2})/);
-                                                if (match) { lastTimeStr = match[1]; break; }
-                                            }
-                                        }
-
-                                        if (lastTimeStr) {
-                                            const [h, m] = lastTimeStr.split(':').map(Number);
-                                            const finishMin = h * 60 + m;
-                                            const timeToMin = (tmStr) => { const [sh, sm] = tmStr.split(':').map(Number); return sh * 60 + sm; };
-
-                                            [1, 2, 3].forEach(t => {
-                                                if (appliedTimes.includes(String(t)) && !recognizedSet.has(t)) {
-                                                    const startStr = currentSchedule[`t${t}`];
-                                                    const reqMin = parseInt(currentSchedule[`t${t}_req`]) || 0;
-                                                    if (startStr && finishMin >= (timeToMin(startStr) + reqMin)) {
-                                                        recognizedSet.add(t);
-                                                    }
-                                                }
-                                            });
-                                        }
-                                    } else if (log.status === "입실" || log.status === "복귀" || log.status === "외출") {
-                                        // 아직 자리에 있는 경우 신청 타임은 모두 인정으로 잠정 계산
-                                        [1, 2, 3].forEach(t => {
-                                            if (appliedTimes.includes(String(t))) {
-                                                recognizedSet.add(t);
-                                            }
-                                        });
-                                    }
-                                }
-
-                                // 최종 인정된 타임만 1씩 합산
+                                // 최종 인정된 타임만 1씩 합산 (미신청자도 조건 충족 시 합산됨)
                                 if (recognizedSet.has(0)) c0++;
                                 if (recognizedSet.has(1)) c1++;
                                 if (recognizedSet.has(2)) c2++;
                                 if (recognizedSet.has(3)) c3++;
                             });
+
+
+
+
 
                             // 빨간색 에러 칠하기는 삭제 (오직 정확한 결과만 보여줌)
                             let c0Class = "status-val";
