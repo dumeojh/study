@@ -233,8 +233,7 @@
             <div class="card-desc">월별 달력 기반 신청 인원 및<br>일일 출결 결과 통합 통계</div>
         </a>
 
-        <a href="#" onclick="event.preventDefault(); alert('접근이 제한된 관리자 메뉴입니다.');"
-            ondblclick="if(event.ctrlKey) { location.href='settings.html'; }" class="card teacher-card">
+        <a href="#" onclick="event.preventDefault(); handleSecretClick(event);" class="card teacher-card">
             <div class="icon">⚙️</div>
             <div class="card-title">환경설정</div>
             <div class="card-desc">운영 일정, 명단 및 도면 관리<br>(관리자 전용)</div>
@@ -267,6 +266,30 @@
         </div>
     </a>
 
+    <script>
+        let clickTimer = null;
+
+        function handleSecretClick(event) {
+            // Ctrl 키를 누른 상태라면?
+            if (event.ctrlKey) {
+                // 더블 클릭인지 확인하기 위해 타이머가 있는지 검사
+                if (clickTimer !== null) {
+                    clearTimeout(clickTimer); // 단일 클릭 취소
+                    clickTimer = null;
+                    // 비밀 열쇠(?pass=true)를 달고 즉시 이동!
+                    location.href = 'settings.html?pass=true';
+                } else {
+                    // 첫 번째 클릭인 경우 (0.3초 대기)
+                    clickTimer = setTimeout(() => {
+                        clickTimer = null;
+                    }, 300); // 300ms 안에 한 번 더 누르면 더블클릭으로 인정
+                }
+            } else {
+                // Ctrl 키를 안 눌렀다면 (일반 학생의 클릭) 즉시 안내창
+                alert('접근이 제한된 관리자 메뉴입니다.');
+            }
+        }
+    </script>
 </body>
 
 </html>
