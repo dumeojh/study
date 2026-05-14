@@ -1947,9 +1947,10 @@
             loadOpMode();
         });
 
-        // 👇👇 여기서부터 복사해서 붙여넣으세요 👇👇
+
+
         // =========================================================
-        // 🌟 [안전장치 적용] 특정 학생 완벽 삭제 함수
+        // 🌟 [안전장치 + 유령추적 적용] 특정 학생 완벽 삭제 함수
         // =========================================================
         async function deleteStudentCompletely() {
             const stuIdStr = document.getElementById('delete-target-id').value.trim();
@@ -1959,25 +1960,36 @@
             }
 
             const numId = parseInt(stuIdStr);
-
-            // [안전장치 1단계] DB에서 학생 이름부터 몰래 확인합니다.
-            const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').maybeSingle();
             let deletedName = "";
 
+            // 🕵️‍♂️ 1차 추적: 기초 명단(roster)에서 이름 찾기
+            const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').maybeSingle();
             if (rosterData && rosterData.value && rosterData.value.list) {
                 let list = JSON.parse(rosterData.value.list);
                 deletedName = list[stuIdStr] || "";
             }
 
+            // 🕵️‍♂️ 2차 추적: 기초 명단에서 이미 지워졌다면, '신청 내역' 테이블에서 찾기
             if (!deletedName) {
-                alert("⚠️ 해당 학번을 기초 명단에서 찾을 수 없습니다.\n(이미 삭제되었거나 잘못 입력된 학번입니다)");
+                const { data: appData } = await supabaseClient.from('applications').select('stu_name').eq('stu_id', numId).limit(1).maybeSingle();
+                if (appData) deletedName = appData.stu_name;
+            }
+
+            // 🕵️‍♂️ 3차 추적: 그래도 없으면 '출결 로그' 테이블에서 찾기
+            if (!deletedName) {
+                const { data: logData } = await supabaseClient.from('attendance_logs').select('stu_name').eq('stu_id', numId).limit(1).maybeSingle();
+                if (logData) deletedName = logData.stu_name;
+            }
+
+            // 3곳을 다 뒤져도 없으면 정말 데이터가 없는 것임
+            if (!deletedName) {
+                alert("⚠️ 해당 학번의 데이터를 시스템 어디에서도 찾을 수 없습니다.\n(이미 완전히 삭제된 학번입니다)");
                 return;
             }
 
-            // [안전장치 2단계] 선생님께 팝업을 띄워 이름을 직접 입력하게 합니다.
+            // [안전장치] 선생님께 팝업을 띄워 이름을 직접 입력하게 합니다.
             const userInput = prompt(`🚨 [안전장치 작동]\n\n실수 방지를 위해 지우려는 학생의 이름을 확인합니다.\n정말 데이터를 영구 삭제하시려면 아래 빈칸에 [ ${deletedName} ] 라고 똑같이 입력해주세요.`);
 
-            // 입력한 이름이 틀리면 즉시 함수를 종료시켜버립니다. (데이터 안전 보장)
             if (userInput !== deletedName) {
                 alert("❌ 입력한 이름이 일치하지 않아 삭제가 취소되었습니다.\n(데이터가 안전하게 보호되었습니다.)");
                 return;
@@ -1985,7 +1997,7 @@
 
             // 위 관문을 모두 통과해야만 진짜 삭제 작업이 시작됩니다.
             try {
-                // 1. 기초 명단에서 지우기
+                // 1. 기초 명단 찌꺼기 지우기
                 if (rosterData && rosterData.value) {
                     let list = JSON.parse(rosterData.value.list);
                     let phoneList = rosterData.value.phoneList ? JSON.parse(rosterData.value.phoneList) : {};
@@ -2009,7 +2021,7 @@
                     await supabaseClient.from('settings').update({ value: { ids: newIds } }).eq('key', 'priority_students');
                 }
 
-                // 3. 신청, 출결, 예약 등 모든 시스템 찌꺼기 한 번에 지우기
+                // 3. 신청, 출결, 예약 등 모든 시스템 찌꺼기 한 번에 지우기 (병렬 처리)
                 await Promise.all([
                     supabaseClient.from('applications').delete().eq('stu_id', numId),
                     supabaseClient.from('applications').delete().eq('stu_id', stuIdStr),
@@ -2028,7 +2040,6 @@
                 alert("삭제 중 오류가 발생했습니다: " + error.message);
             }
         }
-        // 👆👆 여기까지 붙여넣기 👆👆
     </script>
 </body>
 
