@@ -666,8 +666,11 @@
             <button class="btn btn-save" onclick="saveApplyPeriod()">💾 신청 기간 저장</button>
         </div>
 
+
         <div id="tab-roster" class="card">
-            <h3>⚙️ 기초 명단 업로드 (엑셀)</h3>
+            <h3 style="cursor: pointer; user-select: none;" onclick="triggerSecretMenu()"
+                title="빠르게 5번 클릭하면 숨겨진 메뉴가 나타납니다.">⚙️ 기초 명단 업로드 (엑셀)</h3>
+
             <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
                 ※ 엑셀 양식: A열(학번), B열(이름), C열(학생증번호/바코드), D열(전화번호) 순서로 작성하여 업로드하세요.
             </p>
@@ -680,16 +683,18 @@
                 style="max-height:200px; overflow-y:auto; font-size:12px; border:1px solid #ddd; padding:10px;">
             </div>
 
-            <hr style="border: 0; border-top: 1px dashed #ccc; margin: 30px 0 20px 0;">
-            <h3 style="color:#dc3545; border-left-color:#dc3545;">🗑️ 특정 학생 데이터 영구 삭제 (테스트 계정 정리)</h3>
-            <div style="background:#fff5f5; padding:20px; border-radius:10px; border:1px dashed #dc3545;">
-                <p style="font-size:13px; color:#842029; margin-top:0;">* 통계 허수를 제거하기 위해 특정 학생의 <b>기초 명단, 출결 로그, 신청 내역 등
-                        모든 기록을 완전히 삭제</b>합니다.<br>🚨 (안전장치) 실수 방지를 위해 <b>학생의 이름을 직접 타이핑해야만 삭제가 진행</b>됩니다.</p>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <input type="number" id="delete-target-id" placeholder="삭제할 학번 (예: 3702)"
-                        style="padding:12px; border-radius:6px; border:1px solid #ccc; width:220px; font-size: 15px; font-weight: bold;">
-                    <button class="btn" style="background:#dc3545; color:white; padding:12px 20px; font-size: 15px;"
-                        onclick="deleteStudentCompletely()">🔥 학생 데이터 영구 삭제</button>
+            <div id="secret-delete-zone" style="display: none; animation: fadeIn 0.5s ease;">
+                <hr style="border: 0; border-top: 1px dashed #ccc; margin: 30px 0 20px 0;">
+                <h3 style="color:#dc3545; border-left-color:#dc3545;">🗑️ 특정 학생 데이터 영구 삭제 (최고 관리자 전용)</h3>
+                <div style="background:#fff5f5; padding:20px; border-radius:10px; border:1px dashed #dc3545;">
+                    <p style="font-size:13px; color:#842029; margin-top:0;">* 통계 허수를 제거하기 위해 특정 학생의 <b>기초 명단, 출결 로그, 신청
+                            내역 등 모든 기록을 완전히 삭제</b>합니다.<br>🚨 (안전장치) 실수 방지를 위해 <b>학생의 이름을 직접 타이핑해야만 삭제가 진행</b>됩니다.</p>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="number" id="delete-target-id" placeholder="삭제할 학번 (예: 3702)"
+                            style="padding:12px; border-radius:6px; border:1px solid #ccc; width:220px; font-size: 15px; font-weight: bold;">
+                        <button class="btn" style="background:#dc3545; color:white; padding:12px 20px; font-size: 15px;"
+                            onclick="deleteStudentCompletely()">🔥 학생 데이터 영구 삭제</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1949,6 +1954,49 @@
 
 
 
+        // =========================================================
+        // 🕵️‍♂️ [보안] 숨겨진 삭제 도구를 띄우는 비밀 스위치 함수
+        // =========================================================
+        let secretClickCount = 0;
+        let secretClickTimer = null;
+
+        function triggerSecretMenu() {
+            secretClickCount++;
+
+            // 2초 안에 연속으로 누르지 않으면 카운트 초기화
+            if (secretClickCount === 1) {
+                secretClickTimer = setTimeout(() => {
+                    secretClickCount = 0;
+                }, 2000);
+            }
+
+            // 5번 연속 클릭 시 발동!
+            if (secretClickCount >= 5) {
+                clearTimeout(secretClickTimer);
+                secretClickCount = 0; // 카운트 리셋
+
+                const secretZone = document.getElementById('secret-delete-zone');
+
+                // 이미 열려있다면 다시 숨기기
+                if (secretZone.style.display === 'block') {
+                    secretZone.style.display = 'none';
+                    return;
+                }
+
+                // 닫혀있다면 마스터 비밀번호 요구
+                const masterPwd = prompt("🚨 최고 관리자 전용 숨겨진 기능입니다.\n\n접근하시려면 마스터 비밀번호를 입력하세요.");
+
+                // 👇 원하시는 비밀번호로 변경하세요! (현재는 '7777')
+                if (masterPwd === "7777") {
+                    secretZone.style.display = 'block';
+                    alert("🔓 숨겨진 학생 삭제 도구가 활성화되었습니다.\n(사용 후 탭을 이동하거나 새로고침하면 다시 숨겨집니다.)");
+                    // 해당 구역으로 부드럽게 스크롤 이동
+                    secretZone.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                } else if (masterPwd !== null) {
+                    alert("❌ 비밀번호가 틀렸습니다. 접근이 차단됩니다.");
+                }
+            }
+        }
         // =========================================================
         // 🌟 [안전장치 + 유령추적 적용] 특정 학생 완벽 삭제 함수
         // =========================================================
