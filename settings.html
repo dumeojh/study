@@ -668,379 +668,368 @@
             <button class="btn btn-save" onclick="saveApplyPeriod()">💾 신청 기간 저장</button>
         </div>
 
+        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 30px 0 20px 0;">
+        <h3 style="color:#dc3545; border-left-color:#dc3545;">🗑️ 특정 학생 데이터 영구 삭제</h3>
+        <div style="background:#fff5f5; padding:20px; border-radius:10px; border:1px dashed #dc3545;">
+            <p style="font-size:13px; color:#842029; margin-top:0;">* 통계 허수를 제거하기 위해 특정 학생의 <b>기초 명단, 출결 로그, 신청 내역 등 모든
+                    기록을 완전히 삭제</b>합니다.<br>🚨 (안전장치) 실수 방지를 위해 <b>학생의 이름을 직접 타이핑해야만 삭제가 진행</b>됩니다.</p>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <input type="number" id="delete-target-id" placeholder="삭제할 학번 (예: 3702)"
+                    style="padding:12px; border-radius:6px; border:1px solid #ccc; width:220px; font-size: 15px; font-weight: bold;">
+                <button class="btn" style="background:#dc3545; color:white; padding:12px 20px; font-size: 15px;"
+                    onclick="deleteStudentCompletely()">🔥 학생 데이터 영구 삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-seats" class="card">
+        <h3>🪑 자율학습실 좌석 도면 설계</h3>
+
+        <div
+            style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ffeeba; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <b style="color: #856404;">💾 도면 파일로 PC에 백업/복구하기</b>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">만일의 사태를 대비해 완성한 도면을 PC에 파일로 보관해두거나 불러올 수
+                    있습니다.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="background: #6c757d; color: white;" onclick="window.print()">🖨️ 도면
+                    인쇄</button>
+                <button class="btn" style="background: #fd7e14;" onclick="exportToFile()">⬇️ 도면 다운로드</button>
+                <button class="btn" style="background: #20c997;" onclick="importFromFile()">📂 파일 불러오기</button>
+            </div>
+        </div>
+        <div
+            style="background: #f1f3f5; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
 
 
-        <div id="tab-roster" class="card">
-            <h3>⚙️ 기초 명단 업로드 (엑셀)</h3>
+            <div>가로 <input type="number" id="grid-cols" value="30" style="width:45px;"> X 세로 <input type="number"
+                    id="grid-rows" value="20" style="width:45px;"> <button class="btn"
+                    style="background:var(--gray); padding: 5px 8px; font-size:11px;" onclick="resizeGrid()">리셋</button>
+            </div>
+            <div><input type="number" id="target-index" value="1" style="width: 35px;"> 번째:
+                <button class="btn" style="background:#495057; padding: 5px 6px; font-size:11px;"
+                    onclick="modifyGrid('insertRow')">행삽입</button>
+                <button class="btn" style="background:#adb5bd; padding: 5px 6px; font-size:11px; color:#333;"
+                    onclick="modifyGrid('deleteRow')">행삭제</button>
+                <button class="btn" style="background:#495057; padding: 5px 6px; font-size:11px;"
+                    onclick="modifyGrid('insertCol')">열삽입</button>
+                <button class="btn" style="background:#adb5bd; padding: 5px 6px; font-size:11px; color:#333;"
+                    onclick="modifyGrid('deleteCol')">열삭제</button>
+            </div>
+            <button class="btn" style="background:var(--warning); padding: 5px 10px; font-size:11px; color:#000;"
+                onclick="undo()">↩️되돌리기</button>
+        </div>
 
-            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
-                ※ 엑셀 양식: A열(학번), B열(이름), C열(학생증번호/바코드), D열(전화번호) 순서로 작성하여 업로드하세요.
-            </p>
 
-            <input type="file" id="excel-input" accept=".xlsx, .xls">
-            <button class="btn" style="background:var(--success); margin-top:10px;" onclick="handleExcelUpload()">🚀
-                명단
-                서버 전송</button>
-            <hr>
-            <h4>등록 명단 (<span id="roster-count">0</span>명)</h4>
-            <div id="roster-list"
-                style="max-height:200px; overflow-y:auto; font-size:12px; border:1px solid #ddd; padding:10px;">
+        <div class="tool-bar" style="flex-wrap: wrap; gap: 8px;">
+            <button class="tool-btn" onclick="undo()"
+                style="border-color: var(--warning); color: #856404; background: #fff3cd; margin-right: 10px;">↩️
+                되돌리기 (Ctrl+Z)</button>
+
+            <button class="tool-btn" onclick="selectTool(99, this)"
+                style="border-color: #6f42c1; color: #6f42c1; background: #f3e8ff;">🖱️ 이동(드래그)</button>
+
+            <button class="tool-btn seat-0 selected" onclick="selectTool(0, this)">⬜통로(지우개)</button>
+            <button class="tool-btn seat-1" onclick="selectTool(1, this)">🟨고정</button>
+
+            <button class="tool-btn seat-2" onclick="selectTool(2, this)">🟩자율</button>
+            <button class="tool-btn seat-3" onclick="selectTool(3, this)">⬛기둥(벽)</button>
+
+            <button class="tool-btn seat-4" onclick="selectTool(4, this)">🚪출입구</button>
+            <button class="tool-btn seat-5" onclick="selectTool(5, this)">👩‍🏫교사석</button>
+            <button class="tool-btn seat-17" onclick="selectTool(17, this)">🪟창가</button>
+            <button class="tool-btn seat-18" onclick="selectTool(18, this)">🗄️사물함</button>
+            <div style="width: 100%; height: 0; border-bottom: 1px dashed #ccc; margin: 2px 0;"></div>
+            <span
+                style="font-size:13px; font-weight:bold; align-self:center; color:#555; margin-right: 5px;">파티션:</span>
+            <button class="tool-btn" onclick="selectTool(6, this)">━</button>
+            <button class="tool-btn" onclick="selectTool(7, this)">┃</button>
+            <button class="tool-btn" onclick="selectTool(13, this)">┌</button>
+            <button class="tool-btn" onclick="selectTool(14, this)">┐</button>
+            <button class="tool-btn" onclick="selectTool(15, this)">└</button>
+            <button class="tool-btn" onclick="selectTool(16, this)">┘</button>
+            <button class="tool-btn" onclick="selectTool(8, this)">ㅏ</button>
+            <button class="tool-btn" onclick="selectTool(9, this)">ㅓ</button>
+            <button class="tool-btn" onclick="selectTool(11, this)">ㅗ</button>
+            <button class="tool-btn" onclick="selectTool(10, this)">ㅜ</button>
+            <button class="tool-btn" onclick="selectTool(12, this)">╋</button>
+            <button class="tool-btn" onclick="selectTool(19, this)">╱</button>
+            <button class="tool-btn" onclick="selectTool(20, this)">╲</button>
+        </div>
+        <div class="seat-grid-container">
+
+
+            <div id="seat-grid" class="seat-grid"></div>
+        </div>
+        <button class="btn btn-save" onclick="saveSeatLayout()">🌐 도면 서버 배포</button>
+    </div>
+    <!-- ▼ tab-time 카드 내부 전체 영역 ▼ -->
+    <div id="tab-time" class="card">
+        <h3>⏱️ 시스템 운영 및 시간 설정</h3>
+
+        <div
+            style="margin-bottom:15px; background:#eef6ff; border-radius:8px; border:1px solid #b6d4fe; overflow: hidden;">
+            <div onclick="const content = document.getElementById('layoutModeContent'); const icon = document.getElementById('layoutModeIcon'); if(content.style.display === 'none') { content.style.display = 'block'; icon.innerText = '▲'; } else { content.style.display = 'none'; icon.innerText = '▼'; }"
+                style="padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;"
+                onmouseover="this.style.backgroundColor='#d0e2ff'"
+                onmouseout="this.style.backgroundColor='transparent'">
+                <p style="margin: 0; font-size: 14px; color:#052c65;">
+                    <strong>📐 도면 운영 모드 (사용자 경험 선택)</strong>
+                    <span style="font-size: 12px; color: #666; font-weight: normal; margin-left: 10px;">(클릭하여
+                        펼치기)</span>
+                </p>
+                <span id="layoutModeIcon" style="color: #666; font-size: 14px; font-weight: bold;">▼</span>
+            </div>
+            <div id="layoutModeContent"
+                style="display: none; padding: 0 15px 15px 15px; border-top: 1px dashed #b6d4fe; margin-top: 5px; padding-top: 15px;">
+                <p style="font-size:13px; margin:0 0 10px 0; color: #555;">현재 프로그램 전체에서 사용할 도면 형식을 결정합니다.
+                </p>
+                <label style="display:inline-block; margin-right:20px; cursor:pointer;">
+                    <input type="radio" name="layout-mode" value="1" checked> <b>[기존] 1개 통합 도면</b>
+                </label>
+                <label style="display:inline-block; cursor:pointer;">
+                    <input type="radio" name="layout-mode" value="2"> <b>[신규] 다중 구역(A,B,C실) 도면</b>
+                </label>
             </div>
         </div>
 
-        <div id="tab-seats" class="card">
+        <div
+            style="margin-bottom:20px; background:#fff3cd; border-radius:8px; border:1px solid #ffeeba; overflow: hidden;">
+            <div onclick="const content = document.getElementById('autoCloseContent'); const icon = document.getElementById('autoCloseIcon'); if(content.style.display === 'none') { content.style.display = 'block'; icon.innerText = '▲'; } else { content.style.display = 'none'; icon.innerText = '▼'; }"
+                style="padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;"
+                onmouseover="this.style.backgroundColor='#ffe69c'"
+                onmouseout="this.style.backgroundColor='transparent'">
+                <p style="margin: 0; font-size: 14px; color:#856404;">
+                    <strong>🚨 일일 출결 자동 마감 설정</strong>
+                    <span style="font-size: 12px; color: #666; font-weight: normal; margin-left: 10px;">(클릭하여
+                        펼치기)</span>
+                </p>
+                <span id="autoCloseIcon" style="color: #666; font-size: 14px; font-weight: bold;">▼</span>
+            </div>
+            <div id="autoCloseContent"
+                style="display: none; padding: 0 15px 15px 15px; border-top: 1px dashed #ffeeba; margin-top: 5px; padding-top: 15px;">
+                <p style="font-size:13px; margin:0 0 10px 0; color: #555;">지정된 시간에 미귀가자를 자동으로 '귀가(누락)' 처리하거나
+                    마감
+                    기준 시간으로 사용합니다.</p>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label style="cursor:pointer;"><input type="checkbox" id="auto-close-enable" checked>
+                        <b>자동
+                            마감 기능 켜기</b></label>
+                    <span style="margin: 0 10px; color: #ccc;">|</span>
+                    <b style="color: #555;">강제 마감 시간:</b>
+                    <input type="time" id="auto-close-time"
+                        style="padding:5px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+            </div>
+        </div>
 
-            <h3>🪑 자율학습실 좌석 도면 설계</h3>
+        <div
+            style="display:grid; gap:15px; padding:20px; background:#f8f9fa; border-radius:12px; border: 1px solid #eee;">
+            <div style="padding-bottom:15px; border-bottom:2px dashed #ddd;">
+                <div style="margin-bottom:15px;">
+                    <b style="color:#052c65;">🔐 키오스크 학생 인증 방식</b><br>
+                    <label style="display:block; margin-top:8px; color: #333;"><input type="radio" name="auth-mode"
+                            value="1" checked> <b>[1단계] 학번만 입력</b> (바코드 스캐너 사용 시
+                        추천)</label>
+                    <label style="display:block; margin-top:5px; color: #333;"><input type="radio" name="auth-mode"
+                            value="2"> <b>[2단계] 학번 입력 후 '이름 확인' 팝업</b> (가장 추천)</label>
+                    <label style="display:block; margin-top:5px; color: #333;"><input type="radio" name="auth-mode"
+                            value="3"> <b>[3단계] 학번 + 이름 모두 입력</b> (보안 최고, 시간 소요)</label>
+                </div>
 
-            <div
-                style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ffeeba; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="margin-bottom:10px;">
+                    <b style="color: #333;">🎟️ 발권 시작 시간:</b> 1타임 시작
+                    <input type="number" id="ticket-lead-time" value="30" onchange="updateTicketNoticeAuto()"
+                        style="width:50px; text-align:center; padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                    분 전부터 가능
+                </div>
                 <div>
-                    <b style="color: #856404;">💾 도면 파일로 PC에 백업/복구하기</b>
-                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">만일의 사태를 대비해 완성한 도면을 PC에 파일로 보관해두거나 불러올 수
-                        있습니다.</p>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn" style="background: #6c757d; color: white;" onclick="window.print()">🖨️ 도면
-                        인쇄</button>
-                    <button class="btn" style="background: #fd7e14;" onclick="exportToFile()">⬇️ 도면 다운로드</button>
-                    <button class="btn" style="background: #20c997;" onclick="importFromFile()">📂 파일 불러오기</button>
-                </div>
-            </div>
-            <div
-                style="background: #f1f3f5; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-
-
-                <div>가로 <input type="number" id="grid-cols" value="30" style="width:45px;"> X 세로 <input type="number"
-                        id="grid-rows" value="20" style="width:45px;"> <button class="btn"
-                        style="background:var(--gray); padding: 5px 8px; font-size:11px;"
-                        onclick="resizeGrid()">리셋</button></div>
-                <div><input type="number" id="target-index" value="1" style="width: 35px;"> 번째:
-                    <button class="btn" style="background:#495057; padding: 5px 6px; font-size:11px;"
-                        onclick="modifyGrid('insertRow')">행삽입</button>
-                    <button class="btn" style="background:#adb5bd; padding: 5px 6px; font-size:11px; color:#333;"
-                        onclick="modifyGrid('deleteRow')">행삭제</button>
-                    <button class="btn" style="background:#495057; padding: 5px 6px; font-size:11px;"
-                        onclick="modifyGrid('insertCol')">열삽입</button>
-                    <button class="btn" style="background:#adb5bd; padding: 5px 6px; font-size:11px; color:#333;"
-                        onclick="modifyGrid('deleteCol')">열삭제</button>
-                </div>
-                <button class="btn" style="background:var(--warning); padding: 5px 10px; font-size:11px; color:#000;"
-                    onclick="undo()">↩️되돌리기</button>
-            </div>
-
-
-            <div class="tool-bar" style="flex-wrap: wrap; gap: 8px;">
-                <button class="tool-btn" onclick="undo()"
-                    style="border-color: var(--warning); color: #856404; background: #fff3cd; margin-right: 10px;">↩️
-                    되돌리기 (Ctrl+Z)</button>
-
-                <button class="tool-btn" onclick="selectTool(99, this)"
-                    style="border-color: #6f42c1; color: #6f42c1; background: #f3e8ff;">🖱️ 이동(드래그)</button>
-
-                <button class="tool-btn seat-0 selected" onclick="selectTool(0, this)">⬜통로(지우개)</button>
-                <button class="tool-btn seat-1" onclick="selectTool(1, this)">🟨고정</button>
-
-                <button class="tool-btn seat-2" onclick="selectTool(2, this)">🟩자율</button>
-                <button class="tool-btn seat-3" onclick="selectTool(3, this)">⬛기둥(벽)</button>
-
-                <button class="tool-btn seat-4" onclick="selectTool(4, this)">🚪출입구</button>
-                <button class="tool-btn seat-5" onclick="selectTool(5, this)">👩‍🏫교사석</button>
-                <button class="tool-btn seat-17" onclick="selectTool(17, this)">🪟창가</button>
-                <button class="tool-btn seat-18" onclick="selectTool(18, this)">🗄️사물함</button>
-                <div style="width: 100%; height: 0; border-bottom: 1px dashed #ccc; margin: 2px 0;"></div>
-                <span
-                    style="font-size:13px; font-weight:bold; align-self:center; color:#555; margin-right: 5px;">파티션:</span>
-                <button class="tool-btn" onclick="selectTool(6, this)">━</button>
-                <button class="tool-btn" onclick="selectTool(7, this)">┃</button>
-                <button class="tool-btn" onclick="selectTool(13, this)">┌</button>
-                <button class="tool-btn" onclick="selectTool(14, this)">┐</button>
-                <button class="tool-btn" onclick="selectTool(15, this)">└</button>
-                <button class="tool-btn" onclick="selectTool(16, this)">┘</button>
-                <button class="tool-btn" onclick="selectTool(8, this)">ㅏ</button>
-                <button class="tool-btn" onclick="selectTool(9, this)">ㅓ</button>
-                <button class="tool-btn" onclick="selectTool(11, this)">ㅗ</button>
-                <button class="tool-btn" onclick="selectTool(10, this)">ㅜ</button>
-                <button class="tool-btn" onclick="selectTool(12, this)">╋</button>
-                <button class="tool-btn" onclick="selectTool(19, this)">╱</button>
-                <button class="tool-btn" onclick="selectTool(20, this)">╲</button>
-            </div>
-            <div class="seat-grid-container">
-
-
-                <div id="seat-grid" class="seat-grid"></div>
-            </div>
-            <button class="btn btn-save" onclick="saveSeatLayout()">🌐 도면 서버 배포</button>
-        </div>
-        <!-- ▼ tab-time 카드 내부 전체 영역 ▼ -->
-        <div id="tab-time" class="card">
-            <h3>⏱️ 시스템 운영 및 시간 설정</h3>
-
-            <div
-                style="margin-bottom:15px; background:#eef6ff; border-radius:8px; border:1px solid #b6d4fe; overflow: hidden;">
-                <div onclick="const content = document.getElementById('layoutModeContent'); const icon = document.getElementById('layoutModeIcon'); if(content.style.display === 'none') { content.style.display = 'block'; icon.innerText = '▲'; } else { content.style.display = 'none'; icon.innerText = '▼'; }"
-                    style="padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;"
-                    onmouseover="this.style.backgroundColor='#d0e2ff'"
-                    onmouseout="this.style.backgroundColor='transparent'">
-                    <p style="margin: 0; font-size: 14px; color:#052c65;">
-                        <strong>📐 도면 운영 모드 (사용자 경험 선택)</strong>
-                        <span style="font-size: 12px; color: #666; font-weight: normal; margin-left: 10px;">(클릭하여
-                            펼치기)</span>
-                    </p>
-                    <span id="layoutModeIcon" style="color: #666; font-size: 14px; font-weight: bold;">▼</span>
-                </div>
-                <div id="layoutModeContent"
-                    style="display: none; padding: 0 15px 15px 15px; border-top: 1px dashed #b6d4fe; margin-top: 5px; padding-top: 15px;">
-                    <p style="font-size:13px; margin:0 0 10px 0; color: #555;">현재 프로그램 전체에서 사용할 도면 형식을 결정합니다.
-                    </p>
-                    <label style="display:inline-block; margin-right:20px; cursor:pointer;">
-                        <input type="radio" name="layout-mode" value="1" checked> <b>[기존] 1개 통합 도면</b>
-                    </label>
-                    <label style="display:inline-block; cursor:pointer;">
-                        <input type="radio" name="layout-mode" value="2"> <b>[신규] 다중 구역(A,B,C실) 도면</b>
-                    </label>
+                    <b style="color: #333;">📢 발권기 공지사항:</b><br>
+                    <input type="text" id="ticket-notice" placeholder="첫 화면에 표시될 안내 문구"
+                        style="width:100%; margin-top:5px; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
                 </div>
             </div>
 
             <div
-                style="margin-bottom:20px; background:#fff3cd; border-radius:8px; border:1px solid #ffeeba; overflow: hidden;">
-                <div onclick="const content = document.getElementById('autoCloseContent'); const icon = document.getElementById('autoCloseIcon'); if(content.style.display === 'none') { content.style.display = 'block'; icon.innerText = '▲'; } else { content.style.display = 'none'; icon.innerText = '▼'; }"
-                    style="padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;"
-                    onmouseover="this.style.backgroundColor='#ffe69c'"
-                    onmouseout="this.style.backgroundColor='transparent'">
-                    <p style="margin: 0; font-size: 14px; color:#856404;">
-                        <strong>🚨 일일 출결 자동 마감 설정</strong>
-                        <span style="font-size: 12px; color: #666; font-weight: normal; margin-left: 10px;">(클릭하여
-                            펼치기)</span>
-                    </p>
-                    <span id="autoCloseIcon" style="color: #666; font-size: 14px; font-weight: bold;">▼</span>
-                </div>
-                <div id="autoCloseContent"
-                    style="display: none; padding: 0 15px 15px 15px; border-top: 1px dashed #ffeeba; margin-top: 5px; padding-top: 15px;">
-                    <p style="font-size:13px; margin:0 0 10px 0; color: #555;">지정된 시간에 미귀가자를 자동으로 '귀가(누락)' 처리하거나
-                        마감
-                        기준 시간으로 사용합니다.</p>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <label style="cursor:pointer;"><input type="checkbox" id="auto-close-enable" checked>
-                            <b>자동
-                                마감 기능 켜기</b></label>
-                        <span style="margin: 0 10px; color: #ccc;">|</span>
-                        <b style="color: #555;">강제 마감 시간:</b>
-                        <input type="time" id="auto-close-time"
-                            style="padding:5px; border:1px solid #ccc; border-radius:4px;">
-                    </div>
-                </div>
-            </div>
-
-            <div
-                style="display:grid; gap:15px; padding:20px; background:#f8f9fa; border-radius:12px; border: 1px solid #eee;">
-                <div style="padding-bottom:15px; border-bottom:2px dashed #ddd;">
-                    <div style="margin-bottom:15px;">
-                        <b style="color:#052c65;">🔐 키오스크 학생 인증 방식</b><br>
-                        <label style="display:block; margin-top:8px; color: #333;"><input type="radio" name="auth-mode"
-                                value="1" checked> <b>[1단계] 학번만 입력</b> (바코드 스캐너 사용 시
-                            추천)</label>
-                        <label style="display:block; margin-top:5px; color: #333;"><input type="radio" name="auth-mode"
-                                value="2"> <b>[2단계] 학번 입력 후 '이름 확인' 팝업</b> (가장 추천)</label>
-                        <label style="display:block; margin-top:5px; color: #333;"><input type="radio" name="auth-mode"
-                                value="3"> <b>[3단계] 학번 + 이름 모두 입력</b> (보안 최고, 시간 소요)</label>
-                    </div>
-
-                    <div style="margin-bottom:10px;">
-                        <b style="color: #333;">🎟️ 발권 시작 시간:</b> 1타임 시작
-                        <input type="number" id="ticket-lead-time" value="30" onchange="updateTicketNoticeAuto()"
-                            style="width:50px; text-align:center; padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
-                        분 전부터 가능
-                    </div>
-                    <div>
-                        <b style="color: #333;">📢 발권기 공지사항:</b><br>
-                        <input type="text" id="ticket-notice" placeholder="첫 화면에 표시될 안내 문구"
-                            style="width:100%; margin-top:5px; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
-                    </div>
-                </div>
-
+                style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <b style="font-size:16px; color: #333;">1T:</b>
+                <input type="time" id="t1-start" onchange="calculateMinutes(1); updateTicketNoticeAuto();"
+                    style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;"> ~
+                <input type="time" id="t1-end" onchange="calculateMinutes(1)"
+                    style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                <span style="color:#666; font-size:13px;">(총 <b id="t1-min" style="color:var(--primary);">0분</b>)</span>
                 <div
-                    style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #eee; padding-bottom:10px;">
-                    <b style="font-size:16px; color: #333;">1T:</b>
-                    <input type="time" id="t1-start" onchange="calculateMinutes(1); updateTicketNoticeAuto();"
-                        style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;"> ~
-                    <input type="time" id="t1-end" onchange="calculateMinutes(1)"
-                        style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
-                    <span style="color:#666; font-size:13px;">(총 <b id="t1-min"
-                            style="color:var(--primary);">0분</b>)</span>
-                    <div
-                        style="margin-left:auto; background:#fff3cd; padding:6px 12px; border-radius:6px; font-size:13px; font-weight:bold; color:#856404;">
-                        최소 인정 기준: <input type="number" id="t1-req-min" value="60"
-                            style="width:45px; text-align:center; border:1px solid #ccc; border-radius:4px; padding: 2px;">
-                        분 이상
-                    </div>
+                    style="margin-left:auto; background:#fff3cd; padding:6px 12px; border-radius:6px; font-size:13px; font-weight:bold; color:#856404;">
+                    최소 인정 기준: <input type="number" id="t1-req-min" value="60"
+                        style="width:45px; text-align:center; border:1px solid #ccc; border-radius:4px; padding: 2px;">
+                    분 이상
                 </div>
+            </div>
 
+            <div
+                style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <b style="font-size:16px; color: #333;">2T:</b>
+                <input type="time" id="t2-start" onchange="calculateMinutes(2)"
+                    style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;"> ~
+                <input type="time" id="t2-end" onchange="calculateMinutes(2)"
+                    style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                <span style="color:#666; font-size:13px;">(총 <b id="t2-min" style="color:var(--primary);">0분</b>)</span>
                 <div
-                    style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-bottom:1px solid #eee; padding-bottom:10px;">
-                    <b style="font-size:16px; color: #333;">2T:</b>
-                    <input type="time" id="t2-start" onchange="calculateMinutes(2)"
-                        style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;"> ~
-                    <input type="time" id="t2-end" onchange="calculateMinutes(2)"
-                        style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
-                    <span style="color:#666; font-size:13px;">(총 <b id="t2-min"
-                            style="color:var(--primary);">0분</b>)</span>
-                    <div
-                        style="margin-left:auto; background:#fff3cd; padding:6px 12px; border-radius:6px; font-size:13px; font-weight:bold; color:#856404;">
-                        최소 인정 기준: <input type="number" id="t2-req-min" value="60"
-                            style="width:45px; text-align:center; border:1px solid #ccc; border-radius:4px; padding: 2px;">
-                        분 이상
-                    </div>
-                </div>
-
-                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                    <b style="font-size:16px; color: #333;">3T:</b>
-                    <input type="time" id="t3-start" onchange="calculateMinutes(3)"
-                        style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;"> ~
-                    <input type="time" id="t3-end" onchange="calculateMinutes(3)"
-                        style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
-                    <span style="color:#666; font-size:13px;">(총 <b id="t3-min"
-                            style="color:var(--primary);">0분</b>)</span>
-                    <div
-                        style="margin-left:auto; background:#fff3cd; padding:6px 12px; border-radius:6px; font-size:13px; font-weight:bold; color:#856404;">
-                        최소 인정 기준: <input type="number" id="t3-req-min" value="60"
-                            style="width:45px; text-align:center; border:1px solid #ccc; border-radius:4px; padding: 2px;">
-                        분 이상
-                    </div>
+                    style="margin-left:auto; background:#fff3cd; padding:6px 12px; border-radius:6px; font-size:13px; font-weight:bold; color:#856404;">
+                    최소 인정 기준: <input type="number" id="t2-req-min" value="60"
+                        style="width:45px; text-align:center; border:1px solid #ccc; border-radius:4px; padding: 2px;">
+                    분 이상
                 </div>
             </div>
-            <button class="btn btn-save" onclick="saveTimeSettings()">💾 설정 저장</button>
+
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <b style="font-size:16px; color: #333;">3T:</b>
+                <input type="time" id="t3-start" onchange="calculateMinutes(3)"
+                    style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;"> ~
+                <input type="time" id="t3-end" onchange="calculateMinutes(3)"
+                    style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                <span style="color:#666; font-size:13px;">(총 <b id="t3-min" style="color:var(--primary);">0분</b>)</span>
+                <div
+                    style="margin-left:auto; background:#fff3cd; padding:6px 12px; border-radius:6px; font-size:13px; font-weight:bold; color:#856404;">
+                    최소 인정 기준: <input type="number" id="t3-req-min" value="60"
+                        style="width:45px; text-align:center; border:1px solid #ccc; border-radius:4px; padding: 2px;">
+                    분 이상
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-save" onclick="saveTimeSettings()">💾 설정 저장</button>
+    </div>
+
+
+    <!-- ▼ tab-priority 카드 내부 전체 영역 ▼ -->
+    <div id="tab-priority" class="card" style="width: 100%; box-sizing: border-box;">
+        <h3>💺 고정석 운영 및 권한 설정</h3>
+
+        <div
+            style="width: 100%; margin-bottom: 20px; background: #eef2f7; border-radius: 10px; border-left: 5px solid var(--primary); overflow: hidden;">
+            <div onclick="const content = document.getElementById('opModeContent'); const icon = document.getElementById('opModeIcon'); if(content.style.display === 'none') { content.style.display = 'block'; icon.innerText = '▲'; } else { content.style.display = 'none'; icon.innerText = '▼'; }"
+                style="padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;"
+                onmouseover="this.style.backgroundColor='#e2e8f0'"
+                onmouseout="this.style.backgroundColor='transparent'">
+                <p style="margin: 0; font-size: 14px;">
+                    <strong>⚙️ 운영 모드 설정</strong>
+                    <span style="font-size: 12px; color: #666; font-weight: normal; margin-left: 10px;">(클릭하여
+                        펼치기)</span>
+                </p>
+                <span id="opModeIcon" style="color: #666; font-size: 14px; font-weight: bold;">▼</span>
+            </div>
+
+
+            <div id="opModeContent"
+                style="display: none; padding: 0 15px 15px 15px; border-top: 1px dashed #ccc; margin-top: 5px; padding-top: 15px;">
+                <label style="display:block; margin-bottom: 8px; cursor: pointer;">
+                    <input type="radio" name="opMode" value="manual" checked>
+                    <b>수동 지정</b> <span style="color:#666;">(아래 목록에서 체크한 권한 있는 학생만 고정석 신청 가능)</span>
+                </label>
+                <label style="display:block; cursor: pointer;">
+                    <input type="radio" name="opMode" value="all">
+                    <b style="color: var(--primary);">모두 신청 가능</b> <span style="color:#666;">(명단에 있는 모든 학생이 선착순으로
+                        고정석 신청 가능)</span>
+                </label>
+                <button onclick="saveOpMode()" class="btn"
+                    style="background: var(--primary); margin-top:15px; padding:8px 15px; font-size:13px; border-radius: 5px;">
+                    운영 모드 저장
+                </button>
+            </div>
+
+
+
         </div>
 
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
 
-        <!-- ▼ tab-priority 카드 내부 전체 영역 ▼ -->
-        <div id="tab-priority" class="card" style="width: 100%; box-sizing: border-box;">
-            <h3>💺 고정석 운영 및 권한 설정</h3>
-
-            <div
-                style="width: 100%; margin-bottom: 20px; background: #eef2f7; border-radius: 10px; border-left: 5px solid var(--primary); overflow: hidden;">
-                <div onclick="const content = document.getElementById('opModeContent'); const icon = document.getElementById('opModeIcon'); if(content.style.display === 'none') { content.style.display = 'block'; icon.innerText = '▲'; } else { content.style.display = 'none'; icon.innerText = '▼'; }"
-                    style="padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;"
-                    onmouseover="this.style.backgroundColor='#e2e8f0'"
-                    onmouseout="this.style.backgroundColor='transparent'">
-                    <p style="margin: 0; font-size: 14px;">
-                        <strong>⚙️ 운영 모드 설정</strong>
-                        <span style="font-size: 12px; color: #666; font-weight: normal; margin-left: 10px;">(클릭하여
-                            펼치기)</span>
-                    </p>
-                    <span id="opModeIcon" style="color: #666; font-size: 14px; font-weight: bold;">▼</span>
-                </div>
-
-
-                <div id="opModeContent"
-                    style="display: none; padding: 0 15px 15px 15px; border-top: 1px dashed #ccc; margin-top: 5px; padding-top: 15px;">
-                    <label style="display:block; margin-bottom: 8px; cursor: pointer;">
-                        <input type="radio" name="opMode" value="manual" checked>
-                        <b>수동 지정</b> <span style="color:#666;">(아래 목록에서 체크한 권한 있는 학생만 고정석 신청 가능)</span>
-                    </label>
-                    <label style="display:block; cursor: pointer;">
-                        <input type="radio" name="opMode" value="all">
-                        <b style="color: var(--primary);">모두 신청 가능</b> <span style="color:#666;">(명단에 있는 모든 학생이 선착순으로
-                            고정석 신청 가능)</span>
-                    </label>
-                    <button onclick="saveOpMode()" class="btn"
-                        style="background: var(--primary); margin-top:15px; padding:8px 15px; font-size:13px; border-radius: 5px;">
-                        운영 모드 저장
-                    </button>
-                </div>
-
-
-
+        <div
+            style="width: 100%; display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h4 style="margin: 0 0 5px 0;">📊 학생별 참여 통계 및 권한 부여</h4>
+                <p style="font-size:12px; color:#666; margin: 0;">* 파란색 월 제목(3월▼)을 클릭하면 해당 월 참여가 많은 순으로 자동
+                    정렬됩니다.</p>
             </div>
-
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-
-            <div
-                style="width: 100%; display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                <div>
-                    <h4 style="margin: 0 0 5px 0;">📊 학생별 참여 통계 및 권한 부여</h4>
-                    <p style="font-size:12px; color:#666; margin: 0;">* 파란색 월 제목(3월▼)을 클릭하면 해당 월 참여가 많은 순으로 자동
-                        정렬됩니다.</p>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="selectTop30()" class="btn"
-                        style="background:var(--primary); padding: 12px 20px; font-size: 15px; border-radius: 8px;">🏆
-                        상위 30명 자동 선택</button>
-                    <button onclick="clearAllPriority()" class="btn"
-                        style="background:var(--danger); padding: 12px 20px; font-size: 15px; border-radius: 8px;">❌
-                        모든 선택 해제</button>
-                </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="selectTop30()" class="btn"
+                    style="background:var(--primary); padding: 12px 20px; font-size: 15px; border-radius: 8px;">🏆
+                    상위 30명 자동 선택</button>
+                <button onclick="clearAllPriority()" class="btn"
+                    style="background:var(--danger); padding: 12px 20px; font-size: 15px; border-radius: 8px;">❌
+                    모든 선택 해제</button>
             </div>
-
-            <div class="filter-area"
-                style="width: 100%; box-sizing: border-box; background: #eef6ff; border: 1px solid #b6d4fe; border-radius: 8px; padding: 15px; display: flex; gap: 20px; align-items: center; margin-bottom: 15px; flex-wrap: wrap;">
-                <div>
-                    <label for="class-filter-select"
-                        style="font-weight: bold; color: #052c65; margin-right: 8px; font-size: 14px;">🏫 반별
-                        검색:</label>
-                    <select id="class-filter-select" onchange="filterPriorityTable()"
-                        style="padding: 8px 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; cursor: pointer;">
-                        <option value="">전체 보기</option>
-                    </select>
-                </div>
-                <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
-                    <label for="priority-search-input"
-                        style="font-weight: bold; color: #052c65; margin-right: 8px; font-size: 14px;">🔍 학생
-                        검색:</label>
-                    <input type="text" id="priority-search-input" onkeyup="filterPriorityTable()"
-                        placeholder="이름 또는 학번 입력"
-                        style="width: 160px; padding: 6px 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; cursor: text;">
-                    <button onclick="resetPriorityView()" class="btn"
-                        style="padding: 6px 12px; font-size: 13px; border-radius: 5px; background: #ffffff; color: var(--primary); border: 2px solid var(--primary); font-weight: bold; transition: 0.2s;"
-                        onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='#ffffff'">🔄
-                        초기화</button>
-                </div>
-            </div>
-
-            <div id="student-priority-table"
-                style="width: 100%; max-height: 500px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px;">
-                <table
-                    style="width:100%; border-collapse: collapse; text-align: center; white-space: nowrap; font-size: 13px;">
-                    <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
-                        <tr style="border-bottom: 2px solid #ccc;">
-                            <th style="padding: 12px; width: 40px;">No.</th>
-                            <th style="padding: 12px;">학년반</th>
-                            <th style="padding: 12px; cursor:pointer;" onclick="sortPriorityTable('id')">학번 ↕
-                            </th>
-                            <th style="padding: 12px; cursor:pointer;" onclick="sortPriorityTable('name')">이름 ↕
-                            </th>
-                            <th style="padding: 12px; color:var(--primary);">권한</th>
-                            <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m3')">3월▼
-                            </th>
-                            <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m4')">4월▼
-                            </th>
-                            <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m5')">5월▼
-                            </th>
-                            <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m6')">6월▼
-                            </th>
-                            <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m7')">7월▼
-                            </th>
-                            <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m8')">8월▼
-                            </th>
-                            <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m9')">9월▼
-                            </th>
-                            <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m10')">
-                                10월▼</th>
-                            <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m11')">
-                                11월▼</th>
-                            <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m12')">
-                                12월▼</th>
-                            <th style="padding: 12px; cursor:pointer; color:var(--danger); font-weight:bold;"
-                                onclick="sortPriorityTable('total')">총계▼</th>
-                        </tr>
-                    </thead>
-                    <tbody id="student-list-body"></tbody>
-                </table>
-            </div>
-
-            <button onclick="savePriorityList()" class="btn btn-success"
-                style="width:100%; margin-top:15px; padding: 18px; font-size: 16px; background:var(--success);">💾
-                고정석 권한 설정 저장</button>
         </div>
+
+        <div class="filter-area"
+            style="width: 100%; box-sizing: border-box; background: #eef6ff; border: 1px solid #b6d4fe; border-radius: 8px; padding: 15px; display: flex; gap: 20px; align-items: center; margin-bottom: 15px; flex-wrap: wrap;">
+            <div>
+                <label for="class-filter-select"
+                    style="font-weight: bold; color: #052c65; margin-right: 8px; font-size: 14px;">🏫 반별
+                    검색:</label>
+                <select id="class-filter-select" onchange="filterPriorityTable()"
+                    style="padding: 8px 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; cursor: pointer;">
+                    <option value="">전체 보기</option>
+                </select>
+            </div>
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                <label for="priority-search-input"
+                    style="font-weight: bold; color: #052c65; margin-right: 8px; font-size: 14px;">🔍 학생
+                    검색:</label>
+                <input type="text" id="priority-search-input" onkeyup="filterPriorityTable()" placeholder="이름 또는 학번 입력"
+                    style="width: 160px; padding: 6px 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; cursor: text;">
+                <button onclick="resetPriorityView()" class="btn"
+                    style="padding: 6px 12px; font-size: 13px; border-radius: 5px; background: #ffffff; color: var(--primary); border: 2px solid var(--primary); font-weight: bold; transition: 0.2s;"
+                    onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='#ffffff'">🔄
+                    초기화</button>
+            </div>
+        </div>
+
+        <div id="student-priority-table"
+            style="width: 100%; max-height: 500px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px;">
+            <table
+                style="width:100%; border-collapse: collapse; text-align: center; white-space: nowrap; font-size: 13px;">
+                <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
+                    <tr style="border-bottom: 2px solid #ccc;">
+                        <th style="padding: 12px; width: 40px;">No.</th>
+                        <th style="padding: 12px;">학년반</th>
+                        <th style="padding: 12px; cursor:pointer;" onclick="sortPriorityTable('id')">학번 ↕
+                        </th>
+                        <th style="padding: 12px; cursor:pointer;" onclick="sortPriorityTable('name')">이름 ↕
+                        </th>
+                        <th style="padding: 12px; color:var(--primary);">권한</th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m3')">3월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m4')">4월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m5')">5월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m6')">6월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m7')">7월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m8')">8월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m9')">9월▼
+                        </th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m10')">
+                            10월▼</th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m11')">
+                            11월▼</th>
+                        <th style="padding: 10px; cursor:pointer; color:blue;" onclick="sortPriorityTable('m12')">
+                            12월▼</th>
+                        <th style="padding: 12px; cursor:pointer; color:var(--danger); font-weight:bold;"
+                            onclick="sortPriorityTable('total')">총계▼</th>
+                    </tr>
+                </thead>
+                <tbody id="student-list-body"></tbody>
+            </table>
+        </div>
+
+        <button onclick="savePriorityList()" class="btn btn-success"
+            style="width:100%; margin-top:15px; padding: 18px; font-size: 16px; background:var(--success);">💾
+            고정석 권한 설정 저장</button>
+    </div>
     </div>
 
 
@@ -1939,7 +1928,88 @@
             loadOpMode();
         });
 
+        // 👇👇 여기서부터 복사해서 붙여넣으세요 👇👇
+        // =========================================================
+        // 🌟 [안전장치 적용] 특정 학생 완벽 삭제 함수
+        // =========================================================
+        async function deleteStudentCompletely() {
+            const stuIdStr = document.getElementById('delete-target-id').value.trim();
+            if (!stuIdStr) {
+                alert("삭제할 학번을 입력해주세요.");
+                return;
+            }
 
+            const numId = parseInt(stuIdStr);
+
+            // [안전장치 1단계] DB에서 학생 이름부터 몰래 확인합니다.
+            const { data: rosterData } = await supabaseClient.from('settings').select('value').eq('key', 'roster').maybeSingle();
+            let deletedName = "";
+
+            if (rosterData && rosterData.value && rosterData.value.list) {
+                let list = JSON.parse(rosterData.value.list);
+                deletedName = list[stuIdStr] || "";
+            }
+
+            if (!deletedName) {
+                alert("⚠️ 해당 학번을 기초 명단에서 찾을 수 없습니다.\n(이미 삭제되었거나 잘못 입력된 학번입니다)");
+                return;
+            }
+
+            // [안전장치 2단계] 선생님께 팝업을 띄워 이름을 직접 입력하게 합니다.
+            const userInput = prompt(`🚨 [안전장치 작동]\n\n실수 방지를 위해 지우려는 학생의 이름을 확인합니다.\n정말 데이터를 영구 삭제하시려면 아래 빈칸에 [ ${deletedName} ] 라고 똑같이 입력해주세요.`);
+
+            // 입력한 이름이 틀리면 즉시 함수를 종료시켜버립니다. (데이터 안전 보장)
+            if (userInput !== deletedName) {
+                alert("❌ 입력한 이름이 일치하지 않아 삭제가 취소되었습니다.\n(데이터가 안전하게 보호되었습니다.)");
+                return;
+            }
+
+            // 위 관문을 모두 통과해야만 진짜 삭제 작업이 시작됩니다.
+            try {
+                // 1. 기초 명단에서 지우기
+                if (rosterData && rosterData.value) {
+                    let list = JSON.parse(rosterData.value.list);
+                    let phoneList = rosterData.value.phoneList ? JSON.parse(rosterData.value.phoneList) : {};
+                    let barcodeList = rosterData.value.barcodeList ? JSON.parse(rosterData.value.barcodeList) : {};
+
+                    delete list[stuIdStr];
+                    delete phoneList[stuIdStr];
+                    for (let barcode in barcodeList) {
+                        if (String(barcodeList[barcode]) === stuIdStr) delete barcodeList[barcode];
+                    }
+
+                    await supabaseClient.from('settings').update({
+                        value: { list: JSON.stringify(list), phoneList: JSON.stringify(phoneList), barcodeList: JSON.stringify(barcodeList) }
+                    }).eq('key', 'roster');
+                }
+
+                // 2. 고정석 권한 명단에서 지우기
+                const { data: priorityData } = await supabaseClient.from('settings').select('value').eq('key', 'priority_students').maybeSingle();
+                if (priorityData && priorityData.value && priorityData.value.ids) {
+                    const newIds = priorityData.value.ids.filter(id => String(id) !== stuIdStr);
+                    await supabaseClient.from('settings').update({ value: { ids: newIds } }).eq('key', 'priority_students');
+                }
+
+                // 3. 신청, 출결, 예약 등 모든 시스템 찌꺼기 한 번에 지우기
+                await Promise.all([
+                    supabaseClient.from('applications').delete().eq('stu_id', numId),
+                    supabaseClient.from('applications').delete().eq('stu_id', stuIdStr),
+                    supabaseClient.from('attendance_logs').delete().eq('stu_id', numId),
+                    supabaseClient.from('attendance_logs').delete().eq('stu_id', stuIdStr),
+                    supabaseClient.from('daily_reservations').delete().eq('stu_id', numId),
+                    supabaseClient.from('daily_reservations').delete().eq('stu_id', stuIdStr),
+                ]);
+
+                alert(`✅ [${stuIdStr} ${deletedName}] 학생의 모든 데이터가 서버에서 완벽히 삭제되었습니다.`);
+                document.getElementById('delete-target-id').value = "";
+                loadAllSettings(); // 화면 새로고침
+
+            } catch (error) {
+                console.error("삭제 중 오류 발생:", error);
+                alert("삭제 중 오류가 발생했습니다: " + error.message);
+            }
+        }
+        // 👆👆 여기까지 붙여넣기 👆👆
     </script>
 </body>
 
