@@ -568,7 +568,8 @@
                     onclick="loadDailyDataAndRender()">🔄 화면 새로고침</button>
 
                 <div style="display: flex; gap: 10px;"> <button class="btn btn-gray"
-                        onclick="location.href='settings.html'">⚙️ 환경설정</button>
+                        onclick="alert('접근이 제한된 관리자 메뉴입니다.');"
+                        ondblclick="if(event.ctrlKey) { location.href='settings.html'; }">⚙️ 환경설정</button>
                     <button class="btn btn-gray" onclick="adminLogout()">🔒 로그아웃</button>
                 </div>
             </div>

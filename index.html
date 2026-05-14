@@ -233,7 +233,8 @@
             <div class="card-desc">월별 달력 기반 신청 인원 및<br>일일 출결 결과 통합 통계</div>
         </a>
 
-        <a href="settings.html" class="card teacher-card">
+        <a href="#" onclick="event.preventDefault(); alert('접근이 제한된 관리자 메뉴입니다.');"
+            ondblclick="if(event.ctrlKey) { location.href='settings.html'; }" class="card teacher-card">
             <div class="icon">⚙️</div>
             <div class="card-title">환경설정</div>
             <div class="card-desc">운영 일정, 명단 및 도면 관리<br>(관리자 전용)</div>
