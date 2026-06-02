@@ -458,9 +458,15 @@
     <div id="main-content">
         <div class="header">
             <h1>⚙️ 통합 환경설정</h1>
-            <button class="btn" style="background:var(--gray);" onclick="location.href='split_admin.html'">⬅️ 관리
-                화면</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="background:var(--gray);" onclick="location.href='split_admin.html'">⬅️ 관리
+                    화면</button>
+                <button class="btn" style="background:var(--primary); color: white;"
+                    onclick="location.href='index.html'">🏠 메인 홈</button>
+            </div>
         </div>
+
+
 
         <div class="settings-menu">
             <button class="menu-btn active" onclick="showTab('tab-schedule', this)">📅 야자일정 (감독교사)</button>
