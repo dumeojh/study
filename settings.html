@@ -1791,7 +1791,13 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = async (e) => {
-                const data = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(e.target.result), { type: 'array' }).Sheets[XLSX.read(new Uint8Array(e.target.result), { type: 'array' }).SheetNames[0]], { header: 1 });
+                // 이렇게 변경하면 더 빠르고 안정적으로 작동합니다.
+                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const data = XLSX.utils.sheet_to_jso// 이렇게 변경하면 더 빠르고 안정적으로 작동합니다.
+                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const data = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { header: 1 }); n(workbook.Sheets[firstSheetName], { header: 1 });
                 let roster = {}, phones = {}, barcodes = {};
 
                 data.forEach((r, index) => {
