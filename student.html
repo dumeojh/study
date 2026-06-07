@@ -30,7 +30,8 @@
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-6 select-none">
 
     <div id="quote-screen"
-        class="fixed inset-0 bg-purple-900 text-white flex flex-col items-center justify-center p-8 z-50 transition-opacity duration-500">
+        class="fixed inset-0 bg-purple-900 text-white flex flex-col items-center justify-center p-8 z-50 transition-opacity duration-100">
+
         <div class="text-center max-w-sm space-y-6">
             <div class="text-5xl">🌙</div>
 
@@ -254,7 +255,7 @@
             setTimeout(() => {
                 quoteScreen.style.display = 'none';
                 mainContent.classList.remove('hidden');
-            }, 500);
+            }, 100);
         });
 
         // 🖥️ 기존 전체화면 설정
