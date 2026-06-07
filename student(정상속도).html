@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>안성여고 야자 통합 관리</title>
 
-    <link class="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#7e22ce">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -44,7 +44,6 @@
             <p id="quote-author" class="text-purple-300 text-xs"></p>
 
 
-            <!-- 버튼 영역 가로 정렬 레이아웃 -->
             <div class="mt-6 flex flex-col items-center gap-3 w-full">
                 <div class="flex gap-2 w-full max-w-[280px]">
                     <button id="btn-speak-1"
@@ -232,14 +231,14 @@
             document.getElementById('quote-author').innerText = `- ${selectedQuote.author} -`;
         });
 
-        // 🔊 [목소리 1] 미국식 젊은 여성 발음 (속도 0.85 수정)
+        // 🔊 [목소리 1] 미국식 젊은 여성 발음 (정상 속도 1.0)
         document.getElementById('btn-speak-1').addEventListener('click', (e) => {
             e.stopPropagation();
             window.speechSynthesis.cancel();
 
             const speech = new SpeechSynthesisUtterance(currentEngText);
             speech.lang = 'en-US';
-            speech.rate = 0.85;  // 💡 조금 천천히 또박또박 읽도록 수정
+            speech.rate = 1.0;  // 정상 속도
             speech.pitch = 1.25;
 
             const voices = window.speechSynthesis.getVoices();
@@ -252,14 +251,14 @@
             window.speechSynthesis.speak(speech);
         });
 
-        // 🔊 [목소리 2] 영국식 세련된 여성 발음 (속도 0.85 수정)
+        // 🔊 [목소리 2] 영국식 세련된 여성 발음 (정상 속도 1.0으로 수정완료)
         document.getElementById('btn-speak-2').addEventListener('click', (e) => {
             e.stopPropagation();
             window.speechSynthesis.cancel();
 
             const speech = new SpeechSynthesisUtterance(currentEngText);
             speech.lang = 'en-GB';
-            speech.rate = 0.85;  // 💡 미국식과 동일하게 0.85 속도로 설정
+            speech.rate = 1.0;  // 💡 0.95에서 1.0(정상 속도)으로 수정했습니다.
             speech.pitch = 1.15;
 
             const voices = window.speechSynthesis.getVoices();
